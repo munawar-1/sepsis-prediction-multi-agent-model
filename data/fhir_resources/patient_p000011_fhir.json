@@ -1,0 +1,55 @@
+{
+  "resourceType": "Bundle",
+  "type": "collection",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "p000011",
+        "identifier": [
+          {
+            "system": "https://aegis-icu.hospital.org/bed-id",
+            "value": "ICU-BED-04"
+          }
+        ],
+        "gender": "male",
+        "birthDate": "1958-04-12"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "cond-01",
+        "subject": { "reference": "Patient/p000011" },
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10",
+              "code": "J45.909",
+              "display": "Asthma, unspecified"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "med-01",
+        "status": "active",
+        "intent": "order",
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "435",
+              "display": "Albuterol 0.83 mg/mL Inhalation Solution"
+            }
+          ]
+        },
+        "subject": { "reference": "Patient/p000011" },
+        "authoredOn": "2026-10-29T14:15:00Z"
+      }
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: aegis-clinical-core
+  datasource:
+    url: jdbc:mysql://localhost:3306/aegis_icu?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: root
+    password: password
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: aegis.icu.alerts@gmail.com
+    password: ${EMAIL_APP_PASSWORD:mock_password}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+
+aegis:
+  ai-service:
+    base-url: http://localhost:8000/api/v1
+  dpdp:
+    mask-pii: true
+    hospital-name: "Apollo Multispeciality Hospitals"

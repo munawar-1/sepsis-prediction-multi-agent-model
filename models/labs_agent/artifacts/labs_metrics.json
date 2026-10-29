@@ -1,0 +1,62 @@
+{
+  "model_name": "labs_rf_model",
+  "features": [
+    "Lactate",
+    "WBC",
+    "Creatinine",
+    "Platelets",
+    "Lactate_was_missing",
+    "WBC_was_missing",
+    "Creatinine_was_missing",
+    "Platelets_was_missing"
+  ],
+  "roc_auc": 0.5236092155840095,
+  "pr_auc": 0.024800856977792038,
+  "confusion_matrix": [
+    [
+      110489,
+      5447
+    ],
+    [
+      2337,
+      226
+    ]
+  ],
+  "feature_importances": {
+    "Lactate_was_missing": 0.22411305033544623,
+    "Platelets": 0.20358857187218254,
+    "Lactate": 0.18592451044405514,
+    "WBC": 0.172731434244196,
+    "Creatinine": 0.16579644084095818,
+    "Platelets_was_missing": 0.021080456250238407,
+    "Creatinine_was_missing": 0.013817429762516046,
+    "WBC_was_missing": 0.01294810625040748
+  },
+  "classification_report": {
+    "0": {
+      "precision": 0.9792866892382961,
+      "recall": 0.9530171818934584,
+      "f1-score": 0.9659733697030101,
+      "support": 115936.0
+    },
+    "1": {
+      "precision": 0.0398378283095364,
+      "recall": 0.08817791650409676,
+      "f1-score": 0.054881010199125786,
+      "support": 2563.0
+    },
+    "accuracy": 0.9343116819551219,
+    "macro avg": {
+      "precision": 0.5095622587739163,
+      "recall": 0.5205975491987775,
+      "f1-score": 0.510427189951068,
+      "support": 118499.0
+    },
+    "weighted avg": {
+      "precision": 0.958967467721149,
+      "recall": 0.9343116819551219,
+      "f1-score": 0.9462674673965901,
+      "support": 118499.0
+    }
+  }
+}

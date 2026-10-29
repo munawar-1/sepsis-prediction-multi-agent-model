@@ -1,0 +1,72 @@
+{
+  "model_name": "vitals_rf_model",
+  "features": [
+    "HR",
+    "SBP",
+    "MAP",
+    "Resp",
+    "O2Sat",
+    "Temp",
+    "HR_was_missing",
+    "SBP_was_missing",
+    "MAP_was_missing",
+    "Resp_was_missing",
+    "O2Sat_was_missing",
+    "Temp_was_missing",
+    "Shock_Index"
+  ],
+  "roc_auc": 0.6257903912759217,
+  "pr_auc": 0.03673949611161455,
+  "confusion_matrix": [
+    [
+      89769,
+      26167
+    ],
+    [
+      1572,
+      991
+    ]
+  ],
+  "feature_importances": {
+    "Resp": 0.22384254797984643,
+    "HR": 0.187109322577645,
+    "Shock_Index": 0.14880767384357146,
+    "Temp": 0.1304376966448579,
+    "MAP": 0.09125652190030847,
+    "SBP": 0.08085283751882479,
+    "O2Sat": 0.06406545510425025,
+    "SBP_was_missing": 0.02279279639506389,
+    "Temp_was_missing": 0.01736208337805402,
+    "O2Sat_was_missing": 0.013401175207559672,
+    "MAP_was_missing": 0.0115045307624134,
+    "Resp_was_missing": 0.005017913102846911,
+    "HR_was_missing": 0.0035494455847578698
+  },
+  "classification_report": {
+    "0": {
+      "precision": 0.9827897658225769,
+      "recall": 0.7742978884902015,
+      "f1-score": 0.866174249916778,
+      "support": 115936.0
+    },
+    "1": {
+      "precision": 0.0364901686427572,
+      "recall": 0.3866562621927429,
+      "f1-score": 0.06668685441270482,
+      "support": 2563.0
+    },
+    "accuracy": 0.765913636401995,
+    "macro avg": {
+      "precision": 0.509639967232667,
+      "recall": 0.5804770753414722,
+      "f1-score": 0.46643055216474144,
+      "support": 118499.0
+    },
+    "weighted avg": {
+      "precision": 0.962322370590787,
+      "recall": 0.765913636401995,
+      "f1-score": 0.8488822373708752,
+      "support": 118499.0
+    }
+  }
+}
