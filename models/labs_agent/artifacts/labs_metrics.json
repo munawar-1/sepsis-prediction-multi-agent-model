@@ -22,7 +22,7 @@
       226
     ]
   ],
-  "feature_importances": {
+  "feature_importances_gini": {
     "Lactate_was_missing": 0.22411305033544623,
     "Platelets": 0.20358857187218254,
     "Lactate": 0.18592451044405514,
@@ -31,6 +31,16 @@
     "Platelets_was_missing": 0.021080456250238407,
     "Creatinine_was_missing": 0.013817429762516046,
     "WBC_was_missing": 0.01294810625040748
+  },
+  "feature_importances_shap": {
+    "Lactate_was_missing": 0.010520397455150845,
+    "Platelets_was_missing": 0.007558715807459096,
+    "Lactate": 0.004042785515647677,
+    "Creatinine": 0.003974437642180832,
+    "Platelets": 0.003498512866953386,
+    "WBC_was_missing": 0.00318102540014121,
+    "WBC": 0.0025905754257202615,
+    "Creatinine_was_missing": 0.0009863551993925042
   },
   "classification_report": {
     "0": {

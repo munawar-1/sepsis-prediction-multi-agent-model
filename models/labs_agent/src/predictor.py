@@ -4,15 +4,19 @@ Evaluates blood pathology and organ dysfunction biomarkers:
 1. Sepsis & Organ Stress Probability
 2. Freshness / Missingness Status (STAT Lab Draw Escalation)
 3. Cellular Hypoxia & Organ Dysfunction Drivers (SOFA criteria)
+4. SHAP-based per-prediction feature contributions
 """
 
 import os
+os.environ.setdefault("MPLCONFIGDIR", "/tmp/matplotlib")
 import joblib
 import numpy as np
 import pandas as pd
+import shap
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODEL_PATH = os.path.join(BASE_DIR, "artifacts", "labs_rf_model.pkl")
+SHAP_EXPLAINER_PATH = os.path.join(BASE_DIR, "artifacts", "labs_shap_explainer.pkl")
 
 # Fitted medians from training split
 TRAIN_MEDIANS = {
@@ -26,6 +30,7 @@ class LabsPredictor:
     def __init__(self, model_path=MODEL_PATH):
         self.model_path = model_path
         self.model = None
+        self.shap_explainer = None
         self.load_model()
 
     def load_model(self):
@@ -33,6 +38,41 @@ class LabsPredictor:
             self.model = joblib.load(self.model_path)
         else:
             raise FileNotFoundError(f"Model not found at: {self.model_path}. Run train.py first.")
+
+        # Load pre-computed SHAP TreeExplainer (created during training)
+        if os.path.exists(SHAP_EXPLAINER_PATH):
+            self.shap_explainer = joblib.load(SHAP_EXPLAINER_PATH)
+        else:
+            # Fallback: create explainer on-the-fly from the model
+            self.shap_explainer = shap.TreeExplainer(self.model)
+
+    def _compute_shap_contributions(self, df_row: pd.DataFrame) -> dict:
+        """
+        Compute per-prediction SHAP values explaining *why* this patient
+        received this particular organ stress score.
+        Returns a dict of {feature_name: shap_value} sorted by |contribution|.
+        """
+        shap_values = self.shap_explainer.shap_values(df_row)
+
+        # For binary classification: extract positive-class SHAP values
+        if isinstance(shap_values, list):
+            sv = shap_values[1][0] if len(shap_values) > 1 else shap_values[0][0]
+        else:
+            shap_arr = np.asarray(shap_values)
+            if shap_arr.ndim == 3 and shap_arr.shape[-1] >= 2:
+                sv = shap_arr[0, :, 1]
+            elif shap_arr.ndim == 2:
+                sv = shap_arr[0]
+            else:
+                sv = shap_arr.flatten()
+
+        feature_names = list(df_row.columns)
+        contributions = dict(zip(feature_names, [float(v) for v in sv]))
+        # Sort by absolute contribution (most impactful first)
+        sorted_contributions = dict(
+            sorted(contributions.items(), key=lambda x: abs(x[1]), reverse=True)
+        )
+        return sorted_contributions
 
     def predict(self, labs_dict: dict) -> dict:
         """
@@ -99,6 +139,7 @@ class LabsPredictor:
             "organ_stress_level": stress_level,
             "stat_lab_draws_required": stat_orders,
             "abnormal_biomarkers": abnormal_flags,
+            "shap_contributions": self._compute_shap_contributions(df_row),
             "labs_snapshot": {k: labs_dict.get(k) for k in TRAIN_MEDIANS}
         }
 
@@ -129,4 +170,9 @@ if __name__ == "__main__":
         print(" [+] Immediate Diagnostic Escalations Required:")
         for order in result["stat_lab_draws_required"]:
             print(f"     ! {order}")
+    print("-" * 60)
+    print(" [+] SHAP Feature Contributions (per-prediction):")
+    for feat, val in result['shap_contributions'].items():
+        direction = "↑ Risk" if val > 0 else "↓ Risk"
+        print(f"     {'+'if val > 0 else ''}{val:.4f}  {feat}  ({direction})")
     print("=" * 60 + "\n")

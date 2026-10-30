@@ -27,7 +27,7 @@
       991
     ]
   ],
-  "feature_importances": {
+  "feature_importances_gini": {
     "Resp": 0.22384254797984643,
     "HR": 0.187109322577645,
     "Shock_Index": 0.14880767384357146,
@@ -41,6 +41,21 @@
     "MAP_was_missing": 0.0115045307624134,
     "Resp_was_missing": 0.005017913102846911,
     "HR_was_missing": 0.0035494455847578698
+  },
+  "feature_importances_shap": {
+    "Resp": 0.04414571277383021,
+    "HR": 0.03420500415026002,
+    "Shock_Index": 0.019947625040925652,
+    "Temp": 0.01383737006213793,
+    "O2Sat": 0.013576321936768878,
+    "MAP": 0.012458309310431263,
+    "Temp_was_missing": 0.012337350375190893,
+    "SBP_was_missing": 0.011251728929036042,
+    "SBP": 0.009940923623181797,
+    "MAP_was_missing": 0.008174832579770058,
+    "O2Sat_was_missing": 0.007207916863376894,
+    "HR_was_missing": 0.003652823412222097,
+    "Resp_was_missing": 0.0032766026423250785
   },
   "classification_report": {
     "0": {
