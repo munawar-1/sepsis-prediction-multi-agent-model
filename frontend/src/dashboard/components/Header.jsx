@@ -1,5 +1,5 @@
 import React from 'react';
-import { PanelLeftClose, PanelLeftOpen, ShieldCheck, Activity } from 'lucide-react';
+import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 
 export default function Header({
   isSidebarOpen,
@@ -9,10 +9,10 @@ export default function Header({
 }) {
   return (
     <header className="h-14 border-b border-navy-700 bg-navy-900/95 backdrop-blur-md px-6 flex items-center justify-between shrink-0 z-20">
-      <div className="flex items-center gap-4 min-w-0">
+      <div className="flex items-center gap-3.5 min-w-0">
         <button
           onClick={onToggleSidebar}
-          className="text-slate-400 hover:text-slate-200 p-1.5 rounded hover:bg-navy-800 transition-colors"
+          className="w-8 h-8 rounded-lg bg-navy-850 hover:bg-navy-800 border border-navy-700/80 hover:border-slate-500/60 text-slate-400 hover:text-slate-100 flex items-center justify-center transition-all shadow-sm shrink-0"
           title={isSidebarOpen ? "Collapse navigation sidebar" : "Expand navigation sidebar"}
         >
           {isSidebarOpen ? (
@@ -44,13 +44,6 @@ export default function Header({
           </span>
         </div>
 
-        {/* Demonstration Notice Banner Tag */}
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-navy-850 border border-navy-700 text-[11px] font-mono text-slate-300">
-          <ShieldCheck className="w-3.5 h-3.5 text-clinical-teal" />
-          <span className="hidden sm:inline">Decision-Support Mode</span>
-          <span className="sm:hidden">Support Mode</span>
-        </div>
-
         <div className="h-4 w-px bg-navy-700 hidden sm:block" />
 
         {/* Time & Status */}
@@ -62,4 +55,3 @@ export default function Header({
     </header>
   );
 }
-

@@ -263,64 +263,50 @@ export default function InboxView({
       {/* Filter & Search Bar */}
       <div className="bg-navy-900 border border-navy-700 rounded-xl p-3 mb-4 flex flex-wrap items-center justify-between gap-3">
         {/* Filter Tabs */}
-        <div className="flex items-center gap-1 bg-navy-950 p-1 rounded-lg border border-navy-700">
-          <button
-            onClick={() => onSetFilter('all')}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-              currentFilter === 'all'
-                ? 'bg-navy-800 text-slate-100 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            All Alerts
-          </button>
-          <button
-            onClick={() => onSetFilter('unread')}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-              currentFilter === 'unread'
-                ? 'bg-navy-800 text-slate-100 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            Unreviewed
-          </button>
-          <button
-            onClick={() => onSetFilter('high')}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-              currentFilter === 'high'
-                ? 'bg-navy-800 text-slate-100 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            Critical / High
-          </button>
-          <button
-            onClick={() => onSetFilter('reviewed')}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-              currentFilter === 'reviewed'
-                ? 'bg-navy-800 text-slate-100 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            Acknowledged
-          </button>
+        <div className="flex items-center gap-1 bg-navy-950 p-1 rounded-lg border border-navy-700/80 shadow-inner">
+          {[
+            { id: 'all', label: 'All Alerts' },
+            { id: 'unread', label: 'Unreviewed' },
+            { id: 'high', label: 'Critical / High' },
+            { id: 'reviewed', label: 'Acknowledged' }
+          ].map((tab) => {
+            const isActive = currentFilter === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => onSetFilter(tab.id)}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${
+                  isActive
+                    ? 'bg-navy-800 text-clinical-teal border border-clinical-teal/40 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-navy-850/60 border border-transparent'
+                }`}
+              >
+                {isActive && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-clinical-teal" />
+                )}
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Search Input */}
         <div className="flex items-center gap-2 flex-1 max-w-md">
-          <div className="relative w-full">
-            <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+          <div className="relative w-full flex items-center">
+            <div className="absolute left-3 pointer-events-none flex items-center justify-center text-slate-400">
+              <Search className="w-3.5 h-3.5" />
+            </div>
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder="Search by Patient ID (e.g. PT-9042), bed, or agent..."
-              className="w-full bg-navy-950 border border-navy-700 rounded-lg pl-9 pr-4 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-clinical-teal"
+              className="w-full h-8 bg-navy-950 border border-navy-700 rounded-lg pl-9 pr-3 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-clinical-teal focus:ring-1 focus:ring-clinical-teal transition-all"
             />
           </div>
           <button
             onClick={onSimulateAlert}
-            className="px-3 py-1.5 rounded-lg bg-navy-800 border border-navy-700 hover:border-slate-500 text-slate-300 text-xs font-mono flex items-center gap-1.5 shrink-0 transition-colors"
+            className="h-8 px-3 rounded-lg bg-navy-800 border border-navy-700 hover:border-slate-500 text-slate-300 text-xs font-mono flex items-center gap-1.5 shrink-0 transition-colors"
             title="Simulate incoming real-time alert"
           >
             <RefreshCw className="w-3.5 h-3.5 text-clinical-teal" />

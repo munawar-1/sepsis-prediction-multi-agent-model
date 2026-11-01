@@ -5,8 +5,7 @@ import {
   FlaskConical,
   Pill,
   Bell,
-  ArrowLeft,
-  ShieldCheck
+  Home
 } from 'lucide-react';
 
 export default function Sidebar({
@@ -112,19 +111,16 @@ export default function Sidebar({
               </div>
             </div>
           </div>
-          <span className="px-1.5 py-0.5 text-[10px] font-mono font-medium rounded bg-clinical-amber-dim text-clinical-amber border border-clinical-amber/30">
-            DEMO
-          </span>
         </div>
 
         {/* Navigation */}
-        <nav className="flex flex-col gap-1.5 mt-1">
+        <nav className="flex flex-col gap-1 mt-1">
           <div className="text-[10px] font-mono uppercase text-slate-400 px-3 tracking-wider mb-1">
             Navigation
           </div>
           <button
             onClick={onShowInbox}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-navy-800/90 text-clinical-teal border border-clinical-teal/30 shadow-sm text-xs font-medium transition-all group"
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg bg-navy-800/90 text-clinical-teal border border-clinical-teal/30 shadow-sm text-xs font-medium transition-all group"
           >
             <LayoutGrid className="w-4 h-4 text-clinical-teal transition-transform group-hover:scale-105" />
             <span>Dashboard Inbox</span>
@@ -133,13 +129,13 @@ export default function Sidebar({
             </span>
           </button>
 
-          {/* Return to Public Landing Page */}
+          {/* Return to Public Landing Page as a subtle, professional link */}
           <button
             onClick={onExitToLanding}
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-navy-800/60 border border-transparent hover:border-navy-700 text-xs font-medium transition-all group mt-1"
-            title="Return to Aegis-ICU Public Presentation"
+            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-navy-800/50 border border-transparent hover:border-navy-700/60 text-xs font-normal transition-all group"
+            title="Return to Aegis-ICU Homepage"
           >
-            <ArrowLeft className="w-4 h-4 text-slate-500 group-hover:text-clinical-teal transition-transform group-hover:-translate-x-0.5" />
+            <Home className="w-3.5 h-3.5 text-slate-500 group-hover:text-clinical-teal transition-colors" />
             <span>Exit to Homepage</span>
           </button>
         </nav>
@@ -195,7 +191,7 @@ export default function Sidebar({
 
       {/* Doctor Profile Bar */}
       <div className="p-4 border-t border-navy-700 bg-navy-900/90 flex items-center gap-3 shrink-0">
-        <div className="w-8 h-8 rounded-full bg-navy-800 border border-navy-700 flex items-center justify-center font-display font-medium text-xs text-slate-300 shadow-sm">
+        <div className="w-8 h-8 rounded-full bg-navy-800 border border-navy-700 flex items-center justify-center font-display font-medium text-xs text-slate-300 shadow-sm shrink-0">
           DR
         </div>
         <div className="flex flex-col flex-1 min-w-0">
@@ -203,13 +199,13 @@ export default function Sidebar({
           <span className="text-[10px] font-mono text-slate-400 truncate">Attending Intensivist</span>
         </div>
         <button
-          className="p-1.5 hover:bg-navy-800 rounded text-slate-400 hover:text-slate-200 transition-colors"
-          title="Telemetry notifications active"
+          className="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-navy-800/80 border border-navy-700/70 hover:border-navy-600 flex items-center justify-center transition-all shrink-0 relative"
+          title="Telemetry alerts & notifications"
         >
-          <Bell className="w-4 h-4" />
+          <Bell className="w-3.5 h-3.5" />
+          <span className="w-1.5 h-1.5 rounded-full bg-clinical-teal absolute top-1.5 right-1.5 ring-2 ring-navy-900" />
         </button>
       </div>
     </aside>
   );
 }
-
