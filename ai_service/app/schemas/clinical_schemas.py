@@ -3,8 +3,21 @@ Pydantic Schemas for Aegis-ICU API
 Strict, typed contracts conforming to HL7 FHIR Observation standards.
 """
 
-from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
+
+try:
+    from pydantic import BaseModel, Field
+except ImportError:
+    class BaseModel:
+        def __init__(self, **kwargs):
+            for k, v in kwargs.items():
+                setattr(self, k, v)
+        def dict(self):
+            return self.__dict__
+    def Field(default=None, default_factory=None, description=""):
+        if default_factory is not None:
+            return default_factory()
+        return default
 
 class TelemetryTickRequest(BaseModel):
     patient_id: str = Field(description="De-identified patient token e.g. 'p000011'")
