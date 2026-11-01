@@ -25,7 +25,7 @@
 }
 
 html.light {
-  --bg-primary: #F4F6F9;
+  --bg-primary: #F8FAFC;
   --bg-secondary: #FFFFFF;
   --bg-card: #FFFFFF;
   --bg-surface: #F8FAFC;
@@ -39,9 +39,20 @@ html.light {
   --accent-warm: #D97706;
   --accent-critical: #DC2626;
 
-  --text-primary: #0F172A;
+  --text-primary: #334155;
   --text-secondary: #475569;
-  --text-tertiary: #94A3B8;
+  --text-tertiary: #64748B;
+
+  --daylight-canvas: #F8FAFC;
+  --daylight-surface: #FFFFFF;
+  --daylight-secondary: #F1F5F9;
+  --daylight-border: #E2E8F0;
+  --daylight-mint-surface: #F0FDFA;
+  --daylight-mint-border: #99F6E4;
+  --daylight-mint-accent: #0D9488;
+  --daylight-text-primary: #334155;
+  --daylight-text-secondary: #475569;
+  --daylight-text-muted: #64748B;
 
   color-scheme: light;
 }

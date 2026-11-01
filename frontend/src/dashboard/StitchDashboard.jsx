@@ -1,26 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Sidebar from './components/Sidebar';
-import Header from './components/Header';
 import InboxView from './components/InboxView';
 import ConversationWorkspace from './components/ConversationWorkspace';
 import OverrideModal from './components/OverrideModal';
 import { INITIAL_ALERTS_DATA, createSimulatedAlert } from './data/alertsData';
-import { useTheme } from '../context/ThemeContext';
 
 export default function StitchDashboard({ onExitToLanding }) {
-  const { isDark } = useTheme();
-
-  // Alert dataset state
+  // Alert dataset state - default to first alert (PT-9042) for immediate 3-column view
   const [alerts, setAlerts] = useState(INITIAL_ALERTS_DATA);
-  const [selectedAlertId, setSelectedAlertId] = useState(null);
+  const [selectedAlertId, setSelectedAlertId] = useState(() => INITIAL_ALERTS_DATA[0]?.id || null);
 
   // Filter & Search
   const [currentFilter, setCurrentFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Layout states
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [isPatientPanelOpen, setIsPatientPanelOpen] = useState(true);
+  // Modals
   const [isOverrideModalOpen, setIsOverrideModalOpen] = useState(false);
 
   // Conversations map: alert.id -> array of messages
@@ -48,14 +42,6 @@ export default function StitchDashboard({ onExitToLanding }) {
 
   // Selected Alert Object
   const selectedAlert = alerts.find(a => a.id === selectedAlertId) || null;
-
-  // Header Title & Subtitle
-  const headerTitle = selectedAlert
-    ? `${selectedAlert.patientId} • ${selectedAlert.bed}`
-    : "Clinical Inbox";
-  const headerSubtitle = selectedAlert
-    ? selectedAlert.admissionDiagnosis
-    : "Multi-Agent Sepsis Early Warning Surveillance";
 
   // Select Alert & mark read
   const handleSelectAlert = (alertId) => {
@@ -125,7 +111,7 @@ export default function StitchDashboard({ onExitToLanding }) {
 
     const userTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-    // Append Doctor message
+    // Append Clinician message
     setConversations(prev => ({
       ...prev,
       [selectedAlertId]: [
@@ -188,48 +174,31 @@ export default function StitchDashboard({ onExitToLanding }) {
   };
 
   return (
-    <div className={`font-sans antialiased h-screen overflow-hidden flex select-none transition-colors duration-200 ${
-      isDark ? 'bg-[#070A0F] text-slate-200' : 'bg-[#F4F6F9] text-slate-900'
-    }`}>
-      {/* LEFT FIXED SIDEBAR */}
+    <div className="h-screen w-screen overflow-hidden flex bg-[#F8FAFC] text-[#334155] font-sans antialiased select-none">
+      {/* COLUMN 1: LEFT SIDEBAR (w-60 flex-shrink-0 flex flex-col justify-between p-4) */}
       <Sidebar
-        isOpen={isSidebarOpen}
         activeAlertCount={alerts.filter(a => !a.isReviewed).length}
         onShowInbox={handleBackToInbox}
         onExitToLanding={onExitToLanding}
+        isInboxActive={!selectedAlert}
       />
 
-      {/* MAIN WORKSPACE */}
-      <main className={`flex-1 flex flex-col overflow-hidden relative transition-colors duration-200 ${
-        isDark ? 'bg-[#070A0F]' : 'bg-[#F4F6F9]'
-      }`}>
-        {/* Top App Bar */}
-        <Header
-          isSidebarOpen={isSidebarOpen}
-          onToggleSidebar={() => setIsSidebarOpen(prev => !prev)}
-          onExitToLanding={onExitToLanding}
-          title={headerTitle}
-          subtitle={headerSubtitle}
+      {/* COLUMN 2 & 3: CENTER CHAT CONTAINER & RIGHT CONSENSUS DRAWER */}
+      {selectedAlert ? (
+        <ConversationWorkspace
+          alert={selectedAlert}
+          messages={conversations[selectedAlert.id] || []}
+          isTyping={isTyping}
+          typingText={typingText}
+          onBackToInbox={handleBackToInbox}
+          onAcknowledgeAlert={handleAcknowledgeAlert}
+          onOpenOverrideModal={() => setIsOverrideModalOpen(true)}
+          onSendMessage={handleSendMessage}
         />
-
-        {/* Content Wrapper */}
-        <div className="flex-1 overflow-hidden relative">
-          {selectedAlert ? (
-            /* VIEW 2: Clean, Structured Patient Details & Conversation Workspace */
-            <ConversationWorkspace
-              alert={selectedAlert}
-              messages={conversations[selectedAlert.id] || []}
-              isTyping={isTyping}
-              typingText={typingText}
-              isPatientPanelOpen={isPatientPanelOpen}
-              onTogglePatientPanel={setIsPatientPanelOpen}
-              onBackToInbox={handleBackToInbox}
-              onAcknowledgeAlert={handleAcknowledgeAlert}
-              onOpenOverrideModal={() => setIsOverrideModalOpen(true)}
-              onSendMessage={handleSendMessage}
-            />
-          ) : (
-            /* VIEW 1: Clinical Alert Inbox */
+      ) : (
+        /* INBOX VIEW: Center floating white card */
+        <div className="flex-1 h-full p-3 overflow-hidden flex flex-col">
+          <div className="bg-white rounded-3xl border border-[#E2E8F0] shadow-xs flex flex-col h-full overflow-hidden">
             <InboxView
               alerts={alerts}
               currentFilter={currentFilter}
@@ -239,9 +208,9 @@ export default function StitchDashboard({ onExitToLanding }) {
               onSelectAlert={handleSelectAlert}
               onSimulateAlert={handleSimulateAlert}
             />
-          )}
+          </div>
         </div>
-      </main>
+      )}
 
       {/* Clinical Override / Disagreement Modal */}
       <OverrideModal

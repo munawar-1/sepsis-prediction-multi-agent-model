@@ -19,19 +19,11 @@ import {
   Layers,
   AlertTriangle,
   FileText,
-  UserCheck,
-  Stethoscope,
-  HeartPulse,
-  TrendingUp,
-  Clock,
   ShieldCheck,
-  PanelRightClose,
-  PanelRightOpen,
   Zap,
   Droplet
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
 
 const AGENT_ICON_MAP = {
   vitals: Activity,
@@ -44,17 +36,14 @@ export default function ConversationWorkspace({
   messages,
   isTyping,
   typingText,
-  isPatientPanelOpen = true,
-  onTogglePatientPanel,
   onBackToInbox,
   onAcknowledgeAlert,
   onOpenOverrideModal,
   onSendMessage
 }) {
   const { user, isDoctor, isNurse } = useAuth();
-  const { isDark } = useTheme();
   const [inputText, setInputText] = useState('');
-  const [openEvidence, setOpenEvidence] = useState({ '0-0': true }); // default first evidence open for clarity
+  const [openEvidence, setOpenEvidence] = useState({ '0-0': true });
   const [activeTab, setActiveTab] = useState('agents'); // 'agents', 'vitals', 'labs', 'meds'
   const messagesEndRef = useRef(null);
   const waveformRef = useRef(null);
@@ -64,9 +53,9 @@ export default function ConversationWorkspace({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  // Live Arterial Waveform Canvas
+  // Live Arterial Waveform Canvas (Soft Teal on Daylight Grid)
   useEffect(() => {
-    if (activeTab !== 'vitals' || !isPatientPanelOpen) return;
+    if (activeTab !== 'vitals') return;
     const canvas = waveformRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -88,25 +77,25 @@ export default function ConversationWorkspace({
       const h = canvas.height;
       const mid = h / 2;
 
-      // Subtle grid
-      ctx.strokeStyle = isDark ? '#1A2438' : '#E2E8F0';
+      // Soft Daylight Grid (#E2E8F0)
+      ctx.strokeStyle = '#E2E8F0';
       ctx.lineWidth = 1;
-      for (let x = 0; x < w; x += 25) {
+      for (let x = 0; x < w; x += 24) {
         ctx.beginPath();
         ctx.moveTo(x, 0);
         ctx.lineTo(x, h);
         ctx.stroke();
       }
-      for (let y = 0; y < h; y += 15) {
+      for (let y = 0; y < h; y += 14) {
         ctx.beginPath();
         ctx.moveTo(0, y);
         ctx.lineTo(w, y);
         ctx.stroke();
       }
 
-      // Continuous arterial ECG / pulse wave
+      // Continuous arterial ECG / pulse wave in Soft Teal (#0D9488)
       ctx.lineWidth = 1.8;
-      ctx.strokeStyle = isDark ? '#14B8A6' : '#0D9488';
+      ctx.strokeStyle = '#0D9488';
       ctx.beginPath();
 
       for (let x = 0; x < w; x++) {
@@ -122,16 +111,17 @@ export default function ConversationWorkspace({
         else ctx.lineTo(x, y);
       }
       ctx.stroke();
-      offset = (offset + 1.8) % 360;
+      offset = (offset + 1.2) % 300;
       animId = requestAnimationFrame(draw);
     };
 
     draw();
+
     return () => {
       cancelAnimationFrame(animId);
       window.removeEventListener('resize', resize);
     };
-  }, [activeTab, isPatientPanelOpen, isDark, alert.id]);
+  }, [activeTab]);
 
   const handleSend = () => {
     if (!inputText.trim()) return;
@@ -151,7 +141,7 @@ export default function ConversationWorkspace({
     setOpenEvidence(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  // Nurse STAT Escalation Quick Action
+  // Nurse/Doctor STAT Escalation Action
   const handleStatEscalate = () => {
     const nurseName = user?.fullName || 'Bedside Nurse';
     onSendMessage(`[STAT ESCALATION BY ${nurseName.toUpperCase()}]: Ordered emergency STAT Sepsis Blood Panel (Serum Lactate, CBC with differential, Blood Cultures x 2).`);
@@ -160,980 +150,628 @@ export default function ConversationWorkspace({
   const AgentIcon = AGENT_ICON_MAP[alert.agentKey] || Activity;
 
   return (
-    <div className={`h-full w-full flex flex-col overflow-hidden transition-colors duration-200 ${
-      isDark ? 'bg-[#070A0F] text-slate-200' : 'bg-[#F4F6F9] text-slate-800'
-    }`}>
+    <>
       {/* =========================================================================
-          1. STRUCTURED PATIENT COMMAND & TELEMETRY BANNER
+          COLUMN 2: CENTER CHAT CONTAINER (Gemini-style floating white card)
           ========================================================================= */}
-      <header className={`border-b shrink-0 z-10 transition-colors duration-200 ${
-        isDark ? 'bg-[#0D121D] border-[#1F293D]' : 'bg-white border-slate-200 shadow-xs'
-      }`}>
-        {/* Row 1: Patient Identity, Status Badge, & Clinical Actions */}
-        <div className="px-5 py-3 flex flex-wrap items-center justify-between gap-3">
-          {/* Left: Back button & Patient Demographics */}
-          <div className="flex items-center gap-3.5 min-w-0">
-            <button
-              onClick={onBackToInbox}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all shrink-0 shadow-xs ${
-                isDark
-                  ? 'bg-[#131B2A] hover:bg-[#1A2438] text-slate-300 hover:text-white border-[#1F293D]'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border-slate-200'
-              }`}
-            >
-              <ArrowLeft className={`w-3.5 h-3.5 ${isDark ? 'text-teal-400' : 'text-teal-600'}`} />
-              <span>Back to Inbox</span>
-            </button>
+      <section className="flex-1 h-full p-3 overflow-hidden flex flex-col">
+        <div className="bg-white rounded-3xl border border-[#E2E8F0] shadow-xs flex flex-col h-full overflow-hidden">
+          
+          {/* =========================================================================
+              TIER 1: PATIENT INFO & SOFT ACTION BUTTONS
+              ========================================================================= */}
+          <div className="px-6 py-3.5 border-b border-[#F1F5F9] flex items-center justify-between shrink-0 bg-white">
+            {/* Left: Back icon button, Patient ID, Bed badge, Demographics & Dx */}
+            <div className="flex items-center gap-3 min-w-0 flex-1 mr-4">
+              <button
+                onClick={onBackToInbox}
+                className="bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#475569] rounded-xl p-2 transition-colors cursor-pointer shrink-0 border border-[#E2E8F0]"
+                title="Return to clinical inbox"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </button>
 
-            <div className={`h-6 w-px ${isDark ? 'bg-[#1F293D]' : 'bg-slate-200'} shrink-0`} />
+              <div className="flex items-center gap-2.5 flex-wrap min-w-0">
+                <span className="font-semibold text-base text-[#334155] whitespace-nowrap">
+                  {alert.patientId || 'PT-9042'}
+                </span>
 
-            {/* Patient Header Block */}
-            <div className="flex items-center gap-3 min-w-0">
-              <div className={`w-9 h-9 rounded-lg border flex items-center justify-center shrink-0 ${
-                isDark ? 'bg-[#131B2A] border-teal-500/30 text-teal-400' : 'bg-teal-50 border-teal-200 text-teal-700'
-              }`}>
-                <AgentIcon className="w-5 h-5" />
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className={`font-display font-bold text-base tracking-tight ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
-                    {alert.patientId}
-                  </span>
-                  <span className={`font-mono text-[11px] font-semibold px-2 py-0.5 rounded border ${
-                    isDark
-                      ? 'bg-teal-500/15 text-teal-400 border-teal-500/30'
-                      : 'bg-teal-100 text-teal-800 border-teal-200'
-                  }`}>
-                    {alert.bed} • MICU
-                  </span>
-                  <span className={`font-mono text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                    • Age {alert.age} • {alert.gender} • ICU Day {alert.icuDay}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5 mt-0.5 text-xs truncate">
-                  <span className={`font-mono text-[10px] font-semibold ${isDark ? 'text-teal-400' : 'text-teal-700'}`}>
-                    DIAGNOSIS:
-                  </span>
-                  <span className={`truncate font-medium ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                    {alert.admissionDiagnosis}
-                  </span>
-                </div>
+                <span className="bg-[#F0FDFA] text-[#0D9488] border border-[#CCFBF1] text-xs px-2.5 py-0.5 rounded-full font-medium whitespace-nowrap">
+                  {alert.bed || 'Bed 04'} • MICU
+                </span>
+
+                <span className="text-xs text-[#64748B] truncate">
+                  {alert.age || 68}yo {alert.gender || 'Male'} • ICU Day {alert.icuDay || 3} • Dx: {alert.admissionDiagnosis || 'Acute Hypoxemic Respiratory Failure'}
+                </span>
               </div>
             </div>
-          </div>
 
-          {/* Right: Risk Badge & Role-Tailored Actions */}
-          <div className="flex items-center gap-2.5 shrink-0 ml-auto">
-            {/* Priority Badge */}
-            {alert.priority === 'CRITICAL' ? (
-              <span className={`px-3 py-1.5 text-xs font-mono font-bold rounded-lg border flex items-center gap-2 ${
-                isDark
-                  ? 'bg-rose-950/60 text-rose-300 border-rose-800/60'
-                  : 'bg-rose-50 text-rose-700 border-rose-200'
-              }`}>
-                <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+            {/* Right Action Bar */}
+            <div className="flex items-center gap-2 shrink-0">
+              {/* Sepsis Status Pill */}
+              <span className="bg-[#FFF1F2] text-[#E11D48] border border-[#FECDD3] text-xs font-medium px-3 py-1 rounded-full whitespace-nowrap">
                 CRITICAL SEPSIS (Sepsis-3 Met)
               </span>
-            ) : (
-              <span className={`px-3 py-1.5 text-xs font-mono font-bold rounded-lg border flex items-center gap-1.5 ${
-                isDark
-                  ? 'bg-amber-950/60 text-amber-300 border-amber-800/60'
-                  : 'bg-amber-50 text-amber-700 border-amber-200'
-              }`}>
-                HIGH PRIORITY
-              </span>
-            )}
 
-            <div className={`h-6 w-px ${isDark ? 'bg-[#1F293D]' : 'bg-slate-200'} hidden sm:block`} />
+              {/* Acknowledge Button */}
+              <button
+                onClick={onAcknowledgeAlert}
+                className={`bg-[#F0FDFA] hover:bg-[#CCFBF1] text-[#0D9488] border border-[#99F6E4] text-xs font-medium px-3 py-1.5 rounded-xl transition cursor-pointer flex items-center gap-1.5 shadow-2xs ${
+                  alert.isReviewed ? 'font-semibold' : ''
+                }`}
+                title="Acknowledge alert and log oversight in audit trail"
+              >
+                <Check className={`w-3.5 h-3.5 ${alert.isReviewed ? 'text-[#0D9488]' : ''}`} />
+                <span>{alert.isReviewed ? 'Acknowledged' : 'Acknowledge'}</span>
+              </button>
 
-            {/* Action 1: Acknowledge Alert */}
-            <button
-              onClick={onAcknowledgeAlert}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all shadow-xs border ${
-                alert.isReviewed
-                  ? (isDark ? 'bg-teal-500/20 text-teal-300 border-teal-500/40' : 'bg-teal-100 text-teal-800 border-teal-300 font-semibold')
-                  : (isDark ? 'bg-[#131B2A] hover:bg-[#1A2438] text-slate-200 border-[#1F293D]' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200')
-              }`}
-            >
-              <Check className={`w-3.5 h-3.5 ${alert.isReviewed ? (isDark ? 'text-teal-400' : 'text-teal-700') : ''}`} />
-              <span>{alert.isReviewed ? 'Acknowledged' : 'Acknowledge'}</span>
-            </button>
+              {/* STAT Labs Button */}
+              <button
+                onClick={handleStatEscalate}
+                className="bg-[#F0F9FF] hover:bg-[#E0F2FE] text-[#0284C7] border border-[#BAE6FD] text-xs font-medium px-3 py-1.5 rounded-xl transition cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                title="Order STAT Sepsis Blood Panel"
+              >
+                <Zap className="w-3.5 h-3.5 text-[#0284C7]" />
+                <span className="hidden sm:inline">STAT Labs</span>
+              </button>
 
-            {/* Action 2: STAT Labs Escalation (Nurse & Doctor) */}
-            <button
-              onClick={handleStatEscalate}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all shadow-xs border ${
-                isDark
-                  ? 'bg-teal-500/15 hover:bg-teal-500/25 text-teal-300 border-teal-500/40'
-                  : 'bg-teal-50 hover:bg-teal-100 text-teal-700 border-teal-200'
-              }`}
-              title="Escalate STAT Sepsis Blood Panel Order"
-            >
-              <Zap className="w-3.5 h-3.5 text-teal-500" />
-              <span>STAT Labs</span>
-            </button>
-
-            {/* Action 3: Clinical Override (Doctor Only) */}
-            {isDoctor ? (
+              {/* Override AI Button */}
               <button
                 onClick={onOpenOverrideModal}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all shadow-xs border ${
-                  isDark
-                    ? 'bg-[#131B2A] hover:bg-rose-950/40 text-rose-300 border-[#1F293D] hover:border-rose-500/40'
-                    : 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200'
-                }`}
-                title="Physician Authority AI Override"
+                className="bg-[#F8FAFC] hover:bg-[#F1F5F9] text-[#64748B] border border-[#E2E8F0] text-xs font-medium px-3 py-1.5 rounded-xl transition cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                title="Record clinical disagreement or override"
               >
-                <ShieldAlert className="w-3.5 h-3.5 text-rose-500" />
-                <span>Override AI</span>
+                <ShieldAlert className="w-3.5 h-3.5 text-[#64748B]" />
+                <span className="hidden sm:inline">Override AI</span>
               </button>
-            ) : (
-              <button
-                disabled
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 opacity-60 cursor-not-allowed border ${
-                  isDark ? 'bg-[#0D121D] border-[#1F293D] text-slate-400' : 'bg-slate-100 border-slate-200 text-slate-400'
-                }`}
-                title="Clinical AI override is restricted to Attending Physicians"
-              >
-                <ShieldCheck className="w-3.5 h-3.5" />
-                <span>Override (Doctor Only)</span>
-              </button>
-            )}
-
-            {/* Toggle Right Panel */}
-            <button
-              onClick={() => onTogglePatientPanel(prev => !prev)}
-              className={`p-1.5 rounded-lg border transition-all ${
-                isDark
-                  ? 'bg-[#131B2A] hover:bg-[#1A2438] border-[#1F293D] text-slate-400 hover:text-slate-200'
-                  : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-600 hover:text-slate-900'
-              }`}
-              title={isPatientPanelOpen ? "Collapse Clinical Deck" : "Expand Clinical Deck"}
-            >
-              {isPatientPanelOpen ? (
-                <PanelRightClose className={`w-4 h-4 ${isDark ? 'text-teal-400' : 'text-teal-600'}`} />
-              ) : (
-                <PanelRightOpen className="w-4 h-4" />
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* Row 2: Instant Clinical Telemetry Strip (At-a-glance vitals & biomarkers) */}
-        <div className={`px-5 py-2.5 border-t flex items-center gap-3 overflow-x-auto text-xs font-mono transition-colors duration-200 ${
-          isDark ? 'bg-[#070A0F]/80 border-[#1F293D]' : 'bg-slate-50 border-slate-200'
-        }`}>
-          <div className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wider uppercase shrink-0 text-slate-400">
-            <Activity className={`w-3.5 h-3.5 ${isDark ? 'text-teal-400' : 'text-teal-600'}`} />
-            <span>STAT Vitals:</span>
-          </div>
-
-          {/* HR */}
-          <div className={`px-2.5 py-1 rounded border flex items-center gap-2 shrink-0 ${
-            isDark ? 'bg-[#0D121D] border-[#1F293D]' : 'bg-white border-slate-200 shadow-2xs'
-          }`}>
-            <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>HR:</span>
-            <span className="font-bold text-rose-500">{alert.vitals?.hr || '118 bpm'}</span>
-            <span className="text-[10px] text-rose-500 bg-rose-500/10 px-1 rounded font-sans">▲ Tachycardia</span>
-          </div>
-
-          {/* Blood Pressure & MAP */}
-          <div className={`px-2.5 py-1 rounded border flex items-center gap-2 shrink-0 ${
-            isDark ? 'bg-[#0D121D] border-[#1F293D]' : 'bg-white border-slate-200 shadow-2xs'
-          }`}>
-            <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>NIBP:</span>
-            <span className="font-bold text-amber-500">{alert.vitals?.bp || '88/54 mmHg'}</span>
-            <span className={`text-[10px] px-1 rounded font-sans ${
-              isDark ? 'bg-amber-500/10 text-amber-400' : 'bg-amber-100 text-amber-700'
-            }`}>
-              {alert.vitals?.map || 'MAP 65 mmHg'}
-            </span>
-          </div>
-
-          {/* Resp Rate */}
-          <div className={`px-2.5 py-1 rounded border flex items-center gap-2 shrink-0 ${
-            isDark ? 'bg-[#0D121D] border-[#1F293D]' : 'bg-white border-slate-200 shadow-2xs'
-          }`}>
-            <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>RR:</span>
-            <span className="font-bold text-amber-500">{alert.vitals?.rr || '26 /min'}</span>
-            <span className="text-[10px] text-amber-500">Tachypnea</span>
-          </div>
-
-          {/* Temp */}
-          <div className={`px-2.5 py-1 rounded border flex items-center gap-2 shrink-0 ${
-            isDark ? 'bg-[#0D121D] border-[#1F293D]' : 'bg-white border-slate-200 shadow-2xs'
-          }`}>
-            <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Temp:</span>
-            <span className="font-bold text-rose-500">{alert.vitals?.temp || '38.9 °C'}</span>
-            <span className="text-[10px] text-rose-500">Febrile</span>
-          </div>
-
-          {/* Shock Index */}
-          <div className={`px-2.5 py-1 rounded border flex items-center gap-2 shrink-0 ${
-            isDark ? 'bg-[#0D121D] border-rose-900/40 text-rose-300' : 'bg-rose-50 border-rose-200 text-rose-800'
-          }`}>
-            <span className="font-bold">Shock Index:</span>
-            <span className="font-extrabold text-rose-500">{alert.vitals?.shockIndex || '1.34'}</span>
-            <span className="text-[9px] uppercase px-1 rounded bg-rose-500/20 font-sans font-bold">Critical &gt; 0.70</span>
-          </div>
-
-          {/* Serum Lactate */}
-          <div className={`px-2.5 py-1 rounded border flex items-center gap-2 shrink-0 ${
-            isDark ? 'bg-[#0D121D] border-amber-900/40 text-amber-300' : 'bg-amber-50 border-amber-200 text-amber-800'
-          }`}>
-            <span className="font-bold">Lactate:</span>
-            <span className="font-extrabold text-amber-500">{alert.labs?.lactate || '3.8 mmol/L'}</span>
-            <span className="text-[9px] uppercase px-1 rounded bg-amber-500/20 font-sans font-bold">Elevated</span>
-          </div>
-
-          {/* SpO2 */}
-          <div className={`px-2.5 py-1 rounded border flex items-center gap-2 shrink-0 ${
-            isDark ? 'bg-[#0D121D] border-[#1F293D]' : 'bg-white border-slate-200 shadow-2xs'
-          }`}>
-            <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>SpO₂:</span>
-            <span className={`font-semibold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{alert.vitals?.spo2 || '92% 4L NC'}</span>
-          </div>
-        </div>
-      </header>
-
-      {/* =========================================================================
-          2. TWO-COLUMN BALANCED WORKSPACE (CHAT & CLINICAL DECK)
-          ========================================================================= */}
-      <div className="flex-1 flex overflow-hidden relative">
-        {/* LEFT COLUMN: MULTI-AGENT CLINICAL DIALOGUE */}
-        <section className={`flex-1 flex flex-col overflow-hidden relative border-r transition-colors duration-200 ${
-          isDark ? 'bg-[#070A0F] border-[#1F293D]' : 'bg-white border-slate-200'
-        }`}>
-          {/* Active Model Council Bar */}
-          <div className={`px-6 py-2.5 border-b flex items-center justify-between text-xs font-mono transition-colors duration-200 ${
-            isDark ? 'bg-[#0D121D]/80 border-[#1F293D]' : 'bg-slate-50 border-slate-200'
-          }`}>
-            <div className="flex items-center gap-2.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className={`font-semibold ${isDark ? 'text-slate-200' : 'text-slate-900'}`}>
-                {alert.agent}
-              </span>
-              <span className={`hidden md:inline ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                • {alert.agentSpecialty}
-              </span>
-            </div>
-            <div className={`flex items-center gap-2.5 text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              <span className="text-emerald-500 font-semibold">Active Council</span>
-              <span>• Latency: 42ms</span>
-              <span className="hidden sm:inline">• Confidence: 96.8%</span>
             </div>
           </div>
 
-          {/* Scrollable Conversation Stream */}
-          <div className={`flex-1 overflow-y-auto p-6 space-y-5 transition-colors duration-200 ${
-            isDark ? 'bg-[#070A0F]' : 'bg-slate-50/50'
-          }`}>
-            {messages.map((m, idx) => {
-              // 1. System Audit Messages
-              if (m.sender === "system") {
-                return (
-                  <div key={idx} className="flex justify-center my-3">
-                    <span className={`px-3.5 py-1.5 rounded-full border text-[11px] font-mono flex items-center gap-2 shadow-xs ${
-                      isDark
-                        ? 'bg-[#0D121D] border-[#1F293D] text-slate-300'
-                        : 'bg-white border-slate-200 text-slate-700'
-                    }`}>
-                      <CheckCheck className={`w-3.5 h-3.5 ${isDark ? 'text-teal-400' : 'text-teal-600'} shrink-0`} />
-                      <span>{m.text}</span>
-                    </span>
-                  </div>
-                );
-              }
+          {/* =========================================================================
+              TIER 2: AIRY STAT VITALS STRIP
+              ========================================================================= */}
+          <div className="px-6 py-2 bg-[#F8FAFC]/60 border-b border-[#F1F5F9] flex items-center gap-4 overflow-x-auto text-xs font-mono shrink-0">
+            {/* HR */}
+            <div className="bg-white border border-[#E2E8F0] rounded-lg px-2.5 py-1 flex items-center gap-1.5 shrink-0 shadow-2xs">
+              <span className="text-[#64748B]">HR:</span>
+              <span className="font-bold text-[#334155]">{alert.vitals?.hr || '118 bpm'}</span>
+              <span className="bg-[#FFF1F2] text-[#E11D48] px-1.5 py-0.5 rounded text-[10px] font-sans font-medium">
+                Tachycardia
+              </span>
+            </div>
 
-              // 2. Clinician (Doctor or Nurse) Messages
-              if (m.sender === "doctor") {
-                return (
-                  <div key={idx} className="flex justify-end gap-3 animate-message">
-                    <div className="max-w-xl flex flex-col items-end">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className={`text-[10px] font-mono ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                          {m.time}
-                        </span>
-                        <span className={`text-xs font-semibold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
-                          {user?.fullName || 'Clinician'} ({user?.role || 'DOCTOR'})
-                        </span>
+            {/* NIBP / MAP */}
+            <div className="bg-white border border-[#E2E8F0] rounded-lg px-2.5 py-1 flex items-center gap-1.5 shrink-0 shadow-2xs">
+              <span className="text-[#64748B]">NIBP:</span>
+              <span className="font-bold text-[#334155]">{alert.vitals?.bp || '88/54 mmHg'}</span>
+              <span className="bg-[#FFFBEB] text-[#D97706] px-1.5 py-0.5 rounded text-[10px] font-sans font-medium">
+                {alert.vitals?.map || 'MAP 65'}
+              </span>
+            </div>
+
+            {/* RR */}
+            <div className="bg-white border border-[#E2E8F0] rounded-lg px-2.5 py-1 flex items-center gap-1.5 shrink-0 shadow-2xs">
+              <span className="text-[#64748B]">RR:</span>
+              <span className="font-bold text-[#334155]">{alert.vitals?.rr || '26 /min'}</span>
+              <span className="bg-[#FFFBEB] text-[#D97706] px-1.5 py-0.5 rounded text-[10px] font-sans font-medium">
+                Tachypnea
+              </span>
+            </div>
+
+            {/* Temp */}
+            <div className="bg-white border border-[#E2E8F0] rounded-lg px-2.5 py-1 flex items-center gap-1.5 shrink-0 shadow-2xs">
+              <span className="text-[#64748B]">Temp:</span>
+              <span className="font-bold text-[#334155]">{alert.vitals?.temp || '38.9 °C'}</span>
+              <span className="bg-[#FFF1F2] text-[#E11D48] px-1.5 py-0.5 rounded text-[10px] font-sans font-medium">
+                Febrile
+              </span>
+            </div>
+
+            {/* Shock Index */}
+            <div className="bg-white border border-[#E2E8F0] rounded-lg px-2.5 py-1 flex items-center gap-1.5 shrink-0 shadow-2xs">
+              <span className="text-[#64748B]">Shock Index:</span>
+              <span className="text-[#E11D48] font-semibold">{alert.vitals?.shockIndex || '1.34'}</span>
+            </div>
+
+            {/* Serum Lactate */}
+            <div className="bg-white border border-[#E2E8F0] rounded-lg px-2.5 py-1 flex items-center gap-1.5 shrink-0 shadow-2xs">
+              <span className="text-[#64748B]">Lactate:</span>
+              <span className="font-bold text-[#334155]">{alert.labs?.lactate || '3.8 mmol/L'}</span>
+            </div>
+
+            {/* SpO2 */}
+            <div className="bg-white border border-[#E2E8F0] rounded-lg px-2.5 py-1 flex items-center gap-1.5 shrink-0 shadow-2xs">
+              <span className="text-[#64748B]">SpO₂:</span>
+              <span className="font-semibold text-[#334155]">{alert.vitals?.spo2 || '92% 4L NC'}</span>
+            </div>
+          </div>
+
+          {/* =========================================================================
+              3. SCROLLABLE CONVERSATION STREAM (Gemini-Inspired)
+              ========================================================================= */}
+          <div className="flex-1 overflow-y-auto px-6 py-6 bg-white">
+            <div className="max-w-3xl mx-auto w-full space-y-6">
+              {messages.map((m, idx) => {
+                // System Audit Messages
+                if (m.sender === "system") {
+                  return (
+                    <div key={idx} className="flex justify-center my-2">
+                      <span className="px-3.5 py-1 rounded-full border border-[#E2E8F0] bg-[#F8FAFC] text-[11px] font-mono text-[#64748B] flex items-center gap-1.5 shadow-2xs">
+                        <CheckCheck className="w-3.5 h-3.5 text-[#0D9488] shrink-0" />
+                        <span>{m.text}</span>
+                      </span>
+                    </div>
+                  );
+                }
+
+                // Clinician Messages
+                if (m.sender === "doctor") {
+                  return (
+                    <div key={idx} className="flex justify-end gap-2.5">
+                      <div className="max-w-xl flex flex-col items-end">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[10px] font-mono text-[#64748B]">{m.time}</span>
+                          <span className="text-xs font-semibold text-[#334155]">
+                            {user?.fullName || 'Clinician'} ({user?.role || 'DOCTOR'})
+                          </span>
+                        </div>
+                        <div className="p-3.5 rounded-2xl rounded-tr-xs border border-[#E2E8F0] bg-[#F1F5F9] text-[#334155] text-sm leading-relaxed font-sans whitespace-pre-wrap shadow-2xs">
+                          {m.text}
+                        </div>
                       </div>
-                      <div className={`p-4 rounded-2xl rounded-tr-xs border text-xs leading-relaxed shadow-xs font-sans whitespace-pre-wrap ${
-                        isDark
-                          ? 'bg-[#131B2A] border-[#1F293D] text-slate-100'
-                          : 'bg-teal-50 border-teal-200 text-slate-900'
-                      }`}>
-                        {m.text}
-                      </div>
                     </div>
-                    <div className={`w-8 h-8 rounded-full border flex items-center justify-center font-display font-medium text-xs shrink-0 mt-3 shadow-xs ${
-                      isDark
-                        ? 'bg-[#1A2438] border-[#1F293D] text-teal-400'
-                        : 'bg-white border-slate-200 text-teal-700'
-                    }`}>
-                      {isDoctor ? 'DR' : 'RN'}
-                    </div>
-                  </div>
-                );
-              }
+                  );
+                }
 
-              // 3. Multi-Agent Structured Findings & Reasoning
-              const formattedText = m.text
-                ? m.text.split('\n\n').map((paragraph, pIdx) => {
-                    const parts = paragraph.split(/(\*\*.*?\*\*)/g);
-                    return (
-                      <p key={pIdx} className="mb-2 last:mb-0">
-                        {parts.map((part, partIdx) => {
-                          if (part.startsWith('**') && part.endsWith('**')) {
-                            return (
-                              <strong key={partIdx} className={`font-semibold ${
-                                isDark ? 'text-teal-300' : 'text-teal-800'
-                              }`}>
-                                {part.slice(2, -2)}
-                              </strong>
-                            );
-                          }
-                          return part;
-                        })}
-                      </p>
-                    );
-                  })
-                : null;
+                // AI Agent Turn
+                const evidenceList = (m.evidence && m.evidence.length > 0)
+                  ? m.evidence
+                  : (idx === 0 && alert.evidenceSections) ? alert.evidenceSections : [];
 
-              return (
-                <div key={idx} className="flex justify-start gap-3 animate-message">
-                  <div className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 mt-1 shadow-xs ${
-                    isDark
-                      ? 'bg-[#0D121D] border-teal-500/40 text-teal-400'
-                      : 'bg-teal-50 border-teal-200 text-teal-700'
-                  }`}>
-                    <Bot className="w-5 h-5" />
-                  </div>
-
-                  <div className="max-w-2xl flex flex-col items-start w-full">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <span className={`text-xs font-bold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
-                        {m.agentName || alert.agent}
-                      </span>
-                      <span className={`text-[10px] font-mono hidden sm:inline ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                        • {m.agentSpecialty || alert.agentSpecialty}
-                      </span>
-                      <span className={isDark ? 'text-slate-600' : 'text-slate-300'}>•</span>
-                      <span className={`text-[10px] font-mono ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                        {m.time}
-                      </span>
-                    </div>
-
-                    <div className={`w-full p-4.5 rounded-2xl rounded-tl-xs border text-xs leading-relaxed shadow-xs font-sans ${
-                      isDark
-                        ? 'bg-[#0D121D] border-[#1F293D] text-slate-200'
-                        : 'bg-white border-slate-200 text-slate-800'
-                    }`}>
-                      {formattedText}
-
-                      {/* Supporting Clinical Evidence Drawers */}
-                      {m.evidence && m.evidence.length > 0 && (
-                        <div className={`mt-4 pt-3.5 border-t space-y-2.5 ${isDark ? 'border-[#1F293D]' : 'border-slate-100'}`}>
-                          <div className={`text-[10px] font-mono uppercase font-bold tracking-wider flex items-center gap-1.5 ${
-                            isDark ? 'text-teal-400' : 'text-teal-700'
-                          }`}>
-                            <Layers className="w-3.5 h-3.5" />
-                            <span>Supporting Physiological Evidence (Verified by Ensemble)</span>
+                return (
+                  <div key={idx} className="space-y-3">
+                    {/* Agent Turn Header */}
+                    <div className="flex items-center justify-between">
+                      {/* Left: Gemini-style sparkle icon in soft mint circle + Name & Subtitle */}
+                      <div className="flex items-center gap-3">
+                        <div className="bg-[#F0FDFA] text-[#0D9488] p-2 rounded-full border border-[#CCFBF1] flex items-center justify-center shrink-0 shadow-2xs">
+                          <Sparkles className="w-4 h-4 text-[#0D9488]" />
+                        </div>
+                        <div>
+                          <div className="font-semibold text-sm text-[#334155] leading-tight">
+                            {m.agentName || alert.agent || 'Vitals Intelligence Agent'}
                           </div>
+                          <div className="text-xs text-[#64748B] mt-0.5">
+                            {m.agentSpecialty || alert.agentSpecialty || 'Physiological Telemetry & Trend Decomposition'}
+                          </div>
+                        </div>
+                      </div>
 
-                          {m.evidence.map((ev, eIdx) => {
-                            const isExpanded = !!openEvidence[`${idx}-${eIdx}`];
-                            return (
+                      {/* Right: Soft metadata pill */}
+                      <div className="bg-[#F8FAFC] text-[#64748B] border border-[#E2E8F0] text-[11px] font-mono px-2.5 py-0.5 rounded-full whitespace-nowrap shadow-2xs">
+                        42ms • 96.8% Sync
+                      </div>
+                    </div>
+
+                    {/* Agent Synthesis Text */}
+                    <div className="pl-11 text-sm text-[#475569] leading-relaxed">
+                      {idx === 0 ? (
+                        <p className="mb-2">
+                          Continuous hemodynamic monitoring confirms decreased systemic vascular resistance. Compensated shock is identified with a Shock Index of 1.34 alongside sustained tachycardia (+34 bpm) and tachypnea (26/min).
+                        </p>
+                      ) : (
+                        m.text && m.text.split('\n\n').map((paragraph, pIdx) => {
+                          const parts = paragraph.split(/(\*\*.*?\*\*)/g);
+                          return (
+                            <p key={pIdx} className="mb-2 last:mb-0">
+                              {parts.map((part, partIdx) => {
+                                if (part.startsWith('**') && part.endsWith('**')) {
+                                  return (
+                                    <strong key={partIdx} className="font-semibold text-[#0D9488]">
+                                      {part.slice(2, -2)}
+                                    </strong>
+                                  );
+                                }
+                                return part;
+                              })}
+                            </p>
+                          );
+                        })
+                      )}
+                    </div>
+
+                    {/* Expandable Clinical Reasoning Accordions */}
+                    {evidenceList.length > 0 && (
+                      <div className="pl-11 space-y-2 pt-2">
+                        {evidenceList.map((ev, eIdx) => {
+                          const isExpanded = !!openEvidence[`${idx}-${eIdx}`];
+                          return (
+                            <div key={eIdx} className="overflow-hidden">
                               <div
-                                key={eIdx}
-                                className={`rounded-xl border overflow-hidden transition-all ${
-                                  isDark
-                                    ? 'bg-[#070A0F] border-[#1F293D]'
-                                    : 'bg-slate-50 border-slate-200'
-                                }`}
+                                onClick={() => toggleEvidence(idx, eIdx)}
+                                className="bg-[#F8FAFC] hover:bg-[#F1F5F9]/70 border border-[#E2E8F0] rounded-2xl px-4 py-2.5 flex items-center justify-between cursor-pointer transition select-none shadow-2xs"
                               >
-                                <button
-                                  onClick={() => toggleEvidence(idx, eIdx)}
-                                  className={`w-full px-3.5 py-2.5 flex items-center justify-between text-left text-xs font-medium transition-colors ${
-                                    isDark
-                                      ? 'text-slate-200 hover:bg-[#131B2A]'
-                                      : 'text-slate-800 hover:bg-slate-100'
-                                  }`}
-                                >
-                                  <span className="flex items-center gap-2">
-                                    <ChevronRight
-                                      className={`w-3.5 h-3.5 transition-transform ${
-                                        isExpanded
-                                          ? `rotate-90 ${isDark ? 'text-teal-400' : 'text-teal-600'}`
-                                          : (isDark ? 'text-slate-400' : 'text-slate-500')
-                                      }`}
-                                    />
-                                    <span className="font-semibold">{ev.title}</span>
-                                  </span>
-                                  <span className={`text-[9px] font-mono uppercase tracking-wider px-2 py-0.5 rounded border font-semibold ${
-                                    isDark
-                                      ? 'bg-emerald-950/60 text-emerald-400 border-emerald-800/60'
-                                      : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                  }`}>
-                                    Verified
-                                  </span>
-                                </button>
+                                <div className="flex items-center gap-2.5">
+                                  <ChevronRight
+                                    className={`w-4 h-4 transition-transform text-[#64748B] ${
+                                      isExpanded ? 'rotate-90 text-[#0D9488]' : ''
+                                    }`}
+                                  />
+                                  <span className="text-xs font-medium text-[#334155]">{ev.title}</span>
+                                </div>
+                                <span className="bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0] text-[10px] font-mono px-2 py-0.5 rounded-full font-semibold">
+                                  VERIFIED
+                                </span>
+                              </div>
 
-                                {isExpanded && (
-                                  <div className={`p-3.5 pt-1.5 border-t text-[11px] space-y-2.5 ${
-                                    isDark ? 'border-[#1F293D] bg-[#070A0F]' : 'border-slate-200 bg-white'
-                                  }`}>
-                                    <div className="space-y-1.5">
+                              {isExpanded && (
+                                <div className="mt-1.5 p-3.5 bg-white border border-[#E2E8F0] rounded-2xl text-xs space-y-2 text-[#475569] shadow-2xs">
+                                  {ev.details && ev.details.length > 0 && (
+                                    <div className="space-y-1">
                                       {ev.details.map((d, dIdx) => (
                                         <div
                                           key={dIdx}
-                                          className={`flex items-start justify-between py-1.5 border-b ${
-                                            isDark ? 'border-[#1F293D]/60' : 'border-slate-100'
-                                          }`}
+                                          className="flex items-start justify-between py-1 border-b border-[#F1F5F9] last:border-0"
                                         >
-                                          <span className={`font-mono text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                                            {d.label}:
-                                          </span>
-                                          <span className={`font-medium text-right ml-4 ${isDark ? 'text-slate-200' : 'text-slate-900'}`}>
-                                            {d.val}
-                                          </span>
+                                          <span className="font-mono text-xs text-[#64748B]">{d.label}:</span>
+                                          <span className="font-medium text-right text-[#334155] ml-4">{d.val}</span>
                                         </div>
                                       ))}
                                     </div>
-                                    {ev.interpretation && (
-                                      <div className={`p-2.5 rounded-lg border text-[11px] leading-relaxed ${
-                                        isDark
-                                          ? 'bg-[#0D121D] border-teal-500/20 text-slate-300'
-                                          : 'bg-teal-50/70 border-teal-200 text-slate-700'
-                                      }`}>
-                                        <strong className={`font-mono mr-1.5 uppercase text-[10px] block mb-0.5 ${
-                                          isDark ? 'text-teal-400' : 'text-teal-700'
-                                        }`}>
-                                          Agent Clinical Interpretation:
-                                        </strong>
-                                        {ev.interpretation}
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
+                                  )}
+                                  {ev.interpretation && (
+                                    <div className="p-2.5 rounded-xl border border-[#99F6E4] bg-[#F0FDFA] text-[#334155] text-xs leading-relaxed">
+                                      <strong className="font-mono uppercase text-[10px] text-[#0D9488] block mb-0.5">
+                                        Ensemble Clinical Interpretation:
+                                      </strong>
+                                      {ev.interpretation}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
+                );
+              })}
+
+              {/* Typing Indicator */}
+              {isTyping && (
+                <div className="pl-11 flex items-center gap-2 px-3 py-1.5 rounded-xl border border-[#99F6E4] bg-[#F0FDFA] text-xs font-mono text-[#0D9488] w-fit shadow-2xs">
+                  <span className="w-2 h-2 rounded-full bg-[#0D9488] animate-ping" />
+                  <span>{typingText}</span>
                 </div>
-              );
-            })}
+              )}
 
-            {/* Live Agent Typing Indicator */}
-            {isTyping && (
-              <div className="flex items-center gap-2.5 px-4 py-2 text-xs font-mono text-slate-400">
-                <span className="w-2 h-2 rounded-full bg-teal-500 animate-ping" />
-                <span>{typingText}</span>
-              </div>
-            )}
-
-            <div ref={messagesEndRef} />
+              <div ref={messagesEndRef} />
+            </div>
           </div>
 
-          {/* Message Composer & Suggestions */}
-          <footer className={`p-4 border-t shrink-0 transition-colors duration-200 ${
-            isDark ? 'bg-[#0D121D]/95 border-[#1F293D]' : 'bg-white border-slate-200 shadow-xs'
-          }`}>
-            {/* Suggestion Inquiry Chips */}
-            {alert.chips && alert.chips.length > 0 && (
-              <div className="flex items-center gap-2 overflow-x-auto pb-2.5 scrollbar-none">
-                {alert.chips.map((chip, cIdx) => (
-                  <button
-                    key={cIdx}
-                    onClick={() => onSendMessage(chip)}
-                    className={`px-3 py-1 rounded-full border text-[11px] whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 shadow-2xs ${
-                      isDark
-                        ? 'bg-[#131B2A] hover:bg-[#1A2438] border-[#1F293D] hover:border-teal-500/40 text-slate-300 hover:text-white'
-                        : 'bg-slate-100 hover:bg-slate-200 border-slate-200 hover:border-teal-300 text-slate-700 hover:text-slate-900'
-                    }`}
-                  >
-                    <Sparkles className={`w-3 h-3 ${isDark ? 'text-teal-400' : 'text-teal-600'}`} />
-                    <span>{chip}</span>
-                  </button>
-                ))}
+          {/* =========================================================================
+              4. GEMINI-STYLE FLOATING BOTTOM COMPOSER
+              ========================================================================= */}
+          <footer className="border-t border-[#F1F5F9] bg-white shrink-0">
+            <div className="max-w-3xl mx-auto w-full px-6 pb-4 pt-2">
+              {/* Quick Suggestion Chips */}
+              <div className="flex gap-2 overflow-x-auto pb-2.5 scrollbar-none">
+                <button
+                  onClick={() => onSendMessage("Why did you flag this patient as Critical?")}
+                  className="bg-[#F8FAFC] hover:bg-[#F0FDFA] text-[#475569] hover:text-[#0D9488] border border-[#E2E8F0] hover:border-[#CCFBF1] rounded-full px-3.5 py-1.5 text-xs transition cursor-pointer font-medium whitespace-nowrap shrink-0 shadow-2xs"
+                >
+                  ✦ Why did you flag this patient as Critical?
+                </button>
+                <button
+                  onClick={() => onSendMessage("Could medication timing explain the tachycardia?")}
+                  className="bg-[#F8FAFC] hover:bg-[#F0FDFA] text-[#475569] hover:text-[#0D9488] border border-[#E2E8F0] hover:border-[#CCFBF1] rounded-full px-3.5 py-1.5 text-xs transition cursor-pointer font-medium whitespace-nowrap shrink-0 shadow-2xs"
+                >
+                  ✦ Could medication timing explain the tachycardia?
+                </button>
+                <button
+                  onClick={() => onSendMessage("What parameter contributed most to the sepsis score?")}
+                  className="bg-[#F8FAFC] hover:bg-[#F0FDFA] text-[#475569] hover:text-[#0D9488] border border-[#E2E8F0] hover:border-[#CCFBF1] rounded-full px-3.5 py-1.5 text-xs transition cursor-pointer font-medium whitespace-nowrap shrink-0 shadow-2xs"
+                >
+                  ✦ What parameter contributed most?
+                </button>
               </div>
-            )}
 
-            {/* Input Box */}
-            <div className={`border rounded-xl transition-all p-2.5 flex items-end gap-3 shadow-2xs ${
-              isDark
-                ? 'bg-[#070A0F] border-[#1F293D] focus-within:border-teal-500'
-                : 'bg-slate-50 border-slate-200 focus-within:border-teal-600 focus-within:bg-white'
-            }`}>
-              <textarea
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Ask the agent to challenge hypotheses, explain SHAP drivers, or verify medications... (Press Enter to send)"
-                rows={2}
-                className={`w-full bg-transparent resize-none border-0 text-xs focus:outline-none focus:ring-0 leading-relaxed font-sans ${
-                  isDark ? 'text-slate-100 placeholder-slate-500' : 'text-slate-900 placeholder-slate-400'
-                }`}
-              />
-              <button
-                onClick={handleSend}
-                disabled={!inputText.trim()}
-                className={`px-3.5 py-2 rounded-lg font-semibold text-xs flex items-center gap-1.5 transition-all shadow-xs shrink-0 ${
-                  inputText.trim()
-                    ? (isDark ? 'bg-teal-400 hover:bg-teal-300 text-slate-950 cursor-pointer' : 'bg-teal-600 hover:bg-teal-700 text-white cursor-pointer')
-                    : (isDark ? 'bg-[#131B2A] text-slate-500 cursor-not-allowed' : 'bg-slate-200 text-slate-400 cursor-not-allowed')
-                }`}
-              >
-                <span>Send</span>
-                <Send className="w-3 h-3" />
-              </button>
-            </div>
+              {/* Prompt Input Box */}
+              <div className="bg-[#F8FAFC] focus-within:bg-white border border-[#E2E8F0] focus-within:border-[#99F6E4] focus-within:ring-4 focus-within:ring-[#F0FDFA] rounded-2xl p-2.5 pl-4 flex items-center gap-3 transition-all shadow-2xs">
+                <input
+                  type="text"
+                  value={inputText}
+                  onChange={(e) => setInputText(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Ask the ensemble to challenge hypotheses, explain SHAP drivers, or verify medications..."
+                  className="text-sm text-[#334155] placeholder:text-[#94A3B8] bg-transparent flex-1 focus:outline-none"
+                />
+                <button
+                  onClick={handleSend}
+                  disabled={!inputText.trim()}
+                  className={`bg-[#E6FFFA] hover:bg-[#CCFBF1] text-[#0D9488] border border-[#99F6E4] px-3.5 py-1.5 rounded-xl text-xs font-medium flex items-center gap-1 transition cursor-pointer shadow-2xs ${
+                    !inputText.trim() ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                >
+                  <span>Send</span>
+                  <Send className="w-3.5 h-3.5" />
+                </button>
+              </div>
 
-            {/* Subtle Clinical Responsibility Disclaimer */}
-            <div className={`flex items-center justify-between mt-2 px-1 text-[10px] font-mono ${
-              isDark ? 'text-slate-400' : 'text-slate-500'
-            }`}>
-              <span className="flex items-center gap-1.5">
-                <Info className="w-3 h-3 shrink-0" />
-                <span>
-                  Aegis-ICU Multi-Agent Decision Support. Clinicians retain full diagnostic and therapeutic responsibility.
-                </span>
-              </span>
-              <span className="shrink-0 ml-2">Authenticated: {user?.fullName || 'Clinician'}</span>
+              {/* Footer Disclaimer */}
+              <div className="text-[11px] text-[#94A3B8] text-center mt-2 font-sans">
+                Aegis-ICU Multi-Agent Decision Support • Clinicians retain full diagnostic responsibility.
+              </div>
             </div>
           </footer>
-        </section>
 
-        {/* RIGHT COLUMN: PATIENT CLINICAL INTELLIGENCE DECK */}
-        {isPatientPanelOpen && (
-          <aside className={`w-[440px] border-l flex flex-col shrink-0 overflow-hidden transition-colors duration-200 ${
-            isDark ? 'bg-[#0D121D] border-[#1F293D]' : 'bg-white border-slate-200'
-          }`}>
-            {/* Tabs Header */}
-            <div className={`p-2 border-b flex items-center gap-1 transition-colors duration-200 ${
-              isDark ? 'bg-[#0D121D] border-[#1F293D]' : 'bg-slate-50 border-slate-200'
-            }`}>
+        </div>
+      </section>
+
+      {/* =========================================================================
+          COLUMN 3: RIGHT CONSENSUS DRAWER (Gemini-style floating white card)
+          ========================================================================= */}
+      <aside className="w-80 flex-shrink-0 h-full p-3 pl-0 flex flex-col">
+        <div className="bg-white rounded-3xl border border-[#E2E8F0] shadow-xs h-full flex flex-col overflow-hidden">
+          
+          {/* 1. Top Segmented Pill Bar */}
+          <div className="p-3.5 border-b border-[#F1F5F9] bg-white shrink-0">
+            <div className="bg-[#F8FAFC] p-1 rounded-xl border border-[#E2E8F0] flex text-xs font-medium">
               {[
-                { id: 'agents', label: 'Agents', icon: Bot },
-                { id: 'vitals', label: 'Vitals', icon: Activity },
-                { id: 'labs', label: 'Labs', icon: FlaskConical },
-                { id: 'meds', label: 'Meds', icon: Pill },
+                { id: 'agents', label: 'Agents' },
+                { id: 'vitals', label: 'Vitals' },
+                { id: 'labs', label: 'Labs' },
+                { id: 'meds', label: 'Meds' }
               ].map(tab => {
-                const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
                 return (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-mono transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    className={
                       isActive
-                        ? (isDark
-                            ? 'bg-teal-500/20 text-teal-300 border border-teal-500/40 font-bold shadow-xs'
-                            : 'bg-white text-teal-800 border border-teal-200 font-bold shadow-xs')
-                        : (isDark
-                            ? 'text-slate-400 hover:text-slate-200 hover:bg-[#131B2A]'
-                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100')
-                    }`}
+                        ? 'bg-white text-[#0D9488] shadow-2xs rounded-lg py-1.5 flex-1 text-center border border-[#E2E8F0]/60 cursor-pointer transition'
+                        : 'text-[#64748B] hover:text-[#334155] py-1.5 flex-1 text-center cursor-pointer transition'
+                    }
                   >
-                    <Icon className="w-3.5 h-3.5" />
-                    <span>{tab.label}</span>
+                    {tab.label}
                   </button>
                 );
               })}
             </div>
+          </div>
 
-            {/* Tab Body */}
-            <div className={`flex-1 overflow-y-auto p-4 space-y-4 transition-colors duration-200 ${
-              isDark ? 'bg-[#0D121D]' : 'bg-white'
-            }`}>
-              {/* =================================================================
-                  TAB 1: MULTI-AGENT CONSENSUS & FINDINGS
-                  ================================================================= */}
-              {activeTab === 'agents' && (
-                <div className="space-y-3.5">
-                  <div className={`flex items-center justify-between text-xs font-mono ${
-                    isDark ? 'text-slate-400' : 'text-slate-500'
-                  }`}>
-                    <span className={`font-semibold ${isDark ? 'text-slate-200' : 'text-slate-900'}`}>
-                      Multi-Agent Consensus
+          {/* 2. Consensus Header */}
+          <div className="px-4 py-2.5 bg-[#F8FAFC]/50 border-b border-[#F1F5F9] flex items-center justify-between shrink-0">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">
+              Multi-Agent Consensus
+            </span>
+            <span className="text-[11px] font-mono text-[#059669] bg-[#ECFDF5] px-2 py-0.5 rounded-full border border-[#A7F3D0]">
+              4 Agents Synced (96.8%)
+            </span>
+          </div>
+
+          {/* 3. Soft Agent Evidence Cards & Tabs Content */}
+          <div className="flex-1 overflow-y-auto p-3.5 space-y-3 bg-white">
+            
+            {/* TAB 1: MULTI-AGENT CONSENSUS OVERVIEW */}
+            {activeTab === 'agents' && (
+              <div className="space-y-3">
+                {/* Card 1: Data Quality Agent */}
+                <div className="bg-[#F8FAFC] rounded-2xl p-3.5 border border-[#E2E8F0]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-[#334155]">Data Quality Agent</span>
+                    <span className="bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0] text-[10px] font-mono px-2 py-0.5 rounded-full">
+                      HIGH INTEGRITY
                     </span>
-                    <span className={`font-semibold ${isDark ? 'text-teal-400' : 'text-teal-700'}`}>
-                      4 Agents Synchronized (96.8%)
+                  </div>
+                  <p className="text-xs text-[#475569] mt-1.5 leading-relaxed">
+                    Continuous telemetry stream verified with zero sensor artifacts. Core vitals completeness: 100%.
+                  </p>
+                </div>
+
+                {/* Card 2: Vitals Intelligence Agent */}
+                <div className="bg-[#F8FAFC] rounded-2xl p-3.5 border border-[#E2E8F0]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-[#334155]">Vitals Intelligence Agent</span>
+                    <span className="bg-[#FFF1F2] text-[#E11D48] border border-[#FECDD3] text-[10px] font-mono px-2 py-0.5 rounded-full">
+                      RISK: 72.5%
                     </span>
                   </div>
+                  <p className="text-xs text-[#475569] mt-1.5 leading-relaxed">
+                    Compensated shock identified: Shock Index is 1.34 (threshold &gt; 0.70). Tachycardia (+34 bpm) and Tachypnea (26/min) signal systemic acidosis compensation.
+                  </p>
+                </div>
 
-                  {/* 1. Data Quality Agent Finding */}
-                  <div className={`p-3.5 rounded-xl border space-y-2 ${
-                    isDark ? 'bg-[#070A0F] border-[#1F293D]' : 'bg-slate-50 border-slate-200 shadow-2xs'
-                  }`}>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className={`font-semibold flex items-center gap-1.5 ${isDark ? 'text-slate-200' : 'text-slate-900'}`}>
-                        <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                        Data Quality Agent
-                      </span>
-                      <span className={`text-[10px] font-mono px-2 py-0.5 rounded border font-semibold ${
-                        isDark
-                          ? 'bg-emerald-950/60 text-emerald-400 border-emerald-800/60'
-                          : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                      }`}>
-                        HIGH_INTEGRITY
-                      </span>
+                {/* Card 3: Laboratory Agent */}
+                <div className="bg-[#F8FAFC] rounded-2xl p-3.5 border border-[#E2E8F0]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-[#334155]">Laboratory Agent</span>
+                    <span className="bg-[#FFFBEB] text-[#D97706] border border-[#FDE68A] text-[10px] font-mono px-2 py-0.5 rounded-full">
+                      MODERATE HYPOXIA
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#475569] mt-1.5 leading-relaxed">
+                    Serum Lactate elevated at 3.8 mmol/L. Leukocytosis 16.4 × 10⁹/L. Multi-organ microvascular stress confirmed.
+                  </p>
+                </div>
+
+                {/* Card 4: Skeptic Agent */}
+                <div className="bg-[#F8FAFC] rounded-2xl p-3.5 border border-[#E2E8F0]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-[#334155]">Skeptic Agent</span>
+                    <span className="bg-[#F0F9FF] text-[#0284C7] border border-[#BAE6FD] text-[10px] font-mono px-2 py-0.5 rounded-full">
+                      ONLINE
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#475569] mt-1.5 leading-relaxed">
+                    Evaluating beta-agonist administration 45m prior as a secondary contributor to heart rate elevation.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 2: DETAILED VITALS & WAVEFORM */}
+            {activeTab === 'vitals' && (
+              <div className="space-y-3">
+                {/* Waveform Card */}
+                <div className="p-3 rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] space-y-2 shadow-2xs">
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="font-semibold text-[#334155] flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-[#0D9488] animate-pulse" />
+                      Continuous Arterial Wave
+                    </span>
+                    <span className="text-[#64748B] text-[10px]">100 Hz</span>
+                  </div>
+                  <div className="h-24 w-full rounded-xl bg-white border border-[#E2E8F0] relative overflow-hidden flex items-center shadow-2xs">
+                    <canvas ref={waveformRef} className="w-full h-full" />
+                  </div>
+                  <div className="flex justify-between items-center text-[10px] font-mono text-[#64748B]">
+                    <span>Calibration: Arterial Line A1</span>
+                    <span>Damping Factor: 0.68</span>
+                  </div>
+                </div>
+
+                {/* Metrics Breakdown */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between p-2.5 rounded-xl border border-[#E2E8F0] bg-white shadow-2xs">
+                    <span className="text-xs font-medium text-[#475569]">Heart Rate:</span>
+                    <span className="font-mono font-bold text-xs text-rose-600">{alert.vitals?.hr || '118 bpm'}</span>
+                  </div>
+                  <div className="flex items-center justify-between p-2.5 rounded-xl border border-[#E2E8F0] bg-white shadow-2xs">
+                    <span className="text-xs font-medium text-[#475569]">NIBP &amp; MAP:</span>
+                    <span className="font-mono font-bold text-xs text-amber-600">{alert.vitals?.bp || '88/54 mmHg'}</span>
+                  </div>
+                  <div className="flex items-center justify-between p-2.5 rounded-xl border border-[#E2E8F0] bg-white shadow-2xs">
+                    <span className="text-xs font-medium text-[#475569]">Respiratory Rate:</span>
+                    <span className="font-mono font-bold text-xs text-amber-600">{alert.vitals?.rr || '26 /min'}</span>
+                  </div>
+                  <div className="flex items-center justify-between p-2.5 rounded-xl border border-[#E2E8F0] bg-white shadow-2xs">
+                    <span className="text-xs font-medium text-[#475569]">Temperature:</span>
+                    <span className="font-mono font-bold text-xs text-rose-600">{alert.vitals?.temp || '38.9 °C'}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 3: LABORATORY PANEL */}
+            {activeTab === 'labs' && (
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between p-2.5 rounded-xl border border-amber-200 bg-amber-50 shadow-2xs">
+                    <div>
+                      <div className="text-xs font-semibold text-[#334155]">Serum Lactate</div>
+                      <div className="text-[10px] font-mono text-[#64748B]">Normal: 0.5–2.0 mmol/L</div>
                     </div>
-                    <p className={`text-[11px] font-sans leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                      Continuous telemetry stream verified with zero sensor artifacts. Core vitals completeness: 100%. Arterial line calibration intact.
-                    </p>
+                    <div className="text-right">
+                      <div className="font-mono font-bold text-xs text-amber-700">{alert.labs?.lactate || '3.8 mmol/L'}</div>
+                      <div className="text-[9px] font-mono uppercase text-amber-800 font-semibold">Elevated</div>
+                    </div>
                   </div>
 
-                  {/* 2. Vitals Agent Finding */}
-                  <div className={`p-3.5 rounded-xl border space-y-2 ${
-                    isDark ? 'bg-[#070A0F] border-[#1F293D]' : 'bg-slate-50 border-slate-200 shadow-2xs'
-                  }`}>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className={`font-semibold flex items-center gap-1.5 ${isDark ? 'text-slate-200' : 'text-slate-900'}`}>
-                        <Activity className="w-4 h-4 text-rose-500" />
-                        Vitals Intelligence Agent
-                      </span>
-                      <span className={`text-[10px] font-mono px-2 py-0.5 rounded border font-bold ${
-                        isDark
-                          ? 'bg-rose-950/60 text-rose-300 border-rose-800/60'
-                          : 'bg-rose-50 text-rose-700 border-rose-200'
-                      }`}>
-                        RISK: 72.5%
-                      </span>
+                  <div className="flex items-center justify-between p-2.5 rounded-xl border border-[#E2E8F0] bg-white shadow-2xs">
+                    <div>
+                      <div className="text-xs font-semibold text-[#334155]">WBC Count</div>
+                      <div className="text-[10px] font-mono text-[#64748B]">Normal: 4.5–11.0 × 10⁹/L</div>
                     </div>
-                    <div className={`text-[11px] font-sans leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                      Compensated shock identified: Shock Index is <strong className="text-rose-500 font-mono font-bold">1.34</strong> (threshold &gt; 0.70). Tachycardia (+34 bpm) and Tachypnea (26/min) signal systemic acidosis compensation.
+                    <div className="text-right">
+                      <div className="font-mono font-bold text-xs text-[#334155]">{alert.labs?.wbc || '16.4 × 10⁹/L'}</div>
+                      <div className="text-[9px] font-mono uppercase text-amber-700 font-semibold">Leukocytosis</div>
                     </div>
                   </div>
 
-                  {/* 3. Labs Agent Finding with Martha's Rule Notice */}
-                  <div className={`p-3.5 rounded-xl border space-y-2.5 ${
-                    isDark ? 'bg-[#070A0F] border-[#1F293D]' : 'bg-slate-50 border-slate-200 shadow-2xs'
-                  }`}>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className={`font-semibold flex items-center gap-1.5 ${isDark ? 'text-slate-200' : 'text-slate-900'}`}>
-                        <FlaskConical className="w-4 h-4 text-amber-500" />
-                        Laboratory Agent
-                      </span>
-                      <span className={`text-[10px] font-mono px-2 py-0.5 rounded border font-semibold ${
-                        isDark
-                          ? 'bg-amber-950/60 text-amber-300 border-amber-800/60'
-                          : 'bg-amber-50 text-amber-700 border-amber-200'
-                      }`}>
-                        MODERATE_HYPOXIA
-                      </span>
+                  <div className="flex items-center justify-between p-2.5 rounded-xl border border-[#E2E8F0] bg-white shadow-2xs">
+                    <div>
+                      <div className="text-xs font-semibold text-[#334155]">Creatinine</div>
+                      <div className="text-[10px] font-mono text-[#64748B]">Baseline: 0.9 mg/dL</div>
                     </div>
-                    <p className={`text-[11px] font-sans leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                      Serum Lactate elevated at 3.8 mmol/L. Leukocytosis 16.4 × 10⁹/L. Multi-organ microvascular stress confirmed.
-                    </p>
-
-                    {/* Martha's Rule Safety Callout Box */}
-                    <div className={`p-3 rounded-lg border text-[11px] font-sans leading-relaxed ${
-                      isDark
-                        ? 'bg-[#121A28] border-amber-800/50 text-amber-300/90'
-                        : 'bg-amber-50 border-amber-300 text-amber-900'
-                    }`}>
-                      <strong className={`font-mono uppercase block mb-1 font-bold ${
-                        isDark ? 'text-amber-400' : 'text-amber-800'
-                      }`}>
-                        Martha's Rule Clinical Safety Notice:
-                      </strong>
-                      Biochemical cellular markers can lag 2 to 6 hours behind microvascular hypoperfusion. Normal or missing labs must never automatically rule out sepsis.
-                    </div>
-                  </div>
-
-                  {/* 4. Skeptic Agent Finding */}
-                  <div className={`p-3.5 rounded-xl border space-y-2 ${
-                    isDark ? 'bg-[#070A0F] border-[#1F293D]' : 'bg-slate-50 border-slate-200 shadow-2xs'
-                  }`}>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className={`font-semibold flex items-center gap-1.5 ${isDark ? 'text-slate-200' : 'text-slate-900'}`}>
-                        <ShieldAlert className="w-4 h-4 text-purple-500" />
-                        Skeptic Agent (Confounder Analysis)
-                      </span>
-                      <span className={`text-[10px] font-mono px-2 py-0.5 rounded border font-semibold ${
-                        isDark
-                          ? 'bg-purple-950/60 text-purple-300 border-purple-800/60'
-                          : 'bg-purple-50 text-purple-700 border-purple-200'
-                      }`}>
-                        STAND_ALERT
-                      </span>
-                    </div>
-                    <p className={`text-[11px] font-sans leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                      Active Norepinephrine infusion evaluated as a potential chronotropic contributor. Concomitant metabolic distress (lactate 3.8) confirms real septic deterioration. Alert preservation strictly maintained.
-                    </p>
-                  </div>
-
-                  {/* Transparent Disagreements Card */}
-                  <div className={`p-3.5 rounded-xl border space-y-2 ${
-                    isDark ? 'bg-[#070A0F] border-teal-500/30' : 'bg-teal-50/50 border-teal-200 shadow-2xs'
-                  }`}>
-                    <div className="flex items-center justify-between text-xs font-mono">
-                      <span className={`font-semibold flex items-center gap-1.5 ${isDark ? 'text-teal-400' : 'text-teal-800'}`}>
-                        <AlertTriangle className="w-4 h-4 text-teal-500" />
-                        Transparent Disagreement
-                      </span>
-                      <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Resolved</span>
-                    </div>
-                    <div className={`text-[11px] font-sans leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                      <strong>VITALS_SKEPTIC_DISCORDANCE:</strong> Skeptic Agent flagged vasopressor titration as potential cause of tachycardia, while Vitals Agent indicated rapid hemodynamic collapse.
-                    </div>
-                    <div className={`text-[10px] font-sans italic p-2 rounded border ${
-                      isDark ? 'bg-[#0D121D] border-[#1F293D] text-slate-400' : 'bg-white border-slate-200 text-slate-600'
-                    }`}>
-                      Resolution: Sepsis alert remains ACTIVE. Confounder context is transparently displayed without suppressing alert vigilance.
+                    <div className="text-right">
+                      <div className="font-mono font-bold text-xs text-rose-600">{alert.labs?.creatinine || '1.8 mg/dL'}</div>
+                      <div className="text-[9px] font-mono uppercase text-rose-700 font-semibold">Stage 2 AKI</div>
                     </div>
                   </div>
                 </div>
-              )}
 
-              {/* =================================================================
-                  TAB 2: VITALS & CONTINUOUS WAVEFORM TELEMETRY
-                  ================================================================= */}
-              {activeTab === 'vitals' && (
-                <div className="space-y-4">
-                  {/* Waveform Card */}
-                  <div className={`p-3.5 rounded-xl border space-y-2 ${
-                    isDark ? 'bg-[#070A0F] border-[#1F293D]' : 'bg-slate-50 border-slate-200 shadow-2xs'
-                  }`}>
-                    <div className="flex items-center justify-between text-xs font-mono">
-                      <span className={`font-semibold flex items-center gap-2 ${isDark ? 'text-slate-200' : 'text-slate-900'}`}>
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                        Continuous Arterial Waveform (Lead II)
-                      </span>
-                      <span className={`text-[11px] ${isDark ? 'text-teal-400' : 'text-teal-700'}`}>250 Hz</span>
-                    </div>
-                    <div className={`h-24 w-full rounded-lg border relative overflow-hidden flex items-center ${
-                      isDark ? 'bg-[#05080E] border-[#1F293D]' : 'bg-white border-slate-200'
-                    }`}>
-                      <canvas ref={waveformRef} className="w-full h-full block" />
-                    </div>
+                {/* Repeat Protocol Button */}
+                <button
+                  onClick={handleStatEscalate}
+                  className="w-full py-2 px-3 rounded-xl border border-[#99F6E4] bg-[#F0FDFA] hover:bg-[#CCFBF1] text-[#0D9488] text-xs font-mono font-semibold flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                >
+                  <Zap className="w-3.5 h-3.5 text-[#0D9488]" />
+                  <span>Order Repeat STAT Lactate</span>
+                </button>
+              </div>
+            )}
+
+            {/* TAB 4: MEDICATIONS & CONFOUNDER ANALYSIS */}
+            {activeTab === 'meds' && (
+              <div className="space-y-3">
+                <div className="p-3 rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] space-y-2 shadow-2xs">
+                  <div className="text-xs font-semibold text-[#334155] flex items-center justify-between">
+                    <span>Active Regimens</span>
+                    <span className="text-[10px] font-mono text-[#64748B]">3 Meds</span>
                   </div>
 
-                  {/* Vitals Scorecard Grid */}
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <div className={`p-3 rounded-lg border ${
-                      isDark ? 'bg-[#070A0F] border-[#1F293D]' : 'bg-slate-50 border-slate-200 shadow-2xs'
-                    }`}>
-                      <div className="text-[10px] font-mono text-slate-400 uppercase">Heart Rate</div>
-                      <div className="text-lg font-mono font-bold text-rose-500 mt-0.5">{alert.vitals?.hr || '118 bpm'}</div>
-                      <div className="text-[10px] text-rose-500 mt-1 font-sans">Sustained tachycardia (+34 bpm)</div>
+                  <div className="space-y-2">
+                    <div className="p-2 rounded-xl border border-rose-200 bg-rose-50 shadow-2xs">
+                      <div className="flex items-center justify-between text-xs font-semibold text-[#334155]">
+                        <span>Norepinephrine</span>
+                        <span className="text-rose-600 font-mono text-[11px]">0.08 mcg/kg/min</span>
+                      </div>
+                      <div className="text-[10px] text-rose-700 mt-0.5">Active vasopressor titration ongoing</div>
                     </div>
 
-                    <div className={`p-3 rounded-lg border ${
-                      isDark ? 'bg-[#070A0F] border-[#1F293D]' : 'bg-slate-50 border-slate-200 shadow-2xs'
-                    }`}>
-                      <div className="text-[10px] font-mono text-slate-400 uppercase">Blood Pressure</div>
-                      <div className="text-lg font-mono font-bold text-amber-500 mt-0.5">{alert.vitals?.bp || '88/54'}</div>
-                      <div className="text-[10px] text-amber-500 mt-1 font-sans">{alert.vitals?.map || 'MAP 65 mmHg'}</div>
+                    <div className="p-2 rounded-xl border border-[#E2E8F0] bg-white shadow-2xs">
+                      <div className="flex items-center justify-between text-xs font-semibold text-[#334155]">
+                        <span>Vancomycin IV</span>
+                        <span className="text-[#64748B] font-mono text-[11px]">1.25g in 250mL</span>
+                      </div>
+                      <div className="text-[10px] text-[#64748B] mt-0.5">Administered 07:45 (T-minus 4h)</div>
                     </div>
 
-                    <div className={`p-3 rounded-lg border ${
-                      isDark ? 'bg-[#070A0F] border-[#1F293D]' : 'bg-slate-50 border-slate-200 shadow-2xs'
-                    }`}>
-                      <div className="text-[10px] font-mono text-slate-400 uppercase">Respiratory Rate</div>
-                      <div className="text-lg font-mono font-bold text-amber-500 mt-0.5">{alert.vitals?.rr || '26 /min'}</div>
-                      <div className="text-[10px] text-amber-500 mt-1 font-sans">Tachypnea compensatory</div>
+                    <div className="p-2 rounded-xl border border-amber-200 bg-amber-50 shadow-2xs">
+                      <div className="flex items-center justify-between text-xs font-semibold text-[#334155]">
+                        <span>Metoprolol</span>
+                        <span className="text-amber-700 font-mono text-[11px]">50mg Oral</span>
+                      </div>
+                      <div className="text-[10px] text-amber-800 mt-0.5">Held appropriately (MAP &lt; 65 mmHg)</div>
                     </div>
-
-                    <div className={`p-3 rounded-lg border ${
-                      isDark ? 'bg-[#070A0F] border-[#1F293D]' : 'bg-slate-50 border-slate-200 shadow-2xs'
-                    }`}>
-                      <div className="text-[10px] font-mono text-slate-400 uppercase">Core Temperature</div>
-                      <div className="text-lg font-mono font-bold text-rose-500 mt-0.5">{alert.vitals?.temp || '38.9 °C'}</div>
-                      <div className="text-[10px] text-rose-500 mt-1 font-sans">Febrile spike</div>
-                    </div>
-                  </div>
-
-                  {/* Shock Index Explanation Card */}
-                  <div className={`p-3.5 rounded-xl border space-y-1.5 ${
-                    isDark ? 'bg-[#070A0F] border-rose-900/40 text-rose-300' : 'bg-rose-50 border-rose-200 text-rose-800'
-                  }`}>
-                    <div className="flex items-center justify-between text-xs font-mono font-bold">
-                      <span>Shock Index: HR / SBP</span>
-                      <span className="text-rose-500 font-extrabold text-sm">{alert.vitals?.shockIndex || '1.34'}</span>
-                    </div>
-                    <p className="text-[11px] font-sans leading-relaxed">
-                      Shock Index &gt; 1.0 indicates severe occult hypoperfusion and high mortality risk in critical care sepsis patients.
-                    </p>
                   </div>
                 </div>
-              )}
 
-              {/* =================================================================
-                  TAB 3: STAT BLOOD PANEL & LAB FINDINGS
-                  ================================================================= */}
-              {activeTab === 'labs' && (
-                <div className="space-y-4">
-                  <div className={`p-3.5 rounded-xl border space-y-3 ${
-                    isDark ? 'bg-[#070A0F] border-[#1F293D]' : 'bg-slate-50 border-slate-200 shadow-2xs'
-                  }`}>
-                    <div className={`flex items-center justify-between text-xs font-mono ${
-                      isDark ? 'text-slate-300' : 'text-slate-800'
-                    }`}>
-                      <span className="font-semibold">STAT Blood Panel</span>
-                      <span className="text-amber-500 font-semibold">Drawn 42 mins ago</span>
-                    </div>
-
-                    <div className="space-y-2 text-xs">
-                      {/* Lactate */}
-                      <div className={`flex items-center justify-between p-2 rounded border ${
-                        isDark ? 'bg-[#0D121D] border-[#1F293D]' : 'bg-white border-slate-200 shadow-2xs'
-                      }`}>
-                        <div>
-                          <div className={`font-semibold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>Serum Lactate</div>
-                          <div className={`text-[10px] font-mono ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Normal: 0.5–2.0 mmol/L</div>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-mono font-bold text-amber-500 text-sm">3.8 mmol/L</div>
-                          <div className="text-[9px] font-mono text-amber-500 font-bold uppercase">CRITICAL</div>
-                        </div>
-                      </div>
-
-                      {/* WBC */}
-                      <div className={`flex items-center justify-between p-2 rounded border ${
-                        isDark ? 'bg-[#0D121D] border-[#1F293D]' : 'bg-white border-slate-200 shadow-2xs'
-                      }`}>
-                        <div>
-                          <div className={`font-semibold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>White Blood Cells (WBC)</div>
-                          <div className={`text-[10px] font-mono ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Normal: 4.5–11.0 × 10⁹/L</div>
-                        </div>
-                        <div className="text-right">
-                          <div className={`font-mono font-bold text-sm ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>16.4 × 10⁹/L</div>
-                          <div className="text-[9px] font-mono text-amber-500 uppercase font-semibold">Elevated (Leukocytosis)</div>
-                        </div>
-                      </div>
-
-                      {/* Creatinine */}
-                      <div className={`flex items-center justify-between p-2 rounded border ${
-                        isDark ? 'bg-[#0D121D] border-[#1F293D]' : 'bg-white border-slate-200 shadow-2xs'
-                      }`}>
-                        <div>
-                          <div className={`font-semibold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>Serum Creatinine</div>
-                          <div className={`text-[10px] font-mono ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Baseline: 0.9 mg/dL</div>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-mono font-bold text-rose-500 text-sm">1.8 mg/dL</div>
-                          <div className="text-[9px] font-mono text-rose-500 uppercase font-semibold">Stage 2 AKI</div>
-                        </div>
-                      </div>
-
-                      {/* Platelets */}
-                      <div className={`flex items-center justify-between p-2 rounded border ${
-                        isDark ? 'bg-[#0D121D] border-[#1F293D]' : 'bg-white border-slate-200 shadow-2xs'
-                      }`}>
-                        <div>
-                          <div className={`font-semibold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>Platelets</div>
-                          <div className={`text-[10px] font-mono ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Normal: 150–450 × 10⁹/L</div>
-                        </div>
-                        <div className="text-right">
-                          <div className={`font-mono font-bold text-sm ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>138 × 10⁹/L</div>
-                          <div className={`text-[9px] font-mono uppercase ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Mild Thrombocytopenia</div>
-                        </div>
-                      </div>
-                    </div>
+                {/* Pharmacological Confounder Check */}
+                <div className="p-3 rounded-2xl border border-purple-200 bg-purple-50 text-purple-900 text-xs leading-relaxed space-y-1">
+                  <div className="flex items-center justify-between font-mono font-bold text-[10px]">
+                    <span className="flex items-center gap-1 text-purple-800">
+                      <Pill className="w-3.5 h-3.5 text-purple-600" />
+                      CONFOUNDER CHECK
+                    </span>
+                    <span className="px-1.5 py-0.5 rounded border border-purple-300 bg-purple-100 text-purple-800">
+                      PASSED
+                    </span>
                   </div>
-
-                  {/* Martha's Rule Notice Reminder */}
-                  <div className={`p-3 rounded-lg border text-[11px] font-sans leading-relaxed ${
-                    isDark ? 'bg-[#121A28] border-amber-800/50 text-amber-300/90' : 'bg-amber-50 border-amber-300 text-amber-900'
-                  }`}>
-                    <strong className="font-mono uppercase block mb-1">Martha's Rule Safety Protocol:</strong>
-                    Biochemical markers lag 2–6 hours behind hypoperfusion. Normal or missing labs must never automatically rule out sepsis.
-                  </div>
-
-                  <button
-                    onClick={handleStatEscalate}
-                    className={`w-full py-2 px-3 rounded-lg border text-xs font-mono font-semibold flex items-center justify-center gap-2 transition-all shadow-xs ${
-                      isDark
-                        ? 'bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 border-teal-500/40'
-                        : 'bg-teal-600 hover:bg-teal-700 text-white border-teal-600'
-                    }`}
-                  >
-                    <Zap className="w-4 h-4" />
-                    <span>Order Repeat STAT Lactate Protocol</span>
-                  </button>
+                  <p className="text-[11px] text-purple-950">
+                    Skeptic Agent verified that tachycardia (+34 bpm) is not solely iatrogenic from vasopressors, given concomitant fever (38.9°C) and metabolic acidosis.
+                  </p>
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* =================================================================
-                  TAB 4: ACTIVE MEDICATIONS & CONFOUNDER ANALYSIS
-                  ================================================================= */}
-              {activeTab === 'meds' && (
-                <div className="space-y-4">
-                  <div className={`p-3.5 rounded-xl border space-y-3 ${
-                    isDark ? 'bg-[#070A0F] border-[#1F293D]' : 'bg-slate-50 border-slate-200 shadow-2xs'
-                  }`}>
-                    <div className={`flex items-center justify-between text-xs font-mono ${
-                      isDark ? 'text-slate-300' : 'text-slate-800'
-                    }`}>
-                      <span className="font-semibold">Active Medications &amp; Infusions</span>
-                      <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>3 Regimens</span>
-                    </div>
+          </div>
 
-                    <div className="space-y-2">
-                      <div className={`p-2.5 rounded-lg border ${
-                        isDark ? 'bg-[#0D121D] border-rose-900/40' : 'bg-rose-50 border-rose-200 shadow-2xs'
-                      }`}>
-                        <div className="flex items-center justify-between text-xs font-semibold">
-                          <span className={isDark ? 'text-slate-100' : 'text-slate-900'}>Norepinephrine (Levophed)</span>
-                          <span className="text-rose-500 font-mono">0.08 mcg/kg/min</span>
-                        </div>
-                        <div className="text-[10px] text-rose-500 font-sans mt-0.5">Active continuous vasopressor titration ongoing</div>
-                      </div>
-
-                      <div className={`p-2.5 rounded-lg border ${
-                        isDark ? 'bg-[#0D121D] border-[#1F293D]' : 'bg-white border-slate-200 shadow-2xs'
-                      }`}>
-                        <div className="flex items-center justify-between text-xs font-semibold">
-                          <span className={isDark ? 'text-slate-100' : 'text-slate-900'}>Vancomycin IV</span>
-                          <span className={`font-mono ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>1.25g in 250mL</span>
-                        </div>
-                        <div className={`text-[10px] font-sans mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                          Administered 07:45 (T-minus 4h); cultures pending
-                        </div>
-                      </div>
-
-                      <div className={`p-2.5 rounded-lg border ${
-                        isDark ? 'bg-[#0D121D] border-amber-900/40' : 'bg-amber-50 border-amber-200 shadow-2xs'
-                      }`}>
-                        <div className="flex items-center justify-between text-xs font-semibold">
-                          <span className={isDark ? 'text-slate-100' : 'text-slate-900'}>Metoprolol (Beta-Blocker)</span>
-                          <span className="text-amber-500 font-mono">50mg Oral</span>
-                        </div>
-                        <div className="text-[10px] text-amber-500 font-sans mt-0.5">Held appropriately due to MAP &lt; 65 mmHg</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Confounder Analysis Card */}
-                  <div className={`p-3.5 rounded-xl border space-y-2 ${
-                    isDark ? 'bg-[#070A0F] border-purple-900/40 text-purple-300' : 'bg-purple-50 border-purple-200 text-purple-800'
-                  }`}>
-                    <div className="flex items-center justify-between text-xs font-mono font-bold">
-                      <span className="flex items-center gap-1.5">
-                        <Pill className="w-3.5 h-3.5 text-purple-500" />
-                        Pharmacological Confounder Check
-                      </span>
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded border ${
-                        isDark ? 'bg-purple-950/60 border-purple-800/60' : 'bg-purple-100 border-purple-300'
-                      }`}>
-                        PASSED
-                      </span>
-                    </div>
-                    <p className="text-[11px] font-sans leading-relaxed">
-                      Skeptic Agent verified that tachycardia (+34 bpm) is not solely iatrogenic from vasopressors, given concomitant fever (38.9°C) and metabolic acidosis (lactate 3.8 mmol/L).
-                    </p>
-                  </div>
-                </div>
-              )}
+          {/* 4. Bottom Safety Callout */}
+          <div className="m-3 mt-0 p-3 bg-[#FFFBEB] border border-[#FDE68A] rounded-2xl shrink-0">
+            <div className="text-[10px] font-semibold text-[#B45309] uppercase tracking-wide">
+              MARTHA'S RULE CLINICAL SAFETY NOTICE
             </div>
-          </aside>
-        )}
-      </div>
-    </div>
+            <div className="text-[11px] text-[#D97706] mt-0.5">
+              Rapid response escalation available if clinical trajectory diverges.
+            </div>
+          </div>
+
+        </div>
+      </aside>
+    </>
   );
 }
