@@ -3,7 +3,6 @@ import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import InboxView from './components/InboxView';
 import ConversationWorkspace from './components/ConversationWorkspace';
-import PatientContextPanel from './components/PatientContextPanel';
 import OverrideModal from './components/OverrideModal';
 import { INITIAL_ALERTS_DATA, createSimulatedAlert } from './data/alertsData';
 
@@ -209,27 +208,18 @@ export default function StitchDashboard({ onExitToLanding }) {
         <div className="flex-1 overflow-hidden relative">
           {selectedAlert ? (
             /* VIEW 2: Balanced 3-Pane Conversation Workspace */
-            <div className="h-full flex overflow-hidden">
-              <ConversationWorkspace
-                alert={selectedAlert}
-                messages={conversations[selectedAlert.id] || []}
-                isTyping={isTyping}
-                typingText={typingText}
-                isPatientPanelOpen={isPatientPanelOpen}
-                onTogglePatientPanel={() => setIsPatientPanelOpen(prev => !prev)}
-                onBackToInbox={handleBackToInbox}
-                onAcknowledgeAlert={handleAcknowledgeAlert}
-                onOpenOverrideModal={() => setIsOverrideModalOpen(true)}
-                onSendMessage={handleSendMessage}
-              />
-
-              {/* Collapsible Patient Context Panel */}
-              <PatientContextPanel
-                alert={selectedAlert}
-                isOpen={isPatientPanelOpen}
-                onClose={() => setIsPatientPanelOpen(false)}
-              />
-            </div>
+            <ConversationWorkspace
+              alert={selectedAlert}
+              messages={conversations[selectedAlert.id] || []}
+              isTyping={isTyping}
+              typingText={typingText}
+              isPatientPanelOpen={isPatientPanelOpen}
+              onTogglePatientPanel={setIsPatientPanelOpen}
+              onBackToInbox={handleBackToInbox}
+              onAcknowledgeAlert={handleAcknowledgeAlert}
+              onOpenOverrideModal={() => setIsOverrideModalOpen(true)}
+              onSendMessage={handleSendMessage}
+            />
           ) : (
             /* VIEW 1: Clinical Alert Inbox */
             <InboxView
