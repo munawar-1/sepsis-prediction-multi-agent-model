@@ -200,6 +200,7 @@ export default function StitchDashboard({ onExitToLanding }) {
         <Header
           isSidebarOpen={isSidebarOpen}
           onToggleSidebar={() => setIsSidebarOpen(prev => !prev)}
+          onExitToLanding={onExitToLanding}
           title={headerTitle}
           subtitle={headerSubtitle}
         />

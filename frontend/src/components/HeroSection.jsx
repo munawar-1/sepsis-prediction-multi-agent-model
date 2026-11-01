@@ -80,9 +80,51 @@ export default function HeroSection({ onOpenFlightDeck }) {
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
-        borderBottom: '1px solid #1A2738'
+        borderBottom: '1px solid #1A2738',
+        overflow: 'hidden'
       }}
     >
+      {/* Cinematic ICU Background Image with Subtle Dark Navy & Teal Overlays */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          overflow: 'hidden',
+          pointerEvents: 'none',
+          zIndex: 0
+        }}
+      >
+        <img
+          src="/assets/hero-icu-cinematic.jpg"
+          alt=""
+          aria-hidden="true"
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            objectPosition: 'center 40%',
+            filter: 'blur(3px)',
+            opacity: 0.22,
+            transform: 'scale(1.05)'
+          }}
+        />
+        {/* Dark Navy Atmospheric Overlays & Subtle Teal Tones */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'radial-gradient(ellipse at 75% 35%, rgba(20, 184, 166, 0.08) 0%, transparent 60%), linear-gradient(180deg, rgba(8, 14, 24, 0.72) 0%, rgba(8, 14, 24, 0.85) 50%, #080E18 100%)'
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'linear-gradient(90deg, #080E18 0%, rgba(8, 14, 24, 0.88) 42%, rgba(8, 14, 24, 0.6) 100%)'
+          }}
+        />
+      </div>
+
       <div style={{
         maxWidth: '1320px',
         margin: '0 auto',
@@ -91,7 +133,9 @@ export default function HeroSection({ onOpenFlightDeck }) {
         display: 'grid',
         gridTemplateColumns: '1fr 1fr',
         gap: '48px',
-        alignItems: 'center'
+        alignItems: 'center',
+        position: 'relative',
+        zIndex: 1
       }} className="hero-grid">
         
         {/* Left Column: Refined Editorial Typography */}

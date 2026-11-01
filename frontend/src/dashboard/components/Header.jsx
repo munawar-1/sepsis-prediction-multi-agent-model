@@ -1,9 +1,10 @@
 import React from 'react';
-import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { PanelLeftClose, PanelLeftOpen, Home } from 'lucide-react';
 
 export default function Header({
   isSidebarOpen,
   onToggleSidebar,
+  onExitToLanding,
   title = "Clinical Inbox",
   subtitle = "Multi-Agent Sepsis Early Warning Surveillance"
 }) {
@@ -34,7 +35,7 @@ export default function Header({
       </div>
 
       {/* Header Center / Right items */}
-      <div className="flex items-center gap-4 shrink-0">
+      <div className="flex items-center gap-3 shrink-0">
         {/* Live Agent Flow Mini Indicator */}
         <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-navy-850 border border-navy-700">
           <span className="w-2 h-2 rounded-full bg-clinical-teal animate-pulse" />
@@ -43,6 +44,16 @@ export default function Header({
             96.8% Convergence
           </span>
         </div>
+
+        {/* Compact Home Button Immediately Beside Agents Concurrence */}
+        <button
+          onClick={onExitToLanding}
+          className="h-8 px-2.5 rounded-lg bg-navy-850 hover:bg-navy-800 border border-navy-700/80 hover:border-clinical-teal/40 text-slate-300 hover:text-clinical-teal flex items-center gap-1.5 text-xs font-medium transition-all shadow-sm group"
+          title="Exit to Aegis-ICU Homepage"
+        >
+          <Home className="w-3.5 h-3.5 text-slate-400 group-hover:text-clinical-teal transition-colors" />
+          <span className="hidden sm:inline text-[11px] font-mono">Homepage</span>
+        </button>
 
         <div className="h-4 w-px bg-navy-700 hidden sm:block" />
 

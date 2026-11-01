@@ -262,8 +262,8 @@ export default function InboxView({
 
       {/* Filter & Search Bar */}
       <div className="bg-navy-900 border border-navy-700 rounded-xl p-3 mb-4 flex flex-wrap items-center justify-between gap-3">
-        {/* Filter Tabs */}
-        <div className="flex items-center gap-1 bg-navy-950 p-1 rounded-lg border border-navy-700/80 shadow-inner">
+        {/* Filter Tabs - Polished Dark Navy with Subtle Teal Highlight */}
+        <div className="flex items-center gap-1.5 bg-[#080E18] p-1.5 rounded-xl border border-navy-700/80 shadow-inner">
           {[
             { id: 'all', label: 'All Alerts' },
             { id: 'unread', label: 'Unreviewed' },
@@ -275,14 +275,14 @@ export default function InboxView({
               <button
                 key={tab.id}
                 onClick={() => onSetFilter(tab.id)}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${
+                className={`h-8 px-3.5 rounded-lg text-xs transition-all flex items-center justify-center gap-2 cursor-pointer ${
                   isActive
-                    ? 'bg-navy-800 text-clinical-teal border border-clinical-teal/40 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-navy-850/60 border border-transparent'
+                    ? 'bg-[#122338] text-clinical-teal border border-clinical-teal/50 shadow-sm shadow-clinical-teal/10 font-semibold'
+                    : 'bg-[#0C1422] text-slate-300 hover:text-slate-100 hover:bg-[#111C2E] border border-navy-700/60 hover:border-navy-600 font-medium'
                 }`}
               >
                 {isActive && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-clinical-teal" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-clinical-teal animate-pulse" />
                 )}
                 <span>{tab.label}</span>
               </button>

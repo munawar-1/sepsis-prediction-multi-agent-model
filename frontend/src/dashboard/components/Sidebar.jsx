@@ -4,15 +4,13 @@ import {
   Activity,
   FlaskConical,
   Pill,
-  Bell,
-  Home
+  Bell
 } from 'lucide-react';
 
 export default function Sidebar({
   isOpen,
   activeAlertCount,
-  onShowInbox,
-  onExitToLanding
+  onShowInbox
 }) {
   const canvasRef = useRef(null);
   const [timeStr, setTimeStr] = useState('');
@@ -127,16 +125,6 @@ export default function Sidebar({
             <span className="ml-auto text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-clinical-teal-dim text-clinical-teal font-semibold">
               {activeAlertCount}
             </span>
-          </button>
-
-          {/* Return to Public Landing Page as a subtle, professional link */}
-          <button
-            onClick={onExitToLanding}
-            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-navy-800/50 border border-transparent hover:border-navy-700/60 text-xs font-normal transition-all group"
-            title="Return to Aegis-ICU Homepage"
-          >
-            <Home className="w-3.5 h-3.5 text-slate-500 group-hover:text-clinical-teal transition-colors" />
-            <span>Exit to Homepage</span>
           </button>
         </nav>
 
