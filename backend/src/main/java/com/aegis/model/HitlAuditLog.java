@@ -1,12 +1,18 @@
 package com.aegis.model;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "hitl_audit_log")
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class HitlAuditLog {
     @Id
     @Column(name = "audit_id", length = 64)
@@ -27,12 +33,13 @@ public class HitlAuditLog {
     @Column(name = "override_reason", columnDefinition = "TEXT")
     private String overrideReason;
 
-    @Column(name = "actions_authorized", columnDefinition = "JSON")
+    @Column(name = "actions_authorized", columnDefinition = "TEXT")
     private String actionsAuthorized;
 
     @Column(name = "signature_hash", nullable = false, length = 256)
     private String signatureHash;
 
+    @Builder.Default
     @Column(name = "recorded_at", updatable = false)
     private LocalDateTime recordedAt = LocalDateTime.now();
 }

@@ -6,16 +6,25 @@ Outputs:
 2. Classical NEWS2 Score comparison
 3. Top Mathematical Risk Drivers (Shock Index, Tachypnea, etc.)
 4. SHAP-based per-prediction feature contributions
+5. Structured Evidence Report with Timestamp and Confidence Score
 """
 
 import os
+import sys
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(BASE_DIR))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
 os.environ.setdefault("MPLCONFIGDIR", "/tmp/matplotlib")
+from datetime import datetime, timezone
 import joblib
 import numpy as np
 import pandas as pd
 import shap
+from models.vitals_agent.src.reasoning_agent import VitalsReasoningAgent
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODEL_PATH = os.path.join(BASE_DIR, "artifacts", "vitals_rf_model.pkl")
 SHAP_EXPLAINER_PATH = os.path.join(BASE_DIR, "artifacts", "vitals_shap_explainer.pkl")
 
@@ -63,6 +72,7 @@ class VitalsPredictor:
         self.model_path = model_path
         self.model = None
         self.shap_explainer = None
+        self.reasoning_agent = VitalsReasoningAgent()
         self.load_model()
 
     def load_model(self):
@@ -109,7 +119,7 @@ class VitalsPredictor:
     def predict(self, vitals_dict: dict) -> dict:
         """
         Input: Dictionary of vital signs e.g. {'HR': 105, 'SBP': 102, 'Resp': 22, ...}
-        Output: Prediction dictionary with risk probability, NEWS2, and risk drivers.
+        Output: Prediction dictionary with risk probability, NEWS2, structured findings, confidence, and timestamp.
         """
         # 1. Feature extraction with missingness handling
         features = {}
@@ -158,7 +168,7 @@ class VitalsPredictor:
         # 6. Per-prediction SHAP feature contributions
         shap_contributions = self._compute_shap_contributions(df_row)
 
-        return {
+        raw_result = {
             "vitals_risk_probability": round(prob, 4),
             "news2_score": news2_score,
             "shock_index": round(shock_index, 2),
@@ -166,6 +176,24 @@ class VitalsPredictor:
             "risk_drivers": drivers,
             "shap_contributions": shap_contributions,
             "telemetry_snapshot": {k: features[k] for k in TRAIN_MEDIANS}
+        }
+
+        # 7. Synthesize structured evidence report via reasoning agent
+        evidence_report = self.reasoning_agent.explain(raw_result)
+
+        return {
+            "agent_name": "Vitals Agent",
+            "timestamp": evidence_report.timestamp,
+            "confidence": evidence_report.confidence,
+            "risk_level": evidence_report.risk_level,
+            "vitals_risk_probability": evidence_report.ml_probability,
+            "news2_score": evidence_report.news2_score,
+            "shock_index": evidence_report.shock_index,
+            "discrepancy_detected": evidence_report.discrepancy_flag,
+            "risk_drivers": evidence_report.primary_drivers,
+            "clinical_explanation": evidence_report.clinical_explanation,
+            "shap_contributions": evidence_report.shap_contributions,
+            "telemetry_snapshot": evidence_report.telemetry_snapshot
         }
 
 if __name__ == "__main__":
@@ -184,29 +212,26 @@ if __name__ == "__main__":
     result = predictor.predict(sample_patient)
     prob_pct = result['vitals_risk_probability'] * 100
     
-    # Clinical risk categorization relative to 2% baseline ICU rate
-    if prob_pct >= 50.0:
-        risk_tier = "CRITICAL SEPSIS RISK (25x baseline)"
-    elif prob_pct >= 30.0:
-        risk_tier = "ELEVATED RISK - SUBCLINICAL (15x-20x baseline)"
-    else:
-        risk_tier = "LOW / ROUTINE RISK"
-
     print("\n" + "=" * 60)
     print("      AEGIS-ICU: MODEL 1 (VITALS AGENT) INFERENCE")
     print("=" * 60)
+    print(f" [+] Agent Name            : {result['agent_name']}")
+    print(f" [+] Evaluation Timestamp  : {result['timestamp']}")
+    print(f" [+] Agent Confidence      : {result['confidence'] * 100:.0f}%")
     print(f" [+] ML Sepsis Probability : {prob_pct:.1f}%")
-    print(f" [+] Clinical Risk Tier    : {risk_tier}")
+    print(f" [+] Clinical Risk Tier    : {result['risk_level']}")
     print(f" [+] Shock Index (HR/SBP)  : {result['shock_index']} (Normal: < 0.70)")
-    print(f" [+] Traditional NEWS2     : {result['news2_score']} / 20 (Classified as Low Risk)")
+    print(f" [+] Traditional NEWS2     : {result['news2_score']} / 20")
     print(f" [+] Discrepancy Caught    : {result['discrepancy_detected']}")
     print("-" * 60)
     print(" [+] Key Physiological Risk Drivers:")
     for driver in result['risk_drivers']:
         print(f"     * {driver}")
     print("-" * 60)
+    print(f" [+] Clinical Narrative:\n     {result['clinical_explanation']}")
+    print("-" * 60)
     print(" [+] SHAP Feature Contributions (per-prediction):")
     for feat, val in result['shap_contributions'].items():
-        direction = "↑ Risk" if val > 0 else "↓ Risk"
-        print(f"     {'+'if val > 0 else ''}{val:.4f}  {feat}  ({direction})")
+        direction = "(+) Increases Risk" if val > 0 else "(-) Decreases Risk"
+        print(f"     {'+'if val > 0 else ''}{val:.4f}  {feat}  {direction}")
     print("=" * 60 + "\n")

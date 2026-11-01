@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { useTheme } from '../context/ThemeContext';
 import { AlertCircle, CheckCircle2, History, Check, ArrowRight } from 'lucide-react';
 
 export default function AlertExperienceSection() {
+  const { isDark } = useTheme();
   const [bundleChecks, setBundleChecks] = useState({
     lactate: true,
     cultures: true,
@@ -21,8 +23,8 @@ export default function AlertExperienceSection() {
       style={{
         position: 'relative',
         padding: '72px 24px',
-        background: '#080E18',
-        borderBottom: '1px solid #1A2738'
+        background: isDark ? '#080E18' : '#F8FAFC',
+        borderBottom: isDark ? '1px solid #1A2738' : '1px solid #E2E8F0'
       }}
     >
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
@@ -40,29 +42,29 @@ export default function AlertExperienceSection() {
             fontSize: 'clamp(1.9rem, 3.4vw, 2.75rem)',
             fontWeight: 650,
             lineHeight: 1.15,
-            color: '#F1F5FA',
+            color: isDark ? '#F1F5FA' : '#0F172A',
             marginBottom: '14px'
           }}>
             Every alert should come with a reason.
           </h2>
 
-          <p className="font-body" style={{ fontSize: '15px', color: '#9AA9BA', lineHeight: 1.6 }}>
+          <p className="font-body" style={{ fontSize: '15px', color: isDark ? '#9AA9BA' : '#475569', lineHeight: 1.6 }}>
             Black-box scores generate alarm fatigue and clinical hesitation. Aegis deconstructs each assessment into physiological, biochemical, and pharmacological evidence before requesting clinician authorization.
           </p>
         </div>
 
         {/* Consolidated Card: Alert Evidence + Clinician Review */}
         <div className="ui-panel" style={{
-          background: '#0D1624',
-          border: '1px solid #243247',
+          background: isDark ? '#0D1624' : '#FFFFFF',
+          border: isDark ? '1px solid #243247' : '1px solid #E2E8F0',
           borderRadius: '12px',
           overflow: 'hidden'
         }}>
           {/* Alert Header Bar */}
           <div style={{
             padding: '16px 20px',
-            background: '#111C2B',
-            borderBottom: '1px solid #243247',
+            background: isDark ? '#111C2B' : '#F1F5F9',
+            borderBottom: isDark ? '1px solid #243247' : '1px solid #E2E8F0',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -74,8 +76,8 @@ export default function AlertExperienceSection() {
                 width: '32px',
                 height: '32px',
                 borderRadius: '6px',
-                background: '#162337',
-                border: '1px solid #243247',
+                background: isDark ? '#162337' : '#E2E8F0',
+                border: isDark ? '1px solid #243247' : '1px solid #E2E8F0',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
@@ -84,29 +86,29 @@ export default function AlertExperienceSection() {
               </div>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span className="font-display" style={{ fontSize: '15px', fontWeight: 700, color: '#F1F5FA' }}>
+                  <span className="font-display" style={{ fontSize: '15px', fontWeight: 700, color: isDark ? '#F1F5FA' : '#0F172A' }}>
                     ICU-BED-04 (P-10492)
                   </span>
                   <span style={{
                     fontSize: '11px',
                     fontFamily: 'var(--font-mono)',
-                    background: '#162337',
+                    background: isDark ? '#162337' : '#E2E8F0',
                     color: '#FF5268',
                     padding: '2px 6px',
                     borderRadius: '4px',
-                    border: '1px solid #243247',
+                    border: isDark ? '1px solid #243247' : '1px solid #E2E8F0',
                     fontWeight: 600
                   }}>
                     ELEVATED RISK: 84%
                   </span>
                 </div>
-                <div style={{ fontSize: '11px', color: '#617285', fontFamily: 'var(--font-mono)', marginTop: '2px' }}>
+                <div style={{ fontSize: '11px', color: isDark ? '#617285' : '#64748B', fontFamily: 'var(--font-mono)', marginTop: '2px' }}>
                   Age 68 • Post-Op Day 2 • Illustrative Demonstration Data
                 </div>
               </div>
             </div>
 
-            <div style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: '#9AA9BA' }}>
+            <div style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: isDark ? '#9AA9BA' : '#475569' }}>
               Generated: 3 mins ago • Human-in-the-Loop Active
             </div>
           </div>
@@ -118,29 +120,29 @@ export default function AlertExperienceSection() {
             gap: '1px',
             background: '#1A2738'
           }} className="alert-evidence-grid">
-            <div style={{ background: '#0D1624', padding: '16px 20px' }}>
+            <div style={{ background: isDark ? '#0D1624' : '#FFFFFF', padding: '16px 20px' }}>
               <div style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: '#35D6C5', fontWeight: 600, marginBottom: '6px' }}>
                 1. VITALS EVIDENCE
               </div>
-              <p style={{ fontSize: '13px', color: '#F1F5FA', margin: 0, lineHeight: 1.5 }}>
+              <p style={{ fontSize: '13px', color: isDark ? '#F1F5FA' : '#0F172A', margin: 0, lineHeight: 1.5 }}>
                 Insidious heart rate creep (+20 bpm over 3h) alongside compensated systolic BP (116/74 mmHg). Shock index elevated to 0.87.
               </p>
             </div>
 
-            <div style={{ background: '#0D1624', padding: '16px 20px' }}>
+            <div style={{ background: isDark ? '#0D1624' : '#FFFFFF', padding: '16px 20px' }}>
               <div style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: '#559BFF', fontWeight: 600, marginBottom: '6px' }}>
                 2. LABORATORY EVIDENCE
               </div>
-              <p style={{ fontSize: '13px', color: '#F1F5FA', margin: 0, lineHeight: 1.5 }}>
+              <p style={{ fontSize: '13px', color: isDark ? '#F1F5FA' : '#0F172A', margin: 0, lineHeight: 1.5 }}>
                 Last serum lactate (1.1 mmol/L) is 9.2 hours stale. Platelet count decreased 18%. Repeat STAT draw prompt dispatched.
               </p>
             </div>
 
-            <div style={{ background: '#0D1624', padding: '16px 20px' }}>
+            <div style={{ background: isDark ? '#0D1624' : '#FFFFFF', padding: '16px 20px' }}>
               <div style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: '#E5B86A', fontWeight: 600, marginBottom: '6px' }}>
                 3. MEDICATION CONTEXT
               </div>
-              <p style={{ fontSize: '13px', color: '#F1F5FA', margin: 0, lineHeight: 1.5 }}>
+              <p style={{ fontSize: '13px', color: isDark ? '#F1F5FA' : '#0F172A', margin: 0, lineHeight: 1.5 }}>
                 Albuterol half-life elapsed (&gt;90% cleared). Confounder discount rule rejected. True deterioration pattern confirmed.
               </p>
             </div>
@@ -149,14 +151,14 @@ export default function AlertExperienceSection() {
           {/* Clinician Review & Surviving Sepsis Bundle Action Area */}
           <div style={{
             padding: '20px',
-            background: '#080E18',
+            background: isDark ? '#080E18' : '#F8FAFC',
             borderTop: '1px solid #243247'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
               <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: '#35D6C5', fontWeight: 600 }}>
                 SURVIVING SEPSIS CAMPAIGN (SEPSIS-3) 1-HOUR BUNDLE CONSIDERATIONS:
               </span>
-              <span style={{ fontSize: '11px', color: '#617285', fontFamily: 'var(--font-mono)' }}>
+              <span style={{ fontSize: '11px', color: isDark ? '#617285' : '#64748B', fontFamily: 'var(--font-mono)' }}>
                 Demonstration Environment — Not for clinical use
               </span>
             </div>
@@ -256,11 +258,11 @@ export default function AlertExperienceSection() {
               marginTop: '16px',
               padding: '12px 16px',
               borderRadius: '6px',
-              background: '#0D1624',
-              border: '1px solid #1A2738',
+              background: isDark ? '#0D1624' : '#FFFFFF',
+              border: isDark ? '1px solid #1A2738' : '1px solid #E2E8F0',
               fontSize: '11px',
               fontFamily: 'var(--font-mono)',
-              color: '#9AA9BA',
+              color: isDark ? '#9AA9BA' : '#475569',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
@@ -270,7 +272,7 @@ export default function AlertExperienceSection() {
               <div>
                 <span style={{ color: '#35D6C5' }}>ILLUSTRATIVE AUDIT TRAIL:</span> Demo Clinician 01 • Review ID #DEMO-2026-90412
               </div>
-              <div style={{ color: '#617285' }}>
+              <div style={{ color: isDark ? '#617285' : '#64748B' }}>
                 Demonstration Environment • Doctor maintains 100% prescriptive authority
               </div>
             </div>

@@ -6,6 +6,13 @@ and computes physiological discordance to identify false alarms vs real sepsis.
 """
 
 import os
+import sys
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(BASE_DIR))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
 from typing import Dict, List, Any, Optional
 
 # Known clinical medication classes and physiological confounders
@@ -118,7 +125,9 @@ def analyze_confounders(
 ) -> Dict[str, Any]:
     """
     Evaluates whether elevated vitals/labs are explained by benign EHR confounders
-    (e.g., Albuterol causing tachycardia) or represent true septic shock.
+    (e.g., Albuterol causing isolated tachycardia) or represent true septic shock.
+    Adheres strictly to the clinical rule: Never suppress a sepsis warning solely because
+    medication might explain a symptom.
     """
     medications = ehr_parsed.get("medications", [])
     conditions = ehr_parsed.get("conditions", [])
@@ -153,6 +162,8 @@ def analyze_confounders(
     hr = float(vitals_telemetry.get("HR") or 80.0)
     sbp = float(vitals_telemetry.get("SBP") or 120.0)
     resp = float(vitals_telemetry.get("Resp") or 18.0)
+    temp = float(vitals_telemetry.get("Temp") or 37.0)
+    map_val = float(vitals_telemetry.get("MAP") or 80.0)
     shock_index = hr / max(sbp, 1.0)
 
     lactate = labs_telemetry.get("Lactate")
@@ -164,23 +175,39 @@ def analyze_confounders(
     platelets_val = float(platelets) if platelets is not None else None
 
     # Physiological discordance calculations
-    # 1. Isolated tachycardia: HR > 95 but Resp <= 20 and Shock Index < 0.85
-    isolated_tachycardia = (hr >= 95.0 and resp <= 20.0 and shock_index < 0.85)
+    # 1. Truly isolated tachycardia: HR > 95, BUT normal Resp (<= 20), normal Shock Index (< 0.75),
+    # normal Temp (36.0 - 37.9), and normal MAP (>= 65).
+    isolated_tachycardia = (
+        hr >= 95.0 and
+        resp <= 20.0 and
+        shock_index < 0.75 and
+        (36.0 <= temp < 38.0) and
+        map_val >= 65.0
+    )
 
-    # 2. Benign metabolic profile: Lactate < 2.0 (no cellular hypoxia) and WBC in normal range
+    # 2. Concomitant physiological strain (tachypnea, fever/hypothermia, elevated shock index, hypotension)
+    has_physiological_strain = (
+        resp >= 21.0 or
+        shock_index >= 0.75 or
+        temp >= 38.0 or
+        temp <= 36.0 or
+        map_val < 65.0
+    )
+
+    # 3. Benign metabolic profile: Lactate < 2.0 (no cellular hypoxia) and WBC in normal range
     benign_metabolism = (
         (lactate_val is not None and lactate_val < 2.0) and
         (wbc_val is None or (4.0 <= wbc_val <= 11.5)) and
         (platelets_val is None or platelets_val >= 150.0)
     )
 
-    # 3. Severe septic markers present: Lactate >= 2.5, WBC abnormal, platelets < 100
+    # 4. Severe septic markers present: Lactate >= 2.2, WBC abnormal, platelets < 100, tachypnea >= 22
     has_septic_biomarkers = (
-        (lactate_val is not None and lactate_val >= 2.5) or
-        (wbc_val is not None and (wbc_val > 14.0 or wbc_val < 4.0)) or
+        (lactate_val is not None and lactate_val >= 2.2) or
+        (wbc_val is not None and (wbc_val > 12.0 or wbc_val < 4.0)) or
         (platelets_val is not None and platelets_val < 100.0) or
-        (resp >= 24.0) or
-        (shock_index >= 1.0)
+        (resp >= 22.0) or
+        (shock_index >= 0.85)
     )
 
     return {
@@ -189,11 +216,14 @@ def analyze_confounders(
         "matched_beta_blockers": matched_beta_blockers,
         "matched_immunocompromised": matched_immunocompromised,
         "isolated_tachycardia": isolated_tachycardia,
+        "has_physiological_strain": has_physiological_strain,
         "benign_metabolism": benign_metabolism,
         "has_septic_biomarkers": has_septic_biomarkers,
         "shock_index": round(shock_index, 2),
         "hr": hr,
         "resp": resp,
+        "temp": temp,
+        "map": map_val,
         "lactate": lactate_val,
         "wbc": wbc_val
     }

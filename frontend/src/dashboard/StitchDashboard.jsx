@@ -5,8 +5,11 @@ import InboxView from './components/InboxView';
 import ConversationWorkspace from './components/ConversationWorkspace';
 import OverrideModal from './components/OverrideModal';
 import { INITIAL_ALERTS_DATA, createSimulatedAlert } from './data/alertsData';
+import { useTheme } from '../context/ThemeContext';
 
 export default function StitchDashboard({ onExitToLanding }) {
+  const { isDark } = useTheme();
+
   // Alert dataset state
   const [alerts, setAlerts] = useState(INITIAL_ALERTS_DATA);
   const [selectedAlertId, setSelectedAlertId] = useState(null);
@@ -48,10 +51,10 @@ export default function StitchDashboard({ onExitToLanding }) {
 
   // Header Title & Subtitle
   const headerTitle = selectedAlert
-    ? `${selectedAlert.patientId} (${selectedAlert.bed}) — Agent Dialogue`
+    ? `${selectedAlert.patientId} • ${selectedAlert.bed}`
     : "Clinical Inbox";
   const headerSubtitle = selectedAlert
-    ? selectedAlert.headline
+    ? selectedAlert.admissionDiagnosis
     : "Multi-Agent Sepsis Early Warning Surveillance";
 
   // Select Alert & mark read
@@ -81,7 +84,7 @@ export default function StitchDashboard({ onExitToLanding }) {
 
     const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const logText = newReviewed
-      ? `Dr. Sarah Al-Mansoor acknowledged this alert at ${nowStr}. Clinical oversight recorded in audit trail.`
+      ? `Alert acknowledged at ${nowStr}. Clinical oversight recorded in audit trail.`
       : "Alert marked as unreviewed.";
 
     setConversations(prev => ({
@@ -137,7 +140,7 @@ export default function StitchDashboard({ onExitToLanding }) {
 
     // Start Typing Indicator
     setIsTyping(true);
-    setTypingText(`${alert.agent} is reasoning over historical ICU records...`);
+    setTypingText(`${alert.agent} is synthesizing clinical evidence...`);
 
     // Formulate response using Stitch knowledgebase
     setTimeout(() => {
@@ -160,7 +163,7 @@ export default function StitchDashboard({ onExitToLanding }) {
           }
         ]
       }));
-    }, 900);
+    }, 850);
   };
 
   // Simulate New Incoming Alert
@@ -185,7 +188,9 @@ export default function StitchDashboard({ onExitToLanding }) {
   };
 
   return (
-    <div className="bg-navy-950 text-slate-200 font-sans antialiased h-screen overflow-hidden flex select-none">
+    <div className={`font-sans antialiased h-screen overflow-hidden flex select-none transition-colors duration-200 ${
+      isDark ? 'bg-[#070A0F] text-slate-200' : 'bg-[#F4F6F9] text-slate-900'
+    }`}>
       {/* LEFT FIXED SIDEBAR */}
       <Sidebar
         isOpen={isSidebarOpen}
@@ -195,7 +200,9 @@ export default function StitchDashboard({ onExitToLanding }) {
       />
 
       {/* MAIN WORKSPACE */}
-      <main className="flex-1 flex flex-col bg-navy-950 overflow-hidden relative">
+      <main className={`flex-1 flex flex-col overflow-hidden relative transition-colors duration-200 ${
+        isDark ? 'bg-[#070A0F]' : 'bg-[#F4F6F9]'
+      }`}>
         {/* Top App Bar */}
         <Header
           isSidebarOpen={isSidebarOpen}
@@ -208,7 +215,7 @@ export default function StitchDashboard({ onExitToLanding }) {
         {/* Content Wrapper */}
         <div className="flex-1 overflow-hidden relative">
           {selectedAlert ? (
-            /* VIEW 2: Balanced 3-Pane Conversation Workspace */
+            /* VIEW 2: Clean, Structured Patient Details & Conversation Workspace */
             <ConversationWorkspace
               alert={selectedAlert}
               messages={conversations[selectedAlert.id] || []}
@@ -288,4 +295,3 @@ function formulateMockResponse(alert, userQuery) {
     };
   }
 }
-

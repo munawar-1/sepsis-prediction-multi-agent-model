@@ -5,16 +5,24 @@ Evaluates blood pathology and organ dysfunction biomarkers:
 2. Freshness / Missingness Status (STAT Lab Draw Escalation)
 3. Cellular Hypoxia & Organ Dysfunction Drivers (SOFA criteria)
 4. SHAP-based per-prediction feature contributions
+5. Structured Evidence Report adhering to Martha's Rule
 """
 
 import os
+import sys
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(BASE_DIR))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
 os.environ.setdefault("MPLCONFIGDIR", "/tmp/matplotlib")
+from datetime import datetime, timezone
 import joblib
 import numpy as np
 import pandas as pd
 import shap
+from models.labs_agent.src.reasoning_agent import LabsReasoningAgent
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODEL_PATH = os.path.join(BASE_DIR, "artifacts", "labs_rf_model.pkl")
 SHAP_EXPLAINER_PATH = os.path.join(BASE_DIR, "artifacts", "labs_shap_explainer.pkl")
 
@@ -31,6 +39,7 @@ class LabsPredictor:
         self.model_path = model_path
         self.model = None
         self.shap_explainer = None
+        self.reasoning_agent = LabsReasoningAgent()
         self.load_model()
 
     def load_model(self):
@@ -77,7 +86,7 @@ class LabsPredictor:
     def predict(self, labs_dict: dict) -> dict:
         """
         Input: Dictionary of blood pathology e.g. {'Lactate': 3.4, 'WBC': 16.2, 'Creatinine': 1.8, 'Platelets': 120}
-        Output: Prediction dictionary with probability, organ stress status, and STAT lab triggers.
+        Output: Prediction dictionary with probability, organ stress status, STAT lab triggers, and structured report.
         """
         features = {}
         missing_count = 0
@@ -110,7 +119,9 @@ class LabsPredictor:
             abnormal_flags.append(f"Elevated Lactate: {lactate:.1f} mmol/L (Metabolic Stress Warning)")
 
         wbc = features["WBC"]
-        if features["WBC_was_missing"] == 0:
+        if features["WBC_was_missing"] == 1:
+            stat_orders.append("STAT Complete Blood Count (CBC) with differential")
+        else:
             if wbc >= 12.0:
                 abnormal_flags.append(f"Leukocytosis: WBC {wbc:.1f} x10^3/uL (Active Systemic Infection)")
             elif wbc <= 4.0:
@@ -134,13 +145,33 @@ class LabsPredictor:
         else:
             stress_level = "NORMAL_HOMEOSTASIS"
 
-        return {
+        shap_contribs = self._compute_shap_contributions(df_row)
+
+        raw_result = {
             "labs_risk_probability": round(prob, 4),
             "organ_stress_level": stress_level,
             "stat_lab_draws_required": stat_orders,
             "abnormal_biomarkers": abnormal_flags,
-            "shap_contributions": self._compute_shap_contributions(df_row),
+            "shap_contributions": shap_contribs,
             "labs_snapshot": {k: labs_dict.get(k) for k in TRAIN_MEDIANS}
+        }
+
+        # 5. Synthesize structured report via reasoning agent
+        evidence_report = self.reasoning_agent.explain(raw_result)
+
+        return {
+            "agent_name": "Labs Agent",
+            "timestamp": evidence_report.timestamp,
+            "confidence": evidence_report.confidence,
+            "organ_stress_level": evidence_report.organ_stress_level,
+            "labs_risk_probability": evidence_report.lab_probability,
+            "freshness_status": evidence_report.freshness_status,
+            "safety_notice": evidence_report.safety_notice,
+            "stat_lab_draws_required": evidence_report.stat_orders_recommended,
+            "abnormal_biomarkers": evidence_report.abnormal_biomarkers,
+            "pathology_summary": evidence_report.pathology_summary,
+            "shap_contributions": evidence_report.shap_contributions,
+            "labs_snapshot": evidence_report.labs_snapshot
         }
 
 if __name__ == "__main__":
@@ -160,8 +191,13 @@ if __name__ == "__main__":
     print("\n" + "=" * 60)
     print("       AEGIS-ICU: MODEL 2 (LABS AGENT) INFERENCE")
     print("=" * 60)
+    print(f" [+] Agent Name                       : {result['agent_name']}")
+    print(f" [+] Evaluation Timestamp             : {result['timestamp']}")
+    print(f" [+] Agent Confidence                 : {result['confidence'] * 100:.0f}%")
+    print(f" [+] Freshness Status                 : {result['freshness_status']}")
     print(f" [+] Lab-Confirmed Sepsis Probability : {prob_pct:.1f}%")
     print(f" [+] Organ Dysfunction Tier           : {result['organ_stress_level']}")
+    print(f" [+] Safety Guardrail Notice          : {result['safety_notice']}")
     print("-" * 60)
     print(" [+] Abnormal Blood Biomarkers Identified:")
     for flag in result["abnormal_biomarkers"]:
@@ -171,8 +207,10 @@ if __name__ == "__main__":
         for order in result["stat_lab_draws_required"]:
             print(f"     ! {order}")
     print("-" * 60)
+    print(f" [+] Pathology Summary:\n     {result['pathology_summary']}")
+    print("-" * 60)
     print(" [+] SHAP Feature Contributions (per-prediction):")
     for feat, val in result['shap_contributions'].items():
-        direction = "↑ Risk" if val > 0 else "↓ Risk"
-        print(f"     {'+'if val > 0 else ''}{val:.4f}  {feat}  ({direction})")
+        direction = "(+) Increases Risk" if val > 0 else "(-) Decreases Risk"
+        print(f"     {'+'if val > 0 else ''}{val:.4f}  {feat}  {direction}")
     print("=" * 60 + "\n")

@@ -4,18 +4,27 @@ Takes outputs from Agent 1 (Vitals) and Agent 2 (Labs) along with their SHAP
 attributions and Electronic Health Records (EHR).
 Queries an LLM (with deterministic Neuro-Symbolic clinical fallback) to evaluate
 whether EHR records explain vital spikes (FALSE ALARM) or indicate REAL SEPSIS.
+
+CRITICAL CLINICAL SAFETY RULE:
+Never suppress a sepsis warning solely because medication might explain a symptom.
+Missing or normal lab results must not automatically rule out sepsis.
 """
 
 import os
+import sys
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(BASE_DIR))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
 import json
 import re
+from datetime import datetime, timezone
 from typing import Dict, List, Any, Optional
 
 try:
-    # pyrefly: ignore[missing-import]
     from pydantic import BaseModel, Field
 except ImportError:
-    # Lightweight fallback if pydantic is not installed
     class BaseModel:
         def __init__(self, **kwargs):
             for k, v in kwargs.items():
@@ -30,21 +39,26 @@ from models.skeptic_agent.src.feature_engineering import parse_ehr_data, analyze
 
 
 class SkepticEvidenceReport(BaseModel):
+    agent_name: str = "Skeptic Agent"
+    timestamp: str
+    confidence: float = Field(description="Confidence in skeptic analysis integrity (0.0 to 1.0)")
     is_false_alarm: bool = Field(description="True if deterioration is explained by benign EHR confounders")
     confidence_discount_factor: float = Field(description="Discount factor D between 0.0 (genuine sepsis) and 1.0 (pure false alarm)")
     ehr_risk_modifier: str = Field(description="'DISCOUNT_RISK', 'NEUTRAL', or 'ELEVATE_RISK'")
-    classification: str = Field(description="'BENIGN_CONFOUNDER_FALSE_ALARM', 'REAL_SEPSIS_DETERIORATION', or 'EHR_HIGH_RISK_ESCALATION'")
-    alarm_suppression_recommended: bool = Field(description="True if alarm should be suppressed to avoid alert fatigue")
+    classification: str = Field(description="'BENIGN_CONFOUNDER_STAND_ALERT', 'REAL_SEPSIS_DETERIORATION', or 'EHR_HIGH_RISK_ESCALATION'")
+    alarm_suppression_recommended: bool = Field(description="Clinical guardrail: Never suppress sepsis warnings solely due to medication")
     detected_confounders: List[str] = Field(description="Specific drugs or conditions causing the alert")
     shap_attribution_critique: str = Field(description="Clinical critique of Agent 1 & Agent 2 top SHAP drivers")
     clinical_reasoning: str = Field(description="Comprehensive medical justification for the decision")
-    recommended_action: str = Field(description="'SUPPRESS_ALERT', 'STAND_ALERT', or 'ESCALATE_ALERT'")
+    recommended_action: str = Field(description="'STAND_ALERT', 'ESCALATE_ALERT', or 'SUPPRESS_ALERT'")
     llm_source: str = Field(description="'gemini_api', 'openai_api', or 'neuro_symbolic_clinical_rules'")
 
 
 class SkepticReasoningAgent:
     """
     Agent 3: Adversarial Clinical Skeptic & False Alarm Discriminating Agent.
+    Strictly enforces SSC and Martha's Rule guidelines:
+    Never suppress a sepsis warning solely because medication explains a symptom.
     """
     def __init__(
         self,
@@ -67,20 +81,18 @@ class SkepticReasoningAgent:
     ) -> str:
         """
         Builds a comprehensive medical prompt presenting EHR context,
-        telemetry predictions, and SHAP feature drivers.
+        telemetry predictions, and SHAP feature drivers with strict clinical guardrails.
         """
-        # Format SHAP drivers from Agent 1
         vitals_shap = vitals_result.get("shap_contributions", {})
         top_vitals_shap = [
-            f"  * {feat}: {'+' if val > 0 else ''}{val:.4f} ({'↑ Increases Risk' if val > 0 else '↓ Lowers Risk'})"
+            f"  * {feat}: {'+' if val > 0 else ''}{val:.4f} ({'(+) Increases Risk' if val > 0 else '(-) Lowers Risk'})"
             for feat, val in list(vitals_shap.items())[:5]
         ]
         top_vitals_shap_str = "\n".join(top_vitals_shap) if top_vitals_shap else "  * (No SHAP data provided)"
 
-        # Format SHAP drivers from Agent 2
         labs_shap = labs_result.get("shap_contributions", {})
         top_labs_shap = [
-            f"  * {feat}: {'+' if val > 0 else ''}{val:.4f} ({'↑ Increases Risk' if val > 0 else '↓ Lowers Risk'})"
+            f"  * {feat}: {'+' if val > 0 else ''}{val:.4f} ({'(+) Increases Risk' if val > 0 else '(-) Lowers Risk'})"
             for feat, val in list(labs_shap.items())[:5]
         ]
         top_labs_shap_str = "\n".join(top_labs_shap) if top_labs_shap else "  * (No SHAP data provided)"
@@ -92,8 +104,13 @@ class SkepticReasoningAgent:
 
         prompt = f"""
 You are an expert ICU Intensivist and Clinical AI Auditor (Agent 3: Adversarial Skeptic).
-Your job is to protect ICU nurses from fatal ALERT FATIGUE by verifying if an impending Sepsis Alert
-is a BENIGN FALSE ALARM (e.g. drug-induced tachycardia, post-op reaction) or REAL SEPSIS DETERIORATION.
+Your job is to cross-reference patient EHR records, medications, and clinical status with impending Sepsis Alerts.
+
+CRITICAL CLINICAL SAFETY RULES:
+1. NEVER suppress a sepsis warning solely because medication (e.g. Albuterol, Epinephrine) might explain tachycardia or a symptom.
+   If tachypnea (Resp >= 20), elevated shock index (>= 0.75), fever/hypothermia, or elevated vitals risk (>= 40%) are present,
+   medication does NOT account for the full clinical picture. You MUST set alarm_suppression_recommended=false and recommended_action='STAND_ALERT'.
+2. Missing or normal lab results must NOT automatically rule out sepsis (Martha's Rule). Biochemical cellular markers can lag hours behind vitals.
 
 [PATIENT EHR DATA]
 - Active Medications: {meds_str}
@@ -118,33 +135,27 @@ is a BENIGN FALSE ALARM (e.g. drug-induced tachycardia, post-op reaction) or REA
 {top_labs_shap_str}
 
 [PHYSIOLOGICAL CONTEXT]
-- Isolated Tachycardia: {confounder_analysis.get('isolated_tachycardia')}
+- Truly Isolated Tachycardia: {confounder_analysis.get('isolated_tachycardia')}
+- Concomitant Physiological Strain: {confounder_analysis.get('has_physiological_strain')}
 - Benign Cellular Metabolism: {confounder_analysis.get('benign_metabolism')}
 - Overt Septic Markers Present: {confounder_analysis.get('has_septic_biomarkers')}
 
-[TASK]
-Carefully evaluate whether the vital/lab anomalies flagged by Agent 1 and Agent 2:
-1. Are explained by the EHR records (e.g. Albuterol given for asthma causes sinus tachycardia, but lactate is normal -> FALSE ALARM).
-2. Represent REAL SEPSIS (e.g. tachycardia accompanied by elevated lactate, dropping platelets, leukocytosis, or rising shock index).
-3. Or if high-risk EHR history (e.g. neutropenia, chemotherapy, recent surgery) INCREASES the risk prediction.
-
 Return ONLY a valid JSON object with the following exact keys:
 {{
-  "is_false_alarm": true/false,
-  "confidence_discount_factor": float between 0.0 (no discount / true sepsis) and 1.0 (complete discount / pure false alarm),
+  "is_false_alarm": false,
+  "confidence_discount_factor": float between 0.0 (true sepsis) and 0.5 (maximum discount for isolated drug effect),
   "ehr_risk_modifier": "DISCOUNT_RISK" | "NEUTRAL" | "ELEVATE_RISK",
-  "classification": "BENIGN_CONFOUNDER_FALSE_ALARM" | "REAL_SEPSIS_DETERIORATION" | "EHR_HIGH_RISK_ESCALATION",
-  "alarm_suppression_recommended": true/false,
+  "classification": "BENIGN_CONFOUNDER_STAND_ALERT" | "REAL_SEPSIS_DETERIORATION" | "EHR_HIGH_RISK_ESCALATION",
+  "alarm_suppression_recommended": false,
   "detected_confounders": ["list of identified confounders or 'None'"],
   "shap_attribution_critique": "analysis of how Agent 1 & Agent 2 SHAP drivers relate to EHR",
   "clinical_reasoning": "concise 2-3 sentence intensivist narrative explaining the decision",
-  "recommended_action": "SUPPRESS_ALERT" | "STAND_ALERT" | "ESCALATE_ALERT"
+  "recommended_action": "STAND_ALERT" | "ESCALATE_ALERT"
 }}
 """
         return prompt.strip()
 
     def _query_gemini(self, prompt: str) -> Optional[Dict[str, Any]]:
-        """Queries Google Gemini API via REST if API key is provided."""
         if not self.gemini_api_key:
             return None
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={self.gemini_api_key}"
@@ -164,7 +175,6 @@ Return ONLY a valid JSON object with the following exact keys:
         return None
 
     def _query_openai(self, prompt: str) -> Optional[Dict[str, Any]]:
-        """Queries OpenAI API via REST if API key is provided."""
         if not self.openai_api_key:
             return None
         url = "https://api.openai.com/v1/chat/completions"
@@ -175,7 +185,7 @@ Return ONLY a valid JSON object with the following exact keys:
         payload = {
             "model": "gpt-4o-mini",
             "messages": [
-                {"role": "system", "content": "You are a clinical decision support AI answering in strict JSON."},
+                {"role": "system", "content": "You are a clinical decision support AI answering in strict JSON adhering to Surviving Sepsis Campaign safety rules."},
                 {"role": "user", "content": prompt}
             ],
             "temperature": 0.1,
@@ -192,7 +202,6 @@ Return ONLY a valid JSON object with the following exact keys:
         return None
 
     def _query_ollama(self, prompt: str) -> Optional[Dict[str, Any]]:
-        """Queries local Ollama instance via /api/generate or OpenAI-compatible endpoint."""
         url = f"{self.ollama_base_url.rstrip('/')}/api/generate"
         headers = {"Content-Type": "application/json"}
         payload = {
@@ -213,7 +222,6 @@ Return ONLY a valid JSON object with the following exact keys:
             pass
         return None
 
-
     def _neuro_symbolic_fallback(
         self,
         vitals_result: Dict[str, Any],
@@ -224,24 +232,21 @@ Return ONLY a valid JSON object with the following exact keys:
         """
         Clinical Neuro-Symbolic Rule Engine:
         Executes deterministic ICU decision trees when an LLM endpoint is unreachable.
-        Adheres to SSC (Surviving Sepsis Campaign) and MGH Alert Fatigue guidelines.
+        Strictly adheres to:
+        1. Never suppress a sepsis warning solely because medication might explain a symptom.
+        2. Missing or normal lab results must not automatically rule out sepsis.
         """
         matched_sympatho = confounder_analysis.get("matched_sympathomimetics", [])
         matched_immuno = confounder_analysis.get("matched_immunocompromised", [])
         isolated_tach = confounder_analysis.get("isolated_tachycardia", False)
+        has_phys_strain = confounder_analysis.get("has_physiological_strain", False)
         benign_metabolism = confounder_analysis.get("benign_metabolism", False)
         has_septic_bio = confounder_analysis.get("has_septic_biomarkers", False)
 
         v_prob = vitals_result.get("vitals_risk_probability", 0.0)
         l_prob = labs_result.get("labs_risk_probability", 0.0)
         shock_idx = vitals_result.get("shock_index", 0.0)
-        vitals_shap = vitals_result.get("shap_contributions", {})
-
-        hr_is_top_driver = False
-        if vitals_shap:
-            top_feature = next(iter(vitals_shap))
-            if top_feature in ["HR", "Shock_Index"]:
-                hr_is_top_driver = True
+        resp_rate = confounder_analysis.get("resp", 18.0)
 
         # SCENARIO A: Immunocompromised / High-Risk EHR (Increases Risk!)
         if matched_immuno:
@@ -265,35 +270,11 @@ Return ONLY a valid JSON object with the following exact keys:
                 "llm_source": "neuro_symbolic_clinical_rules"
             }
 
-        # SCENARIO B: Benign Drug Confounder (False Alarm)
-        # e.g., Patient administered Albuterol -> HR spiked (top SHAP driver), but Lactate is normal (< 2.0) and Resp is stable
-        if matched_sympatho and (isolated_tach or benign_metabolism) and not has_septic_bio:
-            confounders = [f"Pharmacological Confounder: {m}" for m in matched_sympatho]
-            return {
-                "is_false_alarm": True,
-                "confidence_discount_factor": 0.85,
-                "ehr_risk_modifier": "DISCOUNT_RISK",
-                "classification": "BENIGN_CONFOUNDER_FALSE_ALARM",
-                "alarm_suppression_recommended": True,
-                "detected_confounders": confounders,
-                "shap_attribution_critique": (
-                    f"Agent 1 elevation was driven by HR/Shock Index, but this directly correlates with recent "
-                    f"sympathomimetic administration ({matched_sympatho[0]}). Agent 2 confirms normal lactate "
-                    "and absence of cellular hypoxia."
-                ),
-                "clinical_reasoning": (
-                    f"Patient's tachycardia is clinically accounted for by recent {matched_sympatho[0]}. "
-                    "Normal cellular metabolism (Lactate < 2.0 mmol/L) and stable respiration confirm this is a "
-                    "benign pharmacological side effect rather than systemic sepsis. Alarm discounted to prevent alert fatigue."
-                ),
-                "recommended_action": "SUPPRESS_ALERT",
-                "llm_source": "neuro_symbolic_clinical_rules"
-            }
-
-        # SCENARIO C: True Sepsis Co-Occurring with Confounder (Real Sepsis!)
-        # e.g., Albuterol given, BUT accompanied by elevated lactate, leukocytosis, or rising shock index
-        if matched_sympatho and has_septic_bio:
-            confounders = [f"Non-exclusive medication: {m}" for m in matched_sympatho]
+        # SCENARIO B: Medication Confounder WITH Concomitant Sepsis Signs
+        # Medication (e.g. Albuterol) is active, BUT patient exhibits tachypnea, shock index >= 0.75, or high vitals risk
+        # MANDATE: Never suppress a sepsis warning solely because medication might explain a symptom!
+        if matched_sympatho and (has_phys_strain or v_prob >= 0.40 or shock_idx >= 0.75 or resp_rate >= 20.0 or has_septic_bio):
+            confounders = [f"Pharmacological Chronotrope: {m}" for m in matched_sympatho]
             return {
                 "is_false_alarm": False,
                 "confidence_discount_factor": 0.05,
@@ -302,19 +283,44 @@ Return ONLY a valid JSON object with the following exact keys:
                 "alarm_suppression_recommended": False,
                 "detected_confounders": confounders,
                 "shap_attribution_critique": (
-                    "Although sympathomimetic medication is active, Agent 2 reveals positive SHAP drivers for "
-                    "hyperlactatemia / organ hypoxia that cannot be explained by bronchodilators alone."
+                    f"Patient is receiving {matched_sympatho[0]}, which causes tachycardia. However, concurrent "
+                    f"physiological strain (Shock Index: {shock_idx:.2f}, Resp: {resp_rate:.0f}/min, Vitals Risk: {v_prob*100:.1f}%) "
+                    "cannot be explained solely by medication. Warning preserved."
                 ),
                 "clinical_reasoning": (
-                    "Active medication accounts for tachycardia, but severe metabolic markers (elevated lactate/leukocytosis) "
-                    "and hemodynamic instability confirm TRUE SYSTEMIC SEPSIS. Sepsis bundle must proceed immediately."
+                    f"Clinical Safety Mandate: Never suppress a sepsis warning solely because medication might explain a symptom. "
+                    f"While {matched_sympatho[0]} explains heart rate acceleration, elevated shock index / tachypnea indicate "
+                    "systemic physiological stress. Maintain active sepsis protocol."
+                ),
+                "recommended_action": "STAND_ALERT",
+                "llm_source": "neuro_symbolic_clinical_rules"
+            }
+
+        # SCENARIO C: Truly Isolated Drug-Induced Tachycardia in a Pristine Patient
+        # Only reached when Resp <= 20, Shock Index < 0.75, Temp normal, Vitals risk < 0.40, and no septic markers
+        if matched_sympatho and isolated_tach and not has_phys_strain and not has_septic_bio and v_prob < 0.40:
+            confounders = [f"Benign Pharmacological Confounder: {m}" for m in matched_sympatho]
+            return {
+                "is_false_alarm": True,
+                "confidence_discount_factor": 0.40,
+                "ehr_risk_modifier": "DISCOUNT_RISK",
+                "classification": "BENIGN_CONFOUNDER_STAND_ALERT",
+                "alarm_suppression_recommended": False,
+                "detected_confounders": confounders,
+                "shap_attribution_critique": (
+                    f"Tachycardia correlates with recent sympathomimetic administration ({matched_sympatho[0]}). "
+                    "All other physiological parameters (Resp, MAP, Temp, Shock Index) are strictly normal."
+                ),
+                "clinical_reasoning": (
+                    f"Patient's isolated sinus tachycardia is consistent with recent {matched_sympatho[0]} therapy. "
+                    "Absence of tachypnea or shock suggests benign chronotropy; continue continuous monitoring."
                 ),
                 "recommended_action": "STAND_ALERT",
                 "llm_source": "neuro_symbolic_clinical_rules"
             }
 
         # SCENARIO D: Genuine Deterioration without Confounders
-        if v_prob >= 0.50 or l_prob >= 0.50 or has_septic_bio:
+        if v_prob >= 0.40 or l_prob >= 0.40 or has_septic_bio or shock_idx >= 0.75:
             return {
                 "is_false_alarm": False,
                 "confidence_discount_factor": 0.0,
@@ -357,7 +363,7 @@ Return ONLY a valid JSON object with the following exact keys:
         """
         Main entrypoint for Agent 3:
         Synthesizes inputs from Agent 1, Agent 2, SHAP values, and EHR data.
-        Returns a typed SkepticEvidenceReport.
+        Returns a typed SkepticEvidenceReport strictly enforcing clinical safety rules.
         """
         ehr_parsed = parse_ehr_data(ehr_data)
         vitals_telemetry = vitals_result.get("telemetry_snapshot", {})
@@ -375,24 +381,24 @@ Return ONLY a valid JSON object with the following exact keys:
         llm_response = None
         source = "neuro_symbolic_clinical_rules"
 
-        # 1. Try Local Ollama if configured or available
+        # 1. Try Local Ollama if configured
         llm_response = self._query_ollama(prompt)
         if llm_response:
             source = f"ollama_{self.ollama_model}"
 
-        # 2. Try Gemini API if Ollama was not active and key available
+        # 2. Try Gemini API
         if not llm_response and self.gemini_api_key:
             llm_response = self._query_gemini(prompt)
             if llm_response:
                 source = "gemini_api"
 
-        # 3. Try OpenAI API if preceding options were unavailable
+        # 3. Try OpenAI API
         if not llm_response and self.openai_api_key:
             llm_response = self._query_openai(prompt)
             if llm_response:
                 source = "openai_api"
 
-        # 4. Fallback to robust deterministic clinical rule engine
+        # 4. Fallback to deterministic clinical rule engine
         if not llm_response:
             llm_response = self._neuro_symbolic_fallback(
                 vitals_result=vitals_result,
@@ -402,11 +408,25 @@ Return ONLY a valid JSON object with the following exact keys:
             )
             source = "neuro_symbolic_clinical_rules"
 
+        # Enforce Clinical Guardrails regardless of LLM or Fallback output
+        # MANDATE: Never suppress a sepsis warning solely because medication might explain a symptom
+        v_prob = vitals_result.get("vitals_risk_probability", 0.0)
+        shock_idx = vitals_result.get("shock_index", 0.0)
+        has_strain = confounder_analysis.get("has_physiological_strain", False)
+        has_septic_bio = confounder_analysis.get("has_septic_biomarkers", False)
 
-        llm_response["llm_source"] = source
+        if v_prob >= 0.40 or shock_idx >= 0.75 or has_strain or has_septic_bio:
+            llm_response["alarm_suppression_recommended"] = False
+            if llm_response.get("recommended_action") == "SUPPRESS_ALERT":
+                llm_response["recommended_action"] = "STAND_ALERT"
 
-        # Ensure all expected fields are present
+        now_iso = datetime.now(timezone.utc).isoformat()
+        confidence = 0.90 if ehr_parsed.get("medications") or ehr_parsed.get("conditions") else 0.75
+
         return SkepticEvidenceReport(
+            agent_name="Skeptic Agent",
+            timestamp=now_iso,
+            confidence=confidence,
             is_false_alarm=bool(llm_response.get("is_false_alarm", False)),
             confidence_discount_factor=float(llm_response.get("confidence_discount_factor", 0.0)),
             ehr_risk_modifier=str(llm_response.get("ehr_risk_modifier", "NEUTRAL")),
