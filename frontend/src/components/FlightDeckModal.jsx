@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Shield, Activity } from 'lucide-react';
+import { X, Shield, Activity, ExternalLink } from 'lucide-react';
 
-export default function FlightDeckModal({ isOpen, onClose }) {
+export default function FlightDeckModal({ isOpen, onClose, onLaunchDashboard }) {
   const [patientId] = useState("ICU-BED-04 (p000011)");
   const [hourIndex] = useState(22);
   const [urgency] = useState("ELEVATED RISK");
@@ -84,138 +84,190 @@ export default function FlightDeckModal({ isOpen, onClose }) {
                 style={{
                   background: '#162337',
                   border: '1px solid #243247',
-                  color: '#9AA9BA',
-                  padding: '4px',
                   borderRadius: '4px',
+                  color: '#9AA9BA',
                   cursor: 'pointer',
-                  marginLeft: '6px'
+                  padding: '6px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
                 }}
-                aria-label="Close Flight Deck"
               >
-                <X size={18} />
+                <X size={16} />
               </button>
             </div>
           </div>
 
-          {/* Flight Deck Body */}
-          <div style={{ padding: '20px', display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px' }}>
+          {/* Body Content */}
+          <div style={{ padding: '24px', display: 'grid', gridTemplateColumns: '1.8fr 1.2fr', gap: '24px' }}>
             
-            {/* Main Column */}
+            {/* Left: Telemetry & Multi-Agent Signals */}
             <div>
-              <div style={{ backgroundColor: '#111827', borderRadius: '8px', padding: '16px', border: '1px solid #1F2937', marginBottom: '16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-                  <h3 style={{ fontSize: '13.5px', color: '#F9FAFB', margin: 0, fontWeight: 600 }}>
-                    Hour {hourIndex} Bedside Telemetry vs. Baseline
-                  </h3>
-                  <span style={{ fontSize: '10.5px', color: '#35D6C5', fontFamily: 'var(--font-mono)' }}>
-                    Continuous Feed
-                  </span>
-                </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                <span style={{ fontSize: '12px', fontWeight: 600, color: '#F1F5FA', fontFamily: 'var(--font-mono)' }}>
+                  SYNCHRONIZED TELEMETRY FEEDS (T-{hourIndex}h)
+                </span>
+                <span style={{ fontSize: '11px', color: '#35D6C5', fontFamily: 'var(--font-mono)' }}>
+                  Real-time Processing
+                </span>
+              </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '16px' }}>
-                  <div style={{ backgroundColor: '#162337', padding: '10px', borderRadius: '6px', border: '1px solid #243247' }}>
-                    <div style={{ fontSize: '10px', color: '#9AA9BA', fontFamily: 'var(--font-mono)' }}>Heart Rate</div>
-                    <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#FF5268' }}>101 <span style={{ fontSize: '10px' }}>bpm</span></div>
-                    <div style={{ fontSize: '9.5px', color: '#9AA9BA' }}>+20 over 3h</div>
+              {/* Vitals Summary Card */}
+              <div style={{
+                background: '#070C15',
+                border: '1px solid #1F2937',
+                borderRadius: '8px',
+                padding: '16px',
+                marginBottom: '16px'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #1A2738', paddingBottom: '10px', marginBottom: '12px' }}>
+                  <div>
+                    <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: '#9AA9BA' }}>HEART RATE</span>
+                    <div style={{ fontSize: '20px', fontWeight: 700, color: '#FF5268', fontFamily: 'var(--font-display)' }}>108 bpm</div>
                   </div>
-
-                  <div style={{ backgroundColor: '#162337', padding: '10px', borderRadius: '6px', border: '1px solid #243247' }}>
-                    <div style={{ fontSize: '10px', color: '#9AA9BA', fontFamily: 'var(--font-mono)' }}>Blood Pressure</div>
-                    <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#35D6C5' }}>146/91</div>
-                    <div style={{ fontSize: '9.5px', color: '#9AA9BA' }}>Compensated</div>
+                  <div>
+                    <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: '#9AA9BA' }}>BLOOD PRESSURE</span>
+                    <div style={{ fontSize: '20px', fontWeight: 700, color: '#35D6C5', fontFamily: 'var(--font-display)' }}>84/52 mmHg (MAP 63)</div>
                   </div>
-
-                  <div style={{ backgroundColor: '#162337', padding: '10px', borderRadius: '6px', border: '1px solid #243247' }}>
-                    <div style={{ fontSize: '10px', color: '#9AA9BA', fontFamily: 'var(--font-mono)' }}>Shock Index</div>
-                    <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#E5B86A' }}>0.69 → 0.98</div>
-                    <div style={{ fontSize: '9.5px', color: '#9AA9BA' }}>Occult Shock</div>
-                  </div>
-
-                  <div style={{ backgroundColor: '#162337', padding: '10px', borderRadius: '6px', border: '1px solid #243247' }}>
-                    <div style={{ fontSize: '10px', color: '#9AA9BA', fontFamily: 'var(--font-mono)' }}>Standard NEWS2</div>
-                    <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#9AA9BA' }}>3 / 20</div>
-                    <div style={{ fontSize: '9.5px', color: '#FF5268' }}>MISSED (Blindspot)</div>
+                  <div>
+                    <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: '#9AA9BA' }}>SHOCK INDEX</span>
+                    <div style={{ fontSize: '20px', fontWeight: 700, color: '#FF5268', fontFamily: 'var(--font-display)' }}>1.28</div>
                   </div>
                 </div>
 
-                {/* Consensus Box */}
-                <div style={{ backgroundColor: '#162337', padding: '14px', borderRadius: '6px', border: '1px solid #243247' }}>
-                  <h4 style={{ fontSize: '12px', color: '#35D6C5', margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: '6px', fontFamily: 'var(--font-mono)' }}>
-                    <Activity size={14} />
-                    <span>Multi-Agent Cross-Verification Consensus</span>
-                  </h4>
-                  <div style={{ fontSize: '12px', lineHeight: '1.5', color: '#F1F5FA' }}>
-                    <p style={{ margin: '0 0 4px 0' }}>
-                      <strong style={{ color: '#35D6C5' }}>Vitals Agent (Risk: 84%):</strong> Detected progressive tachycardia decoupled from systolic compensation.
-                    </p>
-                    <p style={{ margin: '0 0 4px 0' }}>
-                      <strong style={{ color: '#559BFF' }}>Labs Agent:</strong> Last Lactate (1.1 mmol/L) is 9 hours stale. Immediate STAT draw requested.
-                    </p>
-                    <p style={{ margin: 0 }}>
-                      <strong style={{ color: '#E5B86A' }}>Skeptic Agent:</strong> Albuterol administered 6 hours ago cannot account for concurrent tachypnea. Deterioration pattern confirmed.
-                    </p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11.5px', color: '#9AA9BA' }}>
+                  <span>Temperature: <strong style={{ color: '#F1F5FA' }}>38.8 °C</strong></span>
+                  <span>Resp Rate: <strong style={{ color: '#F1F5FA' }}>24 /min</strong></span>
+                  <span>SpO₂: <strong style={{ color: '#F1F5FA' }}>93% on 3L</strong></span>
+                </div>
+              </div>
+
+              {/* Three Agents Attribution Breakdowns */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ background: '#0D1624', border: '1px solid #1F2937', borderRadius: '6px', padding: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 600, color: '#35D6C5', fontFamily: 'var(--font-mono)' }}>AGENT 1: Vitals Intelligence</span>
+                    <span style={{ fontSize: '11px', color: '#FF5268', fontWeight: 600 }}>Severe Risk (Score 0.88)</span>
                   </div>
+                  <p style={{ fontSize: '11.5px', color: '#9AA9BA', margin: 0 }}>
+                    Shock index widening rapidly ($108 / 84 = 1.28$). Acute tachycardia uncoupled from compensatory vasoconstriction.
+                  </p>
+                </div>
+
+                <div style={{ background: '#0D1624', border: '1px solid #1F2937', borderRadius: '6px', padding: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 600, color: '#559BFF', fontFamily: 'var(--font-mono)' }}>AGENT 2: Laboratory Intelligence</span>
+                    <span style={{ fontSize: '11px', color: '#E5B86A', fontWeight: 600 }}>Elevated Sepsis Triad</span>
+                  </div>
+                  <p style={{ fontSize: '11.5px', color: '#9AA9BA', margin: 0 }}>
+                    Venous Lactate 3.8 mmol/L (acute doubling). WBC 16.4 with 14% bandemia indicating occult bacterial dissemination.
+                  </p>
+                </div>
+
+                <div style={{ background: '#0D1624', border: '1px solid #1F2937', borderRadius: '6px', padding: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 600, color: '#E5B86A', fontFamily: 'var(--font-mono)' }}>AGENT 3: Medication Context</span>
+                    <span style={{ fontSize: '11px', color: '#35D6C5', fontWeight: 600 }}>Active Vasopressor Support</span>
+                  </div>
+                  <p style={{ fontSize: '11.5px', color: '#9AA9BA', margin: 0 }}>
+                    Norepinephrine titrated to 0.08 mcg/kg/min at 07:45. Tachycardia cannot be attributed to beta-agonist confounders alone.
+                  </p>
                 </div>
               </div>
             </div>
 
-            {/* Right Action Panel */}
-            <div style={{ backgroundColor: '#111827', borderRadius: '8px', padding: '16px', border: '1px solid #1F2937', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            {/* Right: Clinician Governance & Actions */}
+            <div style={{
+              background: '#0D1624',
+              border: '1px solid #243247',
+              borderRadius: '8px',
+              padding: '20px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
+            }}>
               <div>
-                <h3 style={{ fontSize: '13.5px', color: '#F9FAFB', marginBottom: '10px', fontWeight: 600 }}>
-                  Clinical Action Center
+                <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#F1F5FA', margin: '0 0 8px 0', fontFamily: 'var(--font-display)' }}>
+                  Aegis Consensus Directive
                 </h3>
-                <p style={{ fontSize: '11.5px', color: '#9AA9BA', marginBottom: '14px' }}>
-                  Surviving Sepsis Campaign (Sepsis-3) 1-Hour Bundle considerations:
+                <p style={{ fontSize: '12px', color: '#9AA9BA', lineHeight: 1.5, margin: '0 0 16px 0' }}>
+                  High confidence indication of early septic decompensation. Recommend initiating Sepsis-3 1-Hour Bundled Care Protocol under attending physician oversight.
                 </p>
-                <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 16px 0', fontSize: '12px' }}>
-                  <li style={{ padding: '6px 0', borderBottom: '1px solid #1F2937', display: 'flex', gap: '6px' }}>
-                    <span>✓</span> <span>Measure STAT Blood Lactate</span>
-                  </li>
-                  <li style={{ padding: '6px 0', borderBottom: '1px solid #1F2937', display: 'flex', gap: '6px' }}>
-                    <span>✓</span> <span>Blood Cultures prior to antibiotics</span>
-                  </li>
-                  <li style={{ padding: '6px 0', borderBottom: '1px solid #1F2937', display: 'flex', gap: '6px' }}>
-                    <span>✓</span> <span>Broad-Spectrum Antimicrobials</span>
-                  </li>
-                  <li style={{ padding: '6px 0', display: 'flex', gap: '6px' }}>
-                    <span>✓</span> <span>Rapid Crystalloid Infusion</span>
-                  </li>
-                </ul>
+
+                <div style={{
+                  padding: '12px',
+                  background: '#070C15',
+                  border: '1px solid #1F2937',
+                  borderRadius: '6px',
+                  marginBottom: '16px'
+                }}>
+                  <div style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: '#35D6C5', marginBottom: '6px' }}>
+                    RECOMMENDED ACTIONS:
+                  </div>
+                  <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '11.5px', color: '#F1F5FA' }}>
+                    <li style={{ padding: '4px 0', borderBottom: '1px solid #1F2937' }}>✓ STAT Arterial Blood Gas &amp; Lactate</li>
+                    <li style={{ padding: '4px 0', borderBottom: '1px solid #1F2937' }}>✓ Blood Cultures prior to broad antimicrobials</li>
+                    <li style={{ padding: '4px 0', borderBottom: '1px solid #1F2937' }}>✓ 30 mL/kg balanced crystalloid resuscitation</li>
+                    <li style={{ padding: '4px 0' }}>✓ Vasopressor titration targeting MAP ≥ 65 mmHg</li>
+                  </ul>
+                </div>
               </div>
 
-              {actionStatus ? (
-                <div style={{
-                  padding: '10px',
-                  borderRadius: '6px',
-                  background: '#162337',
-                  border: '1px solid #243247',
-                  color: actionStatus === 'AUTHORIZED' ? '#35D6C5' : '#FF5268',
-                  fontSize: '11px',
-                  fontFamily: 'var(--font-mono)',
-                  textAlign: 'center',
-                  fontWeight: 600
-                }}>
-                  {actionStatus === 'AUTHORIZED' ? 'Bundle Authorized & Dispatched to Bedside' : 'Override Logged with Attending Signature'}
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div>
+                {actionStatus ? (
+                  <div style={{
+                    padding: '10px',
+                    borderRadius: '6px',
+                    background: '#162337',
+                    border: '1px solid #243247',
+                    color: actionStatus === 'AUTHORIZED' ? '#35D6C5' : '#FF5268',
+                    fontSize: '11px',
+                    fontFamily: 'var(--font-mono)',
+                    textAlign: 'center',
+                    fontWeight: 600,
+                    marginBottom: '10px'
+                  }}>
+                    {actionStatus === 'AUTHORIZED' ? 'Bundle Authorized & Dispatched to Bedside' : 'Override Logged with Attending Signature'}
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '10px' }}>
+                    <button
+                      onClick={() => setActionStatus('AUTHORIZED')}
+                      className="btn-primary"
+                      style={{ fontSize: '12.5px', padding: '10px' }}
+                    >
+                      Authorize 1-Hour Bundle
+                    </button>
+                    <button
+                      onClick={() => setActionStatus('OVERRIDDEN')}
+                      className="btn-secondary"
+                      style={{ fontSize: '12px', padding: '8px' }}
+                    >
+                      Override AI (Mandatory Reason)
+                    </button>
+                  </div>
+                )}
+
+                {onLaunchDashboard && (
                   <button
-                    onClick={() => setActionStatus('AUTHORIZED')}
-                    className="btn-primary"
-                    style={{ fontSize: '12.5px', padding: '10px' }}
-                  >
-                    Authorize 1-Hour Bundle
-                  </button>
-                  <button
-                    onClick={() => setActionStatus('OVERRIDDEN')}
+                    onClick={onLaunchDashboard}
                     className="btn-secondary"
-                    style={{ fontSize: '12px', padding: '8px' }}
+                    style={{
+                      width: '100%',
+                      fontSize: '12px',
+                      padding: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      color: '#35D6C5'
+                    }}
                   >
-                    Override AI (Mandatory Reason)
+                    <span>Launch Clinical Intelligence Workspace</span>
+                    <ExternalLink size={13} />
                   </button>
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
           </div>

@@ -204,3 +204,28 @@ section {
     scroll-behavior: auto !important;
   }
 }
+
+
+/* ======================================================== */
+/* Stitch Clinical Intelligence Dashboard Styles & Tailwind */
+/* ======================================================== */
+@tailwind utilities;
+
+.waveform-canvas {
+  filter: drop-shadow(0 0 2px rgba(20, 184, 166, 0.4));
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-message {
+  animation: slideInUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
