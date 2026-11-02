@@ -8,12 +8,18 @@ import SimulationPreviewSection from './components/SimulationPreviewSection';
 import ClosingSection from './components/ClosingSection';
 import Footer from './components/Footer';
 import FlightDeckModal from './components/FlightDeckModal';
+import LoginPage from './components/auth/LoginPage';
+import RegisterPage from './components/auth/RegisterPage';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { initLenis, destroyLenis } from './utils/lenis';
 
 // Lazy-load the Stitch Clinical Intelligence Dashboard for optimal performance
 const StitchDashboard = lazy(() => import('./dashboard/StitchDashboard'));
 
-export default function App() {
+function AppContent() {
+  const { isAuthenticated } = useAuth();
+  const { isDark } = useTheme();
   const [currentPath, setCurrentPath] = useState(() => {
     return typeof window !== 'undefined' ? window.location.pathname : '/';
   });
@@ -38,10 +44,12 @@ export default function App() {
   };
 
   const isDashboard = currentPath.startsWith('/dashboard');
+  const isLogin = currentPath === '/login';
+  const isRegister = currentPath === '/register';
 
   // Handle Lenis smooth scroll on landing page only
   useEffect(() => {
-    if (!isDashboard) {
+    if (!isDashboard && !isLogin && !isRegister) {
       const lenis = initLenis();
       return () => {
         destroyLenis();
@@ -49,16 +57,36 @@ export default function App() {
     } else {
       destroyLenis();
     }
-  }, [isDashboard]);
+  }, [isDashboard, isLogin, isRegister]);
 
-  // If on /dashboard route, render the Google Stitch Clinical Intelligence Dashboard
+  // ROUTE 1: Dedicated Login Page
+  if (isLogin) {
+    return <LoginPage onNavigate={navigateTo} returnPath="/dashboard" />;
+  }
+
+  // ROUTE 2: Dedicated Registration Page
+  if (isRegister) {
+    return <RegisterPage onNavigate={navigateTo} />;
+  }
+
+  // ROUTE 3: Protected Clinical Dashboard
   if (isDashboard) {
+    // If not authenticated, redirect to Login
+    if (!isAuthenticated) {
+      return (
+        <LoginPage
+          onNavigate={navigateTo}
+          returnPath="/dashboard"
+        />
+      );
+    }
+
     return (
       <Suspense
         fallback={
-          <div className="h-screen w-screen bg-[#070A0F] flex items-center justify-center font-mono text-sm text-[#14B8A6] select-none">
+          <div className="h-screen w-screen flex items-center justify-center font-mono text-sm select-none bg-[#F8FAFC] text-[#0D9488]">
             <div className="flex items-center gap-3">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#14B8A6] animate-ping" />
+              <span className="w-2.5 h-2.5 rounded-full bg-[#0D9488] animate-ping" />
               <span>INITIALIZING AEGIS-ICU WORKSPACE...</span>
             </div>
           </div>
@@ -69,19 +97,34 @@ export default function App() {
     );
   }
 
-  // Otherwise, render the complete Aegis-ICU Editorial Landing Page
+  // ROUTE 4: Editorial Landing Page
+  const handleLaunchFlightDeck = () => {
+    if (isAuthenticated) {
+      navigateTo('/dashboard');
+    } else {
+      navigateTo('/login');
+    }
+  };
+
   return (
-    <div style={{ backgroundColor: '#080E18', minHeight: '100vh', color: '#F1F5FA', overflowX: 'hidden' }}>
+    <div style={{
+      backgroundColor: isDark ? '#080E18' : '#F4F6F9',
+      minHeight: '100vh',
+      color: isDark ? '#F1F5FA' : '#0F172A',
+      overflowX: 'hidden',
+      transition: 'background-color 0.2s ease, color 0.2s ease'
+    }}>
       {/* Navigation Header */}
       <Navbar
-        onOpenFlightDeck={() => navigateTo('/dashboard')}
+        onOpenFlightDeck={handleLaunchFlightDeck}
+        onNavigate={navigateTo}
       />
 
       {/* Consolidated 6-Section Storytelling Journey */}
       <main>
         {/* Section 01: Hero Experience */}
         <HeroSection
-          onOpenFlightDeck={() => navigateTo('/dashboard')}
+          onOpenFlightDeck={handleLaunchFlightDeck}
         />
 
         {/* Section 02: The Clinical Problem */}
@@ -95,18 +138,18 @@ export default function App() {
 
         {/* Section 05: ICU Case Replay Simulation Preview */}
         <SimulationPreviewSection
-          onOpenFlightDeck={() => navigateTo('/dashboard')}
+          onOpenFlightDeck={handleLaunchFlightDeck}
         />
 
         {/* Section 06: Closing Statement with Kinetic Inline CTA */}
         <ClosingSection
-          onOpenFlightDeck={() => navigateTo('/dashboard')}
+          onOpenFlightDeck={handleLaunchFlightDeck}
         />
       </main>
 
       {/* Footer */}
       <Footer
-        onOpenFlightDeck={() => navigateTo('/dashboard')}
+        onOpenFlightDeck={handleLaunchFlightDeck}
       />
 
       {/* Optional Clinical Flight Deck Modal */}
@@ -115,9 +158,19 @@ export default function App() {
         onClose={() => setFlightDeckOpen(false)}
         onLaunchDashboard={() => {
           setFlightDeckOpen(false);
-          navigateTo('/dashboard');
+          handleLaunchFlightDeck();
         }}
       />
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

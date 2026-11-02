@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTheme } from '../context/ThemeContext';
 import { Play, Pause, RotateCcw, Activity, ArrowRight } from 'lucide-react';
 import { SIMULATION_TIMELINE } from '../utils/constants';
 
 export default function SimulationPreviewSection({ onOpenFlightDeck }) {
+  const { isDark } = useTheme();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const timerRef = useRef(null);
@@ -28,8 +30,8 @@ export default function SimulationPreviewSection({ onOpenFlightDeck }) {
       style={{
         position: 'relative',
         padding: '72px 24px',
-        background: '#0D1624',
-        borderBottom: '1px solid #1A2738'
+        background: isDark ? '#0D1624' : '#FFFFFF',
+        borderBottom: isDark ? '1px solid #1A2738' : '1px solid #E2E8F0'
       }}
     >
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
@@ -47,29 +49,29 @@ export default function SimulationPreviewSection({ onOpenFlightDeck }) {
             fontSize: 'clamp(1.9rem, 3.4vw, 2.75rem)',
             fontWeight: 650,
             lineHeight: 1.15,
-            color: '#F1F5FA',
+            color: isDark ? '#F1F5FA' : '#0F172A',
             marginBottom: '14px'
           }}>
             Watch the system respond as conditions evolve.
           </h2>
 
-          <p className="font-body" style={{ fontSize: '15px', color: '#9AA9BA', lineHeight: 1.6 }}>
+          <p className="font-body" style={{ fontSize: '15px', color: isDark ? '#9AA9BA' : '#475569', lineHeight: 1.6 }}>
             Scrub across an accelerated 24-hour ICU trajectory to see how Aegis coordinates physiological, laboratory, and medication evidence as deterioration unfolds.
           </p>
         </div>
 
         {/* Clean Interactive Simulator Card */}
         <div className="ui-panel" style={{
-          background: '#080E18',
-          border: '1px solid #243247',
+          background: isDark ? '#080E18' : '#F8FAFC',
+          border: isDark ? '1px solid #243247' : '1px solid #E2E8F0',
           borderRadius: '12px',
           overflow: 'hidden'
         }}>
           {/* Controls Bar */}
           <div style={{
             padding: '14px 20px',
-            background: '#111C2B',
-            borderBottom: '1px solid #243247',
+            background: isDark ? '#111C2B' : '#F1F5F9',
+            borderBottom: isDark ? '1px solid #243247' : '1px solid #E2E8F0',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -103,9 +105,9 @@ export default function SimulationPreviewSection({ onOpenFlightDeck }) {
                   width: '32px',
                   height: '32px',
                   borderRadius: '6px',
-                  background: '#162337',
-                  border: '1px solid #243247',
-                  color: '#9AA9BA',
+                  background: isDark ? '#162337' : '#E2E8F0',
+                  border: isDark ? '1px solid #243247' : '1px solid #E2E8F0',
+                  color: isDark ? '#9AA9BA' : '#475569',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -117,7 +119,7 @@ export default function SimulationPreviewSection({ onOpenFlightDeck }) {
               </button>
 
               <div style={{ marginLeft: '6px' }}>
-                <span style={{ fontSize: '12.5px', fontFamily: 'var(--font-mono)', color: '#F1F5FA', fontWeight: 600 }}>
+                <span style={{ fontSize: '12.5px', fontFamily: 'var(--font-mono)', color: isDark ? '#F1F5FA' : '#0F172A', fontWeight: 600 }}>
                   {current.time} (Hour {current.hour}:00) — {current.label}
                 </span>
               </div>
@@ -163,7 +165,7 @@ export default function SimulationPreviewSection({ onOpenFlightDeck }) {
                 borderRadius: '8px',
                 overflow: 'hidden',
                 marginBottom: '16px',
-                border: '1px solid #1A2738'
+                border: isDark ? '1px solid #1A2738' : '1px solid #E2E8F0'
               }}>
                 <img
                   src="/assets/agent-vitals-telemetry.jpg"
@@ -185,13 +187,13 @@ export default function SimulationPreviewSection({ onOpenFlightDeck }) {
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', fontFamily: 'var(--font-mono)' }}>
                     <span style={{ color: '#35D6C5', fontWeight: 600 }}>● BEDSIDE REPLAY FEED</span>
-                    <span style={{ color: '#9AA9BA' }}>CASE #p000011</span>
+                    <span style={{ color: isDark ? '#9AA9BA' : '#475569' }}>CASE #p000011</span>
                   </div>
                   <div>
-                    <div style={{ fontSize: '16px', fontWeight: 700, color: '#F1F5FA', fontFamily: 'var(--font-display)' }}>
+                    <div style={{ fontSize: '16px', fontWeight: 700, color: isDark ? '#F1F5FA' : '#0F172A', fontFamily: 'var(--font-display)' }}>
                       {current.hrTrend}
                     </div>
-                    <div style={{ fontSize: '11px', color: '#9AA9BA' }}>
+                    <div style={{ fontSize: '11px', color: isDark ? '#9AA9BA' : '#475569' }}>
                       Blood Pressure: {current.bp} • MAP: {current.map} mmHg
                     </div>
                   </div>
@@ -200,36 +202,36 @@ export default function SimulationPreviewSection({ onOpenFlightDeck }) {
 
               {/* 4 Numerical Gauges */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
-                <div style={{ background: '#0D1624', padding: '10px', borderRadius: '6px', border: '1px solid #1A2738' }}>
-                  <span style={{ fontSize: '9.5px', color: '#617285', fontFamily: 'var(--font-mono)' }}>HEART RATE</span>
+                <div style={{ background: isDark ? '#0D1624' : '#FFFFFF', padding: '10px', borderRadius: '6px', border: isDark ? '1px solid #1A2738' : '1px solid #E2E8F0' }}>
+                  <span style={{ fontSize: '9.5px', color: isDark ? '#617285' : '#64748B', fontFamily: 'var(--font-mono)' }}>HEART RATE</span>
                   <div style={{ fontSize: '17px', fontWeight: 700, color: current.hr > 100 ? '#FF5268' : '#35D6C5' }}>
-                    {current.hr} <span style={{ fontSize: '9.5px', color: '#617285' }}>bpm</span>
+                    {current.hr} <span style={{ fontSize: '9.5px', color: isDark ? '#617285' : '#64748B' }}>bpm</span>
                   </div>
-                  <span style={{ fontSize: '9.5px', color: '#617285' }}>SpO₂: {current.spo2}%</span>
+                  <span style={{ fontSize: '9.5px', color: isDark ? '#617285' : '#64748B' }}>SpO₂: {current.spo2}%</span>
                 </div>
 
-                <div style={{ background: '#0D1624', padding: '10px', borderRadius: '6px', border: '1px solid #1A2738' }}>
-                  <span style={{ fontSize: '9.5px', color: '#617285', fontFamily: 'var(--font-mono)' }}>RESPIRATION</span>
+                <div style={{ background: isDark ? '#0D1624' : '#FFFFFF', padding: '10px', borderRadius: '6px', border: isDark ? '1px solid #1A2738' : '1px solid #E2E8F0' }}>
+                  <span style={{ fontSize: '9.5px', color: isDark ? '#617285' : '#64748B', fontFamily: 'var(--font-mono)' }}>RESPIRATION</span>
                   <div style={{ fontSize: '17px', fontWeight: 700, color: current.resp > 20 ? '#FF8A65' : '#F1F5FA' }}>
-                    {current.resp} <span style={{ fontSize: '9.5px', color: '#617285' }}>/min</span>
+                    {current.resp} <span style={{ fontSize: '9.5px', color: isDark ? '#617285' : '#64748B' }}>/min</span>
                   </div>
-                  <span style={{ fontSize: '9.5px', color: '#617285' }}>Temp: {current.temp}°C</span>
+                  <span style={{ fontSize: '9.5px', color: isDark ? '#617285' : '#64748B' }}>Temp: {current.temp}°C</span>
                 </div>
 
-                <div style={{ background: '#0D1624', padding: '10px', borderRadius: '6px', border: '1px solid #1A2738' }}>
-                  <span style={{ fontSize: '9.5px', color: '#617285', fontFamily: 'var(--font-mono)' }}>SHOCK INDEX</span>
+                <div style={{ background: isDark ? '#0D1624' : '#FFFFFF', padding: '10px', borderRadius: '6px', border: isDark ? '1px solid #1A2738' : '1px solid #E2E8F0' }}>
+                  <span style={{ fontSize: '9.5px', color: isDark ? '#617285' : '#64748B', fontFamily: 'var(--font-mono)' }}>SHOCK INDEX</span>
                   <div style={{ fontSize: '17px', fontWeight: 700, color: current.shockIndex > 0.85 ? '#E5B86A' : '#F1F5FA' }}>
                     {current.shockIndex}
                   </div>
-                  <span style={{ fontSize: '9.5px', color: '#617285' }}>Norm: &lt; 0.70</span>
+                  <span style={{ fontSize: '9.5px', color: isDark ? '#617285' : '#64748B' }}>Norm: &lt; 0.70</span>
                 </div>
 
-                <div style={{ background: '#0D1624', padding: '10px', borderRadius: '6px', border: '1px solid #1A2738' }}>
-                  <span style={{ fontSize: '9.5px', color: '#617285', fontFamily: 'var(--font-mono)' }}>SERUM LACTATE</span>
+                <div style={{ background: isDark ? '#0D1624' : '#FFFFFF', padding: '10px', borderRadius: '6px', border: isDark ? '1px solid #1A2738' : '1px solid #E2E8F0' }}>
+                  <span style={{ fontSize: '9.5px', color: isDark ? '#617285' : '#64748B', fontFamily: 'var(--font-mono)' }}>SERUM LACTATE</span>
                   <div style={{ fontSize: '17px', fontWeight: 700, color: parseFloat(current.lactate) > 2 ? '#FF5268' : '#559BFF' }}>
-                    {current.lactate} <span style={{ fontSize: '9.5px', color: '#617285' }}>mmol/L</span>
+                    {current.lactate} <span style={{ fontSize: '9.5px', color: isDark ? '#617285' : '#64748B' }}>mmol/L</span>
                   </div>
-                  <span style={{ fontSize: '9.5px', color: '#617285' }}>Platelets: {current.platelets}k</span>
+                  <span style={{ fontSize: '9.5px', color: isDark ? '#617285' : '#64748B' }}>Platelets: {current.platelets}k</span>
                 </div>
               </div>
             </div>
@@ -237,14 +239,14 @@ export default function SimulationPreviewSection({ onOpenFlightDeck }) {
             {/* Right: Risk Probability & Agent Consensus */}
             <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
               <div style={{
-                background: '#0D1624',
+                background: isDark ? '#0D1624' : '#FFFFFF',
                 padding: '16px',
                 borderRadius: '8px',
-                border: '1px solid #243247',
+                border: isDark ? '1px solid #243247' : '1px solid #E2E8F0',
                 marginBottom: '12px'
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                  <span style={{ fontSize: '10.5px', fontFamily: 'var(--font-mono)', color: '#9AA9BA' }}>
+                  <span style={{ fontSize: '10.5px', fontFamily: 'var(--font-mono)', color: isDark ? '#9AA9BA' : '#475569' }}>
                     AEGIS COMPOSITE RISK SCORE:
                   </span>
                   <span style={{
@@ -254,8 +256,8 @@ export default function SimulationPreviewSection({ onOpenFlightDeck }) {
                     color: current.color,
                     padding: '2px 6px',
                     borderRadius: '4px',
-                    background: '#162337',
-                    border: '1px solid #243247'
+                    background: isDark ? '#162337' : '#E2E8F0',
+                    border: isDark ? '1px solid #243247' : '1px solid #E2E8F0'
                   }}>
                     {current.riskLevel}
                   </span>
@@ -265,11 +267,11 @@ export default function SimulationPreviewSection({ onOpenFlightDeck }) {
                   <span className="font-display" style={{ fontSize: '32px', fontWeight: 700, color: current.color }}>
                     {current.riskScore}%
                   </span>
-                  <span style={{ fontSize: '12px', color: '#9AA9BA' }}>calibrated probability</span>
+                  <span style={{ fontSize: '12px', color: isDark ? '#9AA9BA' : '#475569' }}>calibrated probability</span>
                 </div>
 
                 {/* Progress bar */}
-                <div style={{ height: '4px', background: '#080E18', borderRadius: '2px', overflow: 'hidden', marginBottom: '10px' }}>
+                <div style={{ height: '4px', background: isDark ? '#080E18' : '#F8FAFC', borderRadius: '2px', overflow: 'hidden', marginBottom: '10px' }}>
                   <div style={{
                     height: '100%',
                     width: `${current.riskScore}%`,
@@ -278,7 +280,7 @@ export default function SimulationPreviewSection({ onOpenFlightDeck }) {
                   }} />
                 </div>
 
-                <p style={{ fontSize: '12.5px', color: '#F1F5FA', margin: 0, lineHeight: 1.5 }}>
+                <p style={{ fontSize: '12.5px', color: isDark ? '#F1F5FA' : '#0F172A', margin: 0, lineHeight: 1.5 }}>
                   {current.summary}
                 </p>
               </div>
@@ -290,23 +292,23 @@ export default function SimulationPreviewSection({ onOpenFlightDeck }) {
                 gap: '6px',
                 padding: '10px 12px',
                 borderRadius: '6px',
-                background: '#0D1624',
-                border: '1px solid #1A2738',
+                background: isDark ? '#0D1624' : '#FFFFFF',
+                border: isDark ? '1px solid #1A2738' : '1px solid #E2E8F0',
                 fontSize: '11px',
                 fontFamily: 'var(--font-mono)',
                 marginBottom: '12px'
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: '#35D6C5' }}>Agent 1 (Vitals):</span>
-                  <span style={{ color: '#F1F5FA' }}>{current.vitalsStatus}</span>
+                  <span style={{ color: isDark ? '#F1F5FA' : '#0F172A' }}>{current.vitalsStatus}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: '#559BFF' }}>Agent 2 (Labs):</span>
-                  <span style={{ color: '#F1F5FA' }}>{current.labsStatus}</span>
+                  <span style={{ color: isDark ? '#F1F5FA' : '#0F172A' }}>{current.labsStatus}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: '#E5B86A' }}>Agent 3 (Context):</span>
-                  <span style={{ color: '#F1F5FA' }}>{current.skepticStatus}</span>
+                  <span style={{ color: isDark ? '#F1F5FA' : '#0F172A' }}>{current.skepticStatus}</span>
                 </div>
               </div>
 

@@ -1,21 +1,23 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   LayoutGrid,
-  Activity,
-  FlaskConical,
-  Pill,
-  Bell
+  Stethoscope,
+  HeartPulse,
+  LogOut,
+  Home
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 export default function Sidebar({
-  isOpen,
-  activeAlertCount,
-  onShowInbox
+  activeAlertCount = 3,
+  onShowInbox,
+  onExitToLanding,
+  isInboxActive = false
 }) {
-  const canvasRef = useRef(null);
+  const { user, isDoctor, logout } = useAuth();
   const [timeStr, setTimeStr] = useState('');
 
-  // Clock
+  // Live Ward Telemetry Clock
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
@@ -26,173 +28,122 @@ export default function Sidebar({
     return () => clearInterval(timer);
   }, []);
 
-  // Mini Waveform Animation
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    let animId;
-    let offset = 0;
-
-    const resize = () => {
-      if (!canvas.parentElement) return;
-      canvas.width = canvas.parentElement.clientWidth;
-      canvas.height = canvas.parentElement.clientHeight;
-    };
-    resize();
-    window.addEventListener('resize', resize);
-
-    const draw = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.lineWidth = 1.4;
-      ctx.strokeStyle = '#14B8A6';
-      ctx.beginPath();
-
-      const w = canvas.width;
-      const h = canvas.height;
-      const mid = h / 2;
-
-      for (let x = 0; x < w; x++) {
-        const t = (x + offset) % 180;
-        let y = mid;
-
-        if (t > 40 && t < 55) {
-          y = mid - Math.sin(((t - 40) / 15) * Math.PI) * 3;
-        } else if (t >= 60 && t < 65) {
-          y = mid + (t - 60) * 1.5;
-        } else if (t >= 65 && t < 72) {
-          y = mid - 14 + (t - 65) * 1.5;
-        } else if (t >= 72 && t < 78) {
-          y = mid + 5;
-        } else if (t >= 95 && t < 120) {
-          y = mid - Math.sin(((t - 95) / 25) * Math.PI) * 4.5;
-        }
-
-        if (x === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-      offset = (offset + 1.2) % 360;
-      animId = requestAnimationFrame(draw);
-    };
-
-    draw();
-
-    return () => {
-      cancelAnimationFrame(animId);
-      window.removeEventListener('resize', resize);
-    };
-  }, []);
-
   return (
-    <aside
-      className={`w-64 bg-navy-900 border-r border-navy-700 flex flex-col justify-between shrink-0 transition-all duration-300 z-30 ${
-        isOpen ? 'ml-0' : '-ml-64'
-      }`}
-    >
-      <div className="p-5 flex flex-col gap-5 overflow-y-auto">
-        {/* Wordmark & Version */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-md bg-gradient-to-br from-clinical-teal/20 to-teal-950 border border-clinical-teal/40 flex items-center justify-center text-clinical-teal font-mono font-semibold text-sm shadow-sm">
+    <aside className="w-60 flex-shrink-0 flex flex-col justify-between p-4 select-none h-full bg-[#F8FAFC]">
+      {/* TOP SECTION: BRAND + NAV + TELEMETRY CARD */}
+      <div className="flex flex-col gap-4">
+        {/* Brand Header */}
+        <div className="flex items-center justify-between pt-1">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-[#F0FDFA] border border-[#99F6E4] flex items-center justify-center font-mono font-bold text-sm text-[#0D9488] shadow-xs">
               Æ
             </div>
             <div>
-              <div className="font-display font-bold text-slate-100 text-sm tracking-tight leading-tight flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 font-display font-bold text-sm text-[#334155] leading-tight">
                 AEGIS-ICU
-                <span className="text-[9px] font-mono px-1 py-0.5 rounded bg-navy-800 text-slate-400 border border-navy-700">
-                  v2.4
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md bg-[#F0FDFA] text-[#0D9488] border border-[#CCFBF1] font-semibold">
+                  v3.0
                 </span>
               </div>
-              <div className="text-[10px] text-slate-400 tracking-wide font-mono">
-                CLINICAL INTELLIGENCE
+              <div className="text-[10px] font-mono text-[#64748B] tracking-wider uppercase mt-0.5">
+                Clinical Intelligence
               </div>
             </div>
           </div>
         </div>
 
-        {/* Navigation */}
+        {/* Navigation: Dashboard Inbox Active Pill */}
         <nav className="flex flex-col gap-1 mt-1">
-          <div className="text-[10px] font-mono uppercase text-slate-400 px-3 tracking-wider mb-1">
+          <div className="text-[10px] font-mono uppercase tracking-wider text-[#64748B] px-1 mb-0.5 font-semibold">
             Navigation
           </div>
           <button
             onClick={onShowInbox}
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg bg-navy-800/90 text-clinical-teal border border-clinical-teal/30 shadow-sm text-xs font-medium transition-all group"
+            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all shadow-xs border ${
+              isInboxActive
+                ? 'bg-white text-[#0D9488] border-[#99F6E4] shadow-xs font-semibold'
+                : 'bg-white text-[#0D9488] shadow-xs border border-[#E2E8F0] hover:border-[#99F6E4]'
+            }`}
           >
-            <LayoutGrid className="w-4 h-4 text-clinical-teal transition-transform group-hover:scale-105" />
-            <span>Dashboard Inbox</span>
-            <span className="ml-auto text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-clinical-teal-dim text-clinical-teal font-semibold">
-              {activeAlertCount}
-            </span>
+            <div className="flex items-center gap-2.5">
+              <LayoutGrid className="w-4 h-4 text-[#0D9488]" />
+              <span className="text-[#0D9488]">Dashboard Inbox</span>
+            </div>
+            {activeAlertCount > 0 && (
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#F0FDFA] text-[#0D9488] border border-[#CCFBF1] font-bold">
+                {activeAlertCount}
+              </span>
+            )}
           </button>
         </nav>
 
-        {/* System Telemetry Pulse */}
-        <div className="bg-navy-850 rounded-lg p-3.5 border border-navy-700 mt-1">
-          <div className="flex items-center justify-between text-[11px] mb-2 font-mono">
-            <span className="text-slate-400 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-clinical-teal animate-pulse" />
+        {/* Ward Telemetry Mini-Card */}
+        <div className="bg-white rounded-2xl p-3 border border-[#E2E8F0] shadow-xs space-y-2">
+          <div className="flex items-center justify-between text-[11px] font-mono">
+            <span className="flex items-center gap-1.5 text-[#475569]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#0D9488] animate-pulse" />
               Telemetry Stream
             </span>
-            <span className="text-slate-300 text-[10px]">{timeStr || '14:38:09'}</span>
+            <span className="text-[10px] text-[#64748B]">{timeStr || '14:38:09'}</span>
           </div>
-          <div className="h-9 w-full bg-navy-950 rounded border border-navy-700/60 relative overflow-hidden flex items-center">
-            <canvas ref={canvasRef} className="w-full h-full waveform-canvas opacity-85" />
+          
+          {/* Soft teal SVG sparkline */}
+          <div className="h-9 w-full rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]/70 flex items-center px-1 overflow-hidden">
+            <svg className="w-full h-7" viewBox="0 0 200 40" fill="none" preserveAspectRatio="none">
+              <path
+                d="M0 20 L30 20 L38 20 L44 10 L50 32 L56 6 L62 26 L68 18 L74 20 L110 20 L118 20 L124 10 L130 32 L136 6 L142 26 L148 18 L154 20 L200 20"
+                stroke="#0D9488"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
           </div>
-          <div className="flex justify-between items-center text-[10px] font-mono text-slate-400 mt-2">
-            <span>ICU Ward 3B</span>
-            <span className="text-slate-300">12 Beds Monitored</span>
-          </div>
-        </div>
 
-        {/* Active Intelligence Agents */}
-        <div className="border-t border-navy-700 pt-4 flex flex-col gap-2.5">
-          <div className="text-[10px] font-mono uppercase text-slate-400 tracking-wider">
-            Active Intelligence Agents
-          </div>
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-xs px-2.5 py-1.5 rounded bg-navy-850 border border-navy-700">
-              <span className="text-slate-300 text-[11px] flex items-center gap-2">
-                <Activity className="w-3.5 h-3.5 text-clinical-teal" />
-                Vitals Agent
-              </span>
-              <span className="text-[10px] font-mono text-emerald-400">ACTIVE</span>
-            </div>
-            <div className="flex items-center justify-between text-xs px-2.5 py-1.5 rounded bg-navy-850 border border-navy-700">
-              <span className="text-slate-300 text-[11px] flex items-center gap-2">
-                <FlaskConical className="w-3.5 h-3.5 text-cyan-400" />
-                Laboratory Agent
-              </span>
-              <span className="text-[10px] font-mono text-emerald-400">ACTIVE</span>
-            </div>
-            <div className="flex items-center justify-between text-xs px-2.5 py-1.5 rounded bg-navy-850 border border-navy-700">
-              <span className="text-slate-300 text-[11px] flex items-center gap-2">
-                <Pill className="w-3.5 h-3.5 text-purple-400" />
-                Medication Agent
-              </span>
-              <span className="text-[10px] font-mono text-emerald-400">ACTIVE</span>
-            </div>
+          <div className="flex items-center justify-between text-[11px] font-mono pt-0.5">
+            <span className="font-semibold text-[#334155]">ICU Ward 3B</span>
+            <span className="text-[#64748B]">• 12 Beds</span>
           </div>
         </div>
       </div>
 
-      {/* Doctor Profile Bar */}
-      <div className="p-4 border-t border-navy-700 bg-navy-900/90 flex items-center gap-3 shrink-0">
-        <div className="w-8 h-8 rounded-full bg-navy-800 border border-navy-700 flex items-center justify-center font-display font-medium text-xs text-slate-300 shadow-sm shrink-0">
-          DR
+      {/* BOTTOM SECTION: Single unified clinician profile card */}
+      <div className="bg-white border border-[#E2E8F0] rounded-2xl p-2.5 shadow-xs flex items-center justify-between gap-2.5">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-8 h-8 rounded-xl bg-[#F0FDFA] border border-[#CCFBF1] flex items-center justify-center text-[#0D9488] shrink-0">
+            {isDoctor ? <Stethoscope className="w-4 h-4" /> : <HeartPulse className="w-4 h-4" />}
+          </div>
+          <div className="min-w-0">
+            <div className="text-xs font-semibold text-[#334155] truncate leading-tight">
+              {user?.fullName || 'Dr. Rajesh Sharma, MD'}
+            </div>
+            <div className="text-[10px] font-mono text-[#64748B] truncate mt-0.5">
+              {isDoctor ? 'Attending' : 'ICU Nurse'}
+            </div>
+          </div>
         </div>
-        <div className="flex flex-col flex-1 min-w-0">
-          <span className="text-xs font-medium text-slate-200 truncate">Dr. Sarah Al-Mansoor</span>
-          <span className="text-[10px] font-mono text-slate-400 truncate">Attending Intensivist</span>
+
+        <div className="flex items-center gap-1 shrink-0">
+          {onExitToLanding && (
+            <button
+              onClick={onExitToLanding}
+              title="Return to Aegis-ICU Homepage"
+              className="p-1.5 rounded-lg text-[#64748B] hover:text-[#0D9488] hover:bg-[#F1F5F9] transition-colors"
+            >
+              <Home className="w-3.5 h-3.5" />
+            </button>
+          )}
+          <button
+            onClick={() => {
+              logout();
+              if (onExitToLanding) onExitToLanding();
+            }}
+            title="Sign Out"
+            className="p-1.5 rounded-lg text-[#64748B] hover:text-rose-600 hover:bg-rose-50 transition-colors"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+          </button>
         </div>
-        <button
-          className="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-navy-800/80 border border-navy-700/70 hover:border-navy-600 flex items-center justify-center transition-all shrink-0 relative"
-          title="Telemetry alerts & notifications"
-        >
-          <Bell className="w-3.5 h-3.5" />
-          <span className="w-1.5 h-1.5 rounded-full bg-clinical-teal absolute top-1.5 right-1.5 ring-2 ring-navy-900" />
-        </button>
       </div>
     </aside>
   );

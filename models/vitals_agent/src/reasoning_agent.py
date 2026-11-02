@@ -7,6 +7,7 @@ into clear, intensivist-grade physiological reasoning using an LLM
 
 import os
 import json
+from datetime import datetime, timezone
 from typing import Dict, List, Any, Optional
 
 try:
@@ -25,6 +26,9 @@ import requests
 
 
 class VitalsEvidenceReport(BaseModel):
+    agent_name: str = "Vitals Agent"
+    timestamp: str
+    confidence: float = Field(description="Confidence in prediction integrity (0.0 to 1.0) based on telemetry completeness")
     risk_level: str = Field(description="'LOW', 'MODERATE', or 'CRITICAL_SEPSIS'")
     ml_probability: float = Field(description="Predicted Sepsis Risk Probability between 0.0 and 1.0")
     news2_score: int = Field(description="Classical National Early Warning Score 2 (0 to 20)")
@@ -35,12 +39,15 @@ class VitalsEvidenceReport(BaseModel):
     shap_summary: str = Field(description="Clinical synthesis of SHAP contributions")
     discrepancy_rationale: str = Field(description="Medical explanation of why NEWS2 failed or agreed with ML")
     clinical_explanation: str = Field(description="Comprehensive intensivist physiological reasoning")
-    llm_source: str = Field(description="Engine or model used for reasoning")
+    shap_contributions: Dict[str, float] = Field(default_factory=dict)
+    telemetry_snapshot: Dict[str, Any] = Field(default_factory=dict)
+    llm_source: str = Field(default="neuro_symbolic_clinical_rules", description="Engine or model used for reasoning")
 
 
 class VitalsReasoningAgent:
     """
     Model 1 Reasoning Agent: Translates numeric hemodynamics into structured clinical rationale.
+    Synthesizes physiological telemetry, classical NEWS2 scoring, and SHAP attributions.
     """
     def __init__(
         self,
@@ -183,23 +190,22 @@ Return ONLY a valid JSON object with the following exact keys:
         Deterministic, rule-based clinical engine modeling Surviving Sepsis Campaign,
         Shock Index occult hypoperfusion physiology, and NEWS2 blindspot analysis.
         """
-        prob = vitals_result.get("vitals_risk_probability", 0.0)
-        shock_index = vitals_result.get("shock_index", 0.0)
-        news2 = vitals_result.get("news2_score", 0)
-        discrepancy = vitals_result.get("discrepancy_detected", False)
+        prob = float(vitals_result.get("vitals_risk_probability", 0.0))
+        shock_index = float(vitals_result.get("shock_index", 0.0))
+        news2 = int(vitals_result.get("news2_score", 0))
+        discrepancy = bool(vitals_result.get("discrepancy_detected", False))
         telemetry = vitals_result.get("telemetry_snapshot", {})
         shap_contributions = vitals_result.get("shap_contributions", {})
 
-        hr = telemetry.get("HR", 84.0)
-        sbp = telemetry.get("SBP", 118.0)
-        map_val = telemetry.get("MAP", 77.0)
-        resp = telemetry.get("Resp", 18.0)
-        temp = telemetry.get("Temp", 37.0)
+        hr = float(telemetry.get("HR") or 84.0)
+        sbp = float(telemetry.get("SBP") or 118.0)
+        map_val = float(telemetry.get("MAP") or 77.0)
+        resp = float(telemetry.get("Resp") or 18.0)
 
         # 1. Determine risk tier
-        if prob >= 0.50:
+        if prob >= 0.50 or shock_index >= 1.0:
             risk_level = "CRITICAL_SEPSIS"
-        elif prob >= 0.25:
+        elif prob >= 0.25 or shock_index >= 0.80 or news2 >= 5:
             risk_level = "MODERATE"
         else:
             risk_level = "LOW"
@@ -249,7 +255,7 @@ Return ONLY a valid JSON object with the following exact keys:
                 f"Patient exhibits {stage.replace('_', ' ').title()} with Shock Index {shock_index:.2f} "
                 f"(HR {hr:.0f} bpm / SBP {sbp:.0f} mmHg). Sympathetic vasoconstriction is preserving systemic blood pressure "
                 f"despite compromised stroke volume. "
-                f"{'Concurrent tachypnea (' + str(resp) + '/min) suggests respiratory compensation for metabolic acidosis. ' if resp >= 20 else ''}"
+                f"{'Concurrent tachypnea (' + str(int(resp)) + '/min) suggests respiratory compensation for metabolic acidosis. ' if resp >= 20 else ''}"
                 f"Immediate fluid resuscitation and serial perfusion monitoring warranted."
             )
         elif stage == "BORDERLINE_TACHYCARDIA":
@@ -263,9 +269,11 @@ Return ONLY a valid JSON object with the following exact keys:
                 f"Vitals telemetry does not show acute circulatory failure or systemic inflammatory deterioration."
             )
 
-        drivers = vitals_result.get("risk_drivers", [])
+        drivers = list(vitals_result.get("risk_drivers", []))
         if not drivers:
             drivers = [f"Shock Index: {shock_index:.2f}", f"Heart Rate: {hr:.0f} bpm"]
+        if shock_index >= 1.0 and not any("Critical Occult Shock" in d for d in drivers):
+            drivers.insert(0, f"Critical Occult Shock (Shock Index {shock_index:.2f} >= 1.0)")
 
         return {
             "risk_level": risk_level,
@@ -284,6 +292,14 @@ Return ONLY a valid JSON object with the following exact keys:
         news2 = int(vitals_result.get("news2_score", 0))
         shock_index = float(vitals_result.get("shock_index", 0.0))
         discrepancy = bool(vitals_result.get("discrepancy_detected", False))
+        snapshot = dict(vitals_result.get("telemetry_snapshot", {}))
+        shap_contribs = dict(vitals_result.get("shap_contributions", {}))
+        now_iso = datetime.now(timezone.utc).isoformat()
+
+        # Compute confidence based on missingness in snapshot
+        core_keys = ["HR", "SBP", "MAP", "Resp", "O2Sat", "Temp"]
+        missing_count = sum(1 for k in core_keys if k not in snapshot or snapshot.get(k) is None)
+        confidence = max(0.20, round(1.0 - (missing_count * 0.15), 2))
 
         prompt = self.build_clinical_prompt(vitals_result)
         llm_response = None
@@ -311,18 +327,32 @@ Return ONLY a valid JSON object with the following exact keys:
             llm_response = self._neuro_symbolic_fallback(vitals_result)
             source = "neuro_symbolic_clinical_rules"
 
-        llm_response["llm_source"] = source
+        # Ensure risk level consistency
+        risk_level = str(llm_response.get("risk_level", "LOW"))
+        if shock_index >= 1.0 or prob >= 0.50:
+            risk_level = "CRITICAL_SEPSIS"
+        elif risk_level == "LOW" and (prob >= 0.25 or shock_index >= 0.80 or news2 >= 5):
+            risk_level = "MODERATE"
+
+        primary_drivers = list(llm_response.get("primary_drivers", vitals_result.get("risk_drivers", [])))
+        if shock_index >= 1.0 and not any("Critical Occult Shock" in d for d in primary_drivers):
+            primary_drivers.insert(0, f"Critical Occult Shock (Shock Index {shock_index:.2f} >= 1.0)")
 
         return VitalsEvidenceReport(
-            risk_level=str(llm_response.get("risk_level", "LOW")),
+            agent_name="Vitals Agent",
+            timestamp=now_iso,
+            confidence=confidence,
+            risk_level=risk_level,
             ml_probability=round(prob, 4),
             news2_score=news2,
             shock_index=round(shock_index, 2),
             discrepancy_flag=discrepancy,
             hemodynamic_stage=str(llm_response.get("hemodynamic_stage", "HEMODYNAMICALLY_STABLE")),
-            primary_drivers=list(llm_response.get("primary_drivers", vitals_result.get("risk_drivers", []))),
+            primary_drivers=primary_drivers,
             shap_summary=str(llm_response.get("shap_summary", "")),
             discrepancy_rationale=str(llm_response.get("discrepancy_rationale", "")),
             clinical_explanation=str(llm_response.get("clinical_explanation", "")),
+            shap_contributions=shap_contribs,
+            telemetry_snapshot=snapshot,
             llm_source=source
         )

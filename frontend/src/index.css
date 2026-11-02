@@ -1,4 +1,4 @@
-:root {
+:root, html.dark {
   --bg-primary: #080E18;
   --bg-secondary: #0D1624;
   --bg-card: #111C2B;
@@ -24,6 +24,39 @@
   --nav-height: 64px;
 }
 
+html.light {
+  --bg-primary: #F8FAFC;
+  --bg-secondary: #FFFFFF;
+  --bg-card: #FFFFFF;
+  --bg-surface: #F8FAFC;
+
+  --border-default: #E2E8F0;
+  --border-subtle: #F1F5F9;
+  --border-focus: #0D9488;
+
+  --accent-primary: #0D9488;
+  --accent-secondary: #2563EB;
+  --accent-warm: #D97706;
+  --accent-critical: #DC2626;
+
+  --text-primary: #334155;
+  --text-secondary: #475569;
+  --text-tertiary: #64748B;
+
+  --daylight-canvas: #F8FAFC;
+  --daylight-surface: #FFFFFF;
+  --daylight-secondary: #F1F5F9;
+  --daylight-border: #E2E8F0;
+  --daylight-mint-surface: #F0FDFA;
+  --daylight-mint-border: #99F6E4;
+  --daylight-mint-accent: #0D9488;
+  --daylight-text-primary: #334155;
+  --daylight-text-secondary: #475569;
+  --daylight-text-muted: #64748B;
+
+  color-scheme: light;
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -40,6 +73,11 @@ html {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+html.light {
+  color-scheme: light;
 }
 
 /* Lenis smooth scrolling standard classes */
@@ -66,12 +104,18 @@ body {
   min-height: 100vh;
   line-height: 1.5;
   font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* Selection */
 ::selection {
   background: #35D6C5;
   color: #080E18;
+}
+
+html.light ::selection {
+  background: #0D9488;
+  color: #FFFFFF;
 }
 
 /* Typography utilities */
@@ -93,6 +137,7 @@ body {
 /* Custom Scrollbar - Minimal & Flat */
 ::-webkit-scrollbar {
   width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
   background: var(--bg-primary);
@@ -142,8 +187,11 @@ body {
   transition: background-color 0.15s ease, transform 0.15s ease;
   text-decoration: none;
 }
+html.light .btn-primary {
+  color: #FFFFFF;
+}
 .btn-primary:hover {
-  background: #2ec4b4;
+  filter: brightness(1.08);
   transform: translateY(-1px);
 }
 .btn-primary:active {
@@ -168,8 +216,7 @@ body {
   text-decoration: none;
 }
 .btn-secondary:hover {
-  background: #1d2d46;
-  border-color: #384b66;
+  border-color: var(--border-focus);
 }
 
 /* Subtle Technical Eyebrow Tag */
@@ -179,7 +226,7 @@ body {
   gap: 6px;
   padding: 3px 10px;
   border-radius: 4px;
-  background: #0D1624;
+  background: var(--bg-secondary);
   border: 1px solid var(--border-default);
   font-family: var(--font-mono);
   font-size: 11px;
@@ -204,7 +251,6 @@ section {
     scroll-behavior: auto !important;
   }
 }
-
 
 /* ======================================================== */
 /* Stitch Clinical Intelligence Dashboard Styles & Tailwind */

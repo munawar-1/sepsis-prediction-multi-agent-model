@@ -1,12 +1,13 @@
 """
 Model 2 (Labs Agent): Clinical Reasoning Agent
 Translates blood pathology, cellular hypoxia markers, and STAT test orders into
-an intensivist-level diagnostic report using an LLM
-(with a deterministic Neuro-Symbolic clinical fallback engine).
+an intensivist-level diagnostic report adhering to Sepsis-3 guidelines and Martha's Rule.
+Supports multi-tier LLM reasoning (Ollama -> Gemini -> OpenAI -> deterministic fallback).
 """
 
 import os
 import json
+from datetime import datetime, timezone
 from typing import Dict, List, Any, Optional
 
 try:
@@ -25,21 +26,28 @@ import requests
 
 
 class LabsEvidenceReport(BaseModel):
+    agent_name: str = "Labs Agent"
+    timestamp: str
+    confidence: float = Field(description="Confidence in laboratory assessment (0.0 to 1.0) based on biomarker availability")
     organ_stress_level: str = Field(description="'NORMAL_HOMEOSTASIS', 'MODERATE_HYPOXIA', 'SEVERE_ORGAN_DYSFUNCTION', or 'UNASSESSED_MISSING_LABS'")
     lab_probability: float = Field(description="Probability of lab-confirmed sepsis/organ failure between 0.0 and 1.0")
-    cellular_hypoxia_grade: str = Field(description="'NORMAL_AEROBIC_RESPIRATION', 'TISSUE_HYPOPERFUSION', 'ANAEROBIC_GLYCOLYSIS_CRISIS', or 'UNASSESSED_MISSING_DATA'")
-    freshness_status: str = Field(description="'FRESH_EVIDENCE', 'STALE_EVIDENCE', or 'MISSING_LABS'")
-    stat_orders_recommended: List[str] = Field(description="e.g. ['STAT Serum Lactate', 'Blood Cultures x 2', 'ABG']")
-    abnormal_biomarkers: List[str] = Field(description="e.g. ['Lactate: 3.4 mmol/L (Severe Hypoxia)', 'WBC: 16.2 (Leukocytosis)']")
-    shap_summary: str = Field(description="Clinical synthesis of SHAP contributions")
+    freshness_status: str = Field(description="'FRESH_EVIDENCE', 'STALE_EVIDENCE', or 'MISSING_CRITICAL_LABS'")
+    safety_notice: str = Field(description="Clinical guardrail: Normal or missing labs must never rule out sepsis")
+    stat_orders_recommended: List[str] = Field(description="STAT lab escalations required (e.g. STAT Serum Lactate)")
+    abnormal_biomarkers: List[str] = Field(description="e.g. ['Severe Lactic Acidosis: 4.2 mmol/L']")
+    cellular_hypoxia_grade: str = Field(default="NORMAL_AEROBIC_RESPIRATION", description="'NORMAL_AEROBIC_RESPIRATION', 'TISSUE_HYPOPERFUSION', 'ANAEROBIC_GLYCOLYSIS_CRISIS', or 'UNASSESSED_MISSING_DATA'")
+    shap_summary: str = Field(default="", description="Clinical synthesis of SHAP contributions")
     pathology_summary: str = Field(description="Comprehensive intensivist synthesis of patient metabolic/organ state")
-    clinical_reasoning: str = Field(description="Concise 2-3 sentence intensivist narrative summarizing organ dysfunction and lab imperatives")
-    llm_source: str = Field(description="Engine or model used for reasoning")
+    clinical_reasoning: str = Field(default="", description="Concise 2-3 sentence intensivist narrative summarizing organ dysfunction and lab imperatives")
+    shap_contributions: Dict[str, float] = Field(default_factory=dict)
+    labs_snapshot: Dict[str, Any] = Field(default_factory=dict)
+    llm_source: str = Field(default="neuro_symbolic_clinical_rules", description="Engine or model used for reasoning")
 
 
 class LabsReasoningAgent:
     """
     Model 2 Reasoning Agent: Translates lab metrics, hypoxia, and organ failure criteria into clinical rationale.
+    Enforces Martha's Rule and Surviving Sepsis Campaign diagnostic protocols.
     """
     def __init__(
         self,
@@ -78,41 +86,41 @@ class LabsReasoningAgent:
         plat_str = f"{plat_val} x10^3/uL" if plat_val is not None else "NOT TESTED (MISSING)"
 
         prompt = f"""
-You are an expert ICU Pathologist and Critical Care Intensivist auditing Model 2 (Labs & Pathology Agent).
-Explain the exact clinical and pathophysiological reasons for the following laboratory predictions:
+You are an expert ICU Pathologist and Sepsis Specialist evaluating Model 2 (Labs & Pathology Agent).
+Explain the cellular, metabolic, and organ function findings for this patient:
 
-[PATIENT LAB BIOMARKER SNAPSHOT]
-- Serum Lactate: {lactate_str} (Normal < 2.0 mmol/L; >= 2.0 cellular dysoxia; >= 4.0 severe lactic acidosis / septic shock)
-- White Blood Cell (WBC): {wbc_str} (Normal 4.0 - 11.0; >= 12.0 leukocytosis / systemic infection; <= 4.0 leukopenia / marrow exhaustion)
-- Serum Creatinine: {creat_str} (Normal 0.6 - 1.2 mg/dL; >= 1.6 acute kidney injury)
-- Platelet Count: {plat_str} (Normal 150 - 400; < 100 thrombocytopenia / microvascular consumption)
+[LABORATORY BIOMARKER SNAPSHOT]
+- Serum Lactate: {lactate_str} (Normal < 2.0; Hypoperfusion >= 2.0; Severe Crisis >= 4.0 mmol/L)
+- White Blood Cell (WBC): {wbc_str} (Normal 4.0 - 11.0; Leukocytosis >= 12.0)
+- Serum Creatinine: {creat_str} (Normal 0.6 - 1.2 mg/dL; Acute Kidney Injury >= 1.6)
+- Platelet Count: {plat_str} (Normal 150 - 400; Thrombocytopenia < 100)
 
-[MODEL 2 PREDICTION NUMBERS]
-- Lab-Confirmed Sepsis Probability: {prob_pct:.1f}% ({prob:.4f})
-- Organ Stress Level: {stress_level}
-- Identified Abnormal Biomarkers: {abnormal if abnormal else 'None (All in normal reference range)'}
-- Immediate STAT Lab Draw Escalations: {stat_orders if stat_orders else 'None currently required'}
+[MODEL 2 LABS PREDICTION NUMBERS]
+- ML Laboratory Sepsis Probability: {prob_pct:.1f}% ({prob:.4f})
+- Organ Stress Classification: {stress_level}
+- Acute Abnormal Biomarkers Identified: {abnormal}
+- STAT Lab Orders Pending/Recommended: {stat_orders}
 
-[TOP SHAP FEATURE CONTRIBUTIONS]
+[TOP 5 SHAP FEATURE CONTRIBUTIONS]
 {top_shap_str}
 
-[CLINICAL OBJECTIVE]
-Provide an authoritative medical evaluation explaining:
-1. Cellular Hypoxia & Metabolic Dysoxia: If lactate is elevated, explain the shift to anaerobic glycolysis due to microvascular hypoperfusion. If missing, emphasize Martha's Rule (uncorroborated telemetry demands immediate blood lactate test).
-2. End-Organ Dysfunction (SOFA criteria): Explain renal hypoperfusion (creatinine) and consumptive coagulopathy (platelet depletion).
-3. Systemic Immune Response: Explain bone marrow response (leukocytosis vs leukopenia).
-4. STAT Diagnostic Orders: Provide rationale for urgent blood draws or repeat testing.
+[CLINICAL & SAFETY RULES]
+1. MARTHA'S RULE / SEPSIS-3 MANDATE: Normal or uncollected laboratory results must NEVER be used to rule out sepsis! Cellular biochemical markers frequently lag clinical microvascular deterioration by 2-6 hours.
+2. If Serum Lactate is missing, immediately flag an imperative order for STAT Lactate.
+3. If Lactate is >= 2.0, identify cellular hypoxia and anaerobic glycolysis.
+4. Assess end-organ function: Renal (Creatinine), Hematologic (Platelets/DIC risk), Immune (WBC).
 
 Return ONLY a valid JSON object with the following exact keys:
 {{
   "organ_stress_level": "NORMAL_HOMEOSTASIS" | "MODERATE_HYPOXIA" | "SEVERE_ORGAN_DYSFUNCTION" | "UNASSESSED_MISSING_LABS",
   "cellular_hypoxia_grade": "NORMAL_AEROBIC_RESPIRATION" | "TISSUE_HYPOPERFUSION" | "ANAEROBIC_GLYCOLYSIS_CRISIS" | "UNASSESSED_MISSING_DATA",
-  "freshness_status": "FRESH_EVIDENCE" | "STALE_EVIDENCE" | "MISSING_LABS",
-  "stat_orders_recommended": ["list of STAT diagnostic orders"],
-  "abnormal_biomarkers": ["list of abnormal flags"],
-  "shap_summary": "1-2 sentence clinical interpretation of which lab features contributed most to the score",
-  "pathology_summary": "Comprehensive 2-3 sentence intensivist narrative explaining cellular respiration, organ dysfunction status, and clinical implications",
-  "clinical_reasoning": "Concise summary of metabolic and diagnostic status"
+  "freshness_status": "FRESH_EVIDENCE" | "STALE_EVIDENCE" | "MISSING_CRITICAL_LABS",
+  "safety_notice": "Clear Martha's Rule statement regarding lab timing lag or missing critical biomarkers",
+  "stat_orders_recommended": ["list of STAT diagnostic lab orders needed"],
+  "abnormal_biomarkers": ["list of abnormal flags with units"],
+  "shap_summary": "1-2 sentence clinical interpretation of which lab features contributed most to the risk calculation",
+  "pathology_summary": "2-3 sentence intensivist synthesis detailing metabolic status, organ stress, and cellular oxygen debt",
+  "clinical_reasoning": "2-3 sentence narrative summarizing clinical imperatives for bedside staff"
 }}
 """
         return prompt.strip()
@@ -147,7 +155,7 @@ Return ONLY a valid JSON object with the following exact keys:
         payload = {
             "model": "gpt-4o-mini",
             "messages": [
-                {"role": "system", "content": "You are a clinical pathologist answering in strict JSON."},
+                {"role": "system", "content": "You are a clinical pathology specialist answering in strict JSON."},
                 {"role": "user", "content": prompt}
             ],
             "temperature": 0.1,
@@ -186,81 +194,108 @@ Return ONLY a valid JSON object with the following exact keys:
 
     def _neuro_symbolic_fallback(self, labs_result: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Deterministic, rule-based clinical engine modeling Surviving Sepsis Campaign,
-        SOFA score organ dysfunction thresholds, and Martha's Rule diagnostic escalations.
+        Deterministic, rule-based clinical engine adhering to Sepsis-3 definitions,
+        metabolic cellular hypoxia, and Martha's Rule diagnostic safety protocols.
         """
-        prob = labs_result.get("labs_risk_probability", 0.0)
-        stress_level = labs_result.get("organ_stress_level", "NORMAL_HOMEOSTASIS")
-        abnormal = labs_result.get("abnormal_biomarkers", [])
-        stat_orders = labs_result.get("stat_lab_draws_required", [])
-        shap_contributions = labs_result.get("shap_contributions", {})
+        prob = float(labs_result.get("labs_risk_probability", 0.0))
         labs = labs_result.get("labs_snapshot", {})
+        shap_contributions = labs_result.get("shap_contributions", {})
 
         lactate = labs.get("Lactate")
         wbc = labs.get("WBC")
         creatinine = labs.get("Creatinine")
         platelets = labs.get("Platelets")
 
-        missing_count = sum(1 for val in [lactate, wbc, creatinine, platelets] if val is None)
+        orders = list(labs_result.get("stat_lab_draws_required", []))
+        abnormal = list(labs_result.get("abnormal_biomarkers", []))
 
-        # 1. Freshness & missingness
-        if missing_count >= 3:
-            freshness = "MISSING_LABS"
-        elif missing_count >= 1:
-            freshness = "STALE_EVIDENCE"
-        else:
+        # 1. Freshness & Confidence
+        critical_present = sum(1 for v in [lactate, wbc] if v is not None)
+        other_present = sum(1 for v in [creatinine, platelets] if v is not None)
+
+        if critical_present == 2 and other_present == 2:
             freshness = "FRESH_EVIDENCE"
+            confidence = 0.95
+        elif critical_present >= 1:
+            freshness = "FRESH_EVIDENCE"
+            confidence = 0.70
+        else:
+            freshness = "MISSING_CRITICAL_LABS"
+            confidence = 0.35
 
-        # 2. Cellular Hypoxia Grade
+        # 2. Cellular Hypoxia Staging
         if lactate is None:
             hypoxia_grade = "UNASSESSED_MISSING_DATA"
+            if not any("Lactate" in o for o in orders):
+                orders.insert(0, "STAT Blood Lactate (Martha's Rule)")
         elif lactate >= 4.0:
             hypoxia_grade = "ANAEROBIC_GLYCOLYSIS_CRISIS"
+            if not any("Lactate" in o for o in orders):
+                orders.insert(0, "Serial Blood Lactate q2h (Resuscitation Clearance Protocol)")
         elif lactate >= 2.0:
             hypoxia_grade = "TISSUE_HYPOPERFUSION"
+            if not any("Lactate" in o for o in orders):
+                orders.append("Repeat Lactate in 2-4 Hours")
         else:
             hypoxia_grade = "NORMAL_AEROBIC_RESPIRATION"
 
-        # 3. STAT orders escalation
-        orders = list(stat_orders)
-        if lactate is None and "STAT Blood Lactate (Martha's Rule: Uncorroborated Vitals Strain)" not in orders:
-            orders.append("STAT Blood Lactate (Martha's Rule: Uncorroborated Vitals Strain)")
-        if lactate is not None and lactate >= 2.0 and "Repeat Serum Lactate in 2-4 hours" not in orders:
-            orders.append("Repeat Serum Lactate in 2-4 hours to assess clearance")
-        if wbc is not None and (wbc >= 15.0 or wbc <= 4.0) and "Blood Cultures x 2 prior to antibiotics" not in orders:
-            orders.append("Blood Cultures x 2 prior to antibiotics")
+        # 3. Organ Stress Level
+        if prob >= 0.60 or (lactate and lactate >= 4.0) or (creatinine and creatinine >= 2.0) or (platelets and platelets < 100.0):
+            stress_level = "SEVERE_ORGAN_DYSFUNCTION"
+        elif prob >= 0.30 or (lactate and lactate >= 2.0) or (wbc and wbc >= 12.0):
+            stress_level = "MODERATE_HYPOXIA"
+        elif lactate is None and wbc is None:
+            stress_level = "UNASSESSED_MISSING_LABS"
+        else:
+            stress_level = "NORMAL_HOMEOSTASIS"
 
-        # 4. SHAP summary
+        # 4. Safety Notice (Crucial Rule: Normal/missing labs do NOT rule out sepsis)
+        if lactate is None:
+            safety_notice = (
+                "MARTHA'S RULE SAFETY NOTICE: Serum lactate has NOT been drawn. "
+                "Normal or missing laboratory results must NEVER be interpreted as absence of sepsis. "
+                "Immediate STAT lactate draw is mandatory if vitals reflect physiological strain."
+            )
+        elif lactate < 2.0 and not abnormal:
+            safety_notice = (
+                "MARTHA'S RULE SAFETY NOTICE: Current biomarkers are within normal range (Lactate < 2.0 mmol/L). "
+                "However, biochemical cellular markers can lag behind microvascular hypoperfusion by 2 to 6 hours. "
+                "Normal labs must NOT automatically rule out occult evolving sepsis."
+            )
+        else:
+            safety_notice = (
+                "Biomarker evidence active: Sepsis-3 cellular hypoperfusion / organ dysfunction markers identified."
+            )
+
+        # 5. SHAP summary
         if shap_contributions:
             top_drivers = list(shap_contributions.items())[:3]
             pos_drivers = [f"{k} (+{v:.2f})" for k, v in top_drivers if v > 0]
             if pos_drivers:
-                shap_summary = f"Lab risk elevated primarily by {', '.join(pos_drivers)}."
+                shap_summary = f"Biomarker risk heavily driven by: {', '.join(pos_drivers)}."
             else:
-                shap_summary = "Lab biomarkers are within normal limits, driving risk downward."
+                shap_summary = "Laboratory values remain primarily within reference boundaries, exerting downward risk weight."
         else:
-            shap_summary = f"Risk aligned with organ stress level ({stress_level})."
+            shap_summary = f"Risk driven primarily by Lactate ({lactate if lactate is not None else 'Missing'}) and WBC."
 
-        # 5. Comprehensive Pathology Summary
+        # 6. Pathology Narrative Synthesis
         narrative_parts = []
-        if hypoxia_grade == "ANAEROBIC_GLYCOLYSIS_CRISIS":
+        narrative_parts.append(
+            f"Labs Agent assessed Laboratory Sepsis Probability at {prob*100:.1f}% ({stress_level}) "
+            f"with confidence {confidence*100:.0f}% ({freshness})."
+        )
+
+        if abnormal:
+            narrative_parts.append(f"Identified {len(abnormal)} acute biomarker warning(s): {'; '.join(abnormal)}.")
+        elif freshness == "MISSING_CRITICAL_LABS":
             narrative_parts.append(
-                f"Severe lactic acidosis ({lactate:.1f} mmol/L) demonstrates systemic cellular dysoxia "
-                f"and widespread tissue hypoperfusion indicative of septic shock."
-            )
-        elif hypoxia_grade == "TISSUE_HYPOPERFUSION":
-            narrative_parts.append(
-                f"Elevated lactate ({lactate:.1f} mmol/L) indicates early occult anaerobic metabolism "
-                f"prior to gross circulatory collapse."
-            )
-        elif hypoxia_grade == "UNASSESSED_MISSING_DATA":
-            narrative_parts.append(
-                "Critical diagnostic gap: Serum lactate is absent. In accordance with Martha's Rule, "
-                "vital signs strain must be corroborated immediately with STAT blood draws."
+                "Diagnostic Blind Spot: Critical blood pathology (Lactate / WBC) is uncollected. "
+                "Relying solely on existing lab records introduces severe clinical false-negative risk."
             )
         else:
             narrative_parts.append(
-                f"Serum lactate ({lactate:.1f} mmol/L) is normal, reflecting intact cellular aerobic respiration."
+                "Blood pathology panel shows preserved homeostasis. "
+                "Note: Early septic shock may maintain normal lactate prior to microcirculatory uncoupling."
             )
 
         if creatinine is not None and creatinine >= 1.6:
@@ -270,18 +305,18 @@ Return ONLY a valid JSON object with the following exact keys:
         if wbc is not None and wbc >= 12.0:
             narrative_parts.append(f"Leukocytosis (WBC {wbc:.1f} x10^3/uL) reflects active systemic inflammatory mobilization.")
 
-        pathology_summary = " ".join(narrative_parts)
+        if orders:
+            narrative_parts.append(f"Recommended diagnostic orders: {'; '.join(orders)}.")
 
-        first_sentence = narrative_parts[0] if narrative_parts else "Biomarkers reflect stable organ homeostasis."
-        clinical_reasoning = (
-            f"Organ stress classified as {stress_level.replace('_', ' ').title()} "
-            f"(Lab Risk: {prob*100:.1f}%). {first_sentence}"
-        )
+        pathology_summary = " ".join(narrative_parts)
+        clinical_reasoning = f"Organ stress classified as {stress_level.replace('_', ' ').title()} (Lab Risk: {prob*100:.1f}%). {pathology_summary}"
 
         return {
+            "confidence": confidence,
             "organ_stress_level": stress_level,
             "cellular_hypoxia_grade": hypoxia_grade,
             "freshness_status": freshness,
+            "safety_notice": safety_notice,
             "stat_orders_recommended": orders,
             "abnormal_biomarkers": abnormal,
             "shap_summary": shap_summary,
@@ -295,6 +330,9 @@ Return ONLY a valid JSON object with the following exact keys:
         """
         prob = float(labs_result.get("labs_risk_probability", 0.0))
         stress = str(labs_result.get("organ_stress_level", "NORMAL_HOMEOSTASIS"))
+        shap_contribs = dict(labs_result.get("shap_contributions", {}))
+        snapshot = dict(labs_result.get("labs_snapshot", {}))
+        now_iso = datetime.now(timezone.utc).isoformat()
 
         prompt = self.build_clinical_prompt(labs_result)
         llm_response = None
@@ -317,22 +355,37 @@ Return ONLY a valid JSON object with the following exact keys:
             if llm_response:
                 source = "openai_api"
 
-        # 4. Deterministic Clinical Fallback
+        fallback = self._neuro_symbolic_fallback(labs_result)
         if not llm_response:
-            llm_response = self._neuro_symbolic_fallback(labs_result)
+            llm_response = fallback
             source = "neuro_symbolic_clinical_rules"
 
-        llm_response["llm_source"] = source
+        # Merge fallback safety-critical values if not provided by LLM
+        confidence = float(llm_response.get("confidence", fallback["confidence"]))
+        safety_notice = str(llm_response.get("safety_notice", fallback["safety_notice"]))
+        freshness_status = str(llm_response.get("freshness_status", fallback["freshness_status"]))
+        stat_orders = list(llm_response.get("stat_orders_recommended", fallback["stat_orders_recommended"]))
+
+        # Enforce Martha's rule in stat orders
+        lactate = snapshot.get("Lactate")
+        if lactate is None and not any("Lactate" in o for o in stat_orders):
+            stat_orders.insert(0, "STAT Blood Lactate (Martha's Rule)")
 
         return LabsEvidenceReport(
+            agent_name="Labs Agent",
+            timestamp=now_iso,
+            confidence=confidence,
             organ_stress_level=str(llm_response.get("organ_stress_level", stress)),
             lab_probability=round(prob, 4),
-            cellular_hypoxia_grade=str(llm_response.get("cellular_hypoxia_grade", "NORMAL_AEROBIC_RESPIRATION")),
-            freshness_status=str(llm_response.get("freshness_status", "FRESH_EVIDENCE")),
-            stat_orders_recommended=list(llm_response.get("stat_orders_recommended", labs_result.get("stat_lab_draws_required", []))),
+            cellular_hypoxia_grade=str(llm_response.get("cellular_hypoxia_grade", fallback["cellular_hypoxia_grade"])),
+            freshness_status=freshness_status,
+            safety_notice=safety_notice,
+            stat_orders_recommended=stat_orders,
             abnormal_biomarkers=list(llm_response.get("abnormal_biomarkers", labs_result.get("abnormal_biomarkers", []))),
-            shap_summary=str(llm_response.get("shap_summary", "")),
-            pathology_summary=str(llm_response.get("pathology_summary", "")),
-            clinical_reasoning=str(llm_response.get("clinical_reasoning", "")),
+            shap_summary=str(llm_response.get("shap_summary", fallback["shap_summary"])),
+            pathology_summary=str(llm_response.get("pathology_summary", fallback["pathology_summary"])),
+            clinical_reasoning=str(llm_response.get("clinical_reasoning", fallback["clinical_reasoning"])),
+            shap_contributions=shap_contribs,
+            labs_snapshot=snapshot,
             llm_source=source
         )

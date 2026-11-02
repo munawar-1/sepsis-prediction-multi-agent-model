@@ -1,41 +1,46 @@
 """
-Model 2 (Labs Agent): Predictor & Pathology Engine
-Evaluates blood pathology and organ dysfunction biomarkers:
-1. Sepsis & Organ Stress Probability
-2. Freshness / Missingness Status (STAT Lab Draw Escalation)
-3. Cellular Hypoxia & Organ Dysfunction Drivers (SOFA criteria)
-4. SHAP-based per-prediction feature contributions
-5. LLM-powered pathological reasoning explaining the biomarker numbers
+Model 2 (Labs Agent): Predictor & Pathology Evaluation Engine
+Loads labs_rf_model.pkl and evaluates episodic or hourly laboratory panels.
+Outputs:
+1. Laboratory Sepsis Probability (0.0 to 1.0)
+2. Organ Dysfunction Categorization (Sepsis-3 aligned)
+3. Cellular Hypoxia & Metabolic Acidosis Grading
+4. Immediate STAT Diagnostic Lab Draw Escalations
+5. Structured Evidence Report with Timestamp and Confidence Score
+6. LLM-powered clinical pathology reasoning
 """
 
 import os
+import sys
 import tempfile
+from typing import Dict, Any, Optional
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(BASE_DIR))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
 os.environ.setdefault("MPLCONFIGDIR", os.path.join(tempfile.gettempdir(), "matplotlib"))
+
 import joblib
 import numpy as np
 import pandas as pd
 import shap
-import sys
-
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, PROJECT_ROOT)
 
 try:
     from models.labs_agent.src.reasoning_agent import LabsReasoningAgent, LabsEvidenceReport
 except ImportError:
     from reasoning_agent import LabsReasoningAgent, LabsEvidenceReport
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODEL_PATH = os.path.join(BASE_DIR, "artifacts", "labs_rf_model.pkl")
 SHAP_EXPLAINER_PATH = os.path.join(BASE_DIR, "artifacts", "labs_shap_explainer.pkl")
 
-# Fitted medians from training split
+# Fitted medians from training cohort
 TRAIN_MEDIANS = {
-    "Lactate": 1.8,
-    "WBC": 10.8,
+    "Lactate": 1.6,
+    "WBC": 9.2,
     "Creatinine": 0.9,
-    "Platelets": 180.0
+    "Platelets": 220.0
 }
 
 class LabsPredictor:
@@ -62,38 +67,30 @@ class LabsPredictor:
         if os.path.exists(self.model_path):
             self.model = joblib.load(self.model_path)
         else:
-            raise FileNotFoundError(f"Model not found at: {self.model_path}. Run train.py first.")
+            raise FileNotFoundError(f"Labs RF Model not found at {self.model_path}. Train it first.")
 
-        # Load pre-computed SHAP TreeExplainer (created during training)
         if os.path.exists(SHAP_EXPLAINER_PATH):
             self.shap_explainer = joblib.load(SHAP_EXPLAINER_PATH)
         else:
-            # Fallback: create explainer on-the-fly from the model
             self.shap_explainer = shap.TreeExplainer(self.model)
 
     def _compute_shap_contributions(self, df_row: pd.DataFrame) -> dict:
         """
-        Compute per-prediction SHAP values explaining *why* this patient
-        received this particular organ stress score.
-        Returns a dict of {feature_name: shap_value} sorted by |contribution|.
+        Computes SHAP value contributions for a single inference row.
+        Returns a sorted dict of {feature: shap_value} for the Sepsis positive class.
         """
-        shap_values = self.shap_explainer.shap_values(df_row)
-
-        # For binary classification: extract positive-class SHAP values
-        if isinstance(shap_values, list):
-            sv = shap_values[1][0] if len(shap_values) > 1 else shap_values[0][0]
+        raw_shap = self.shap_explainer.shap_values(df_row)
+        if isinstance(raw_shap, list) and len(raw_shap) == 2:
+            vals = raw_shap[1][0]
+        elif isinstance(raw_shap, np.ndarray) and raw_shap.ndim == 3:
+            vals = raw_shap[0, :, 1]
+        elif isinstance(raw_shap, np.ndarray) and raw_shap.ndim == 2:
+            vals = raw_shap[0]
         else:
-            shap_arr = np.asarray(shap_values)
-            if shap_arr.ndim == 3 and shap_arr.shape[-1] >= 2:
-                sv = shap_arr[0, :, 1]
-            elif shap_arr.ndim == 2:
-                sv = shap_arr[0]
-            else:
-                sv = shap_arr.flatten()
+            vals = np.zeros(len(df_row.columns))
 
-        feature_names = list(df_row.columns)
-        contributions = dict(zip(feature_names, [float(v) for v in sv]))
-        # Sort by absolute contribution (most impactful first)
+        features = list(df_row.columns)
+        contributions = {feat: float(round(v, 4)) for feat, v in zip(features, vals)}
         sorted_contributions = dict(
             sorted(contributions.items(), key=lambda x: abs(x[1]), reverse=True)
         )
@@ -108,15 +105,10 @@ class LabsPredictor:
     def predict(self, labs_dict: dict, generate_reasoning: bool = True) -> dict:
         """
         Input: Dictionary of blood pathology e.g. {'Lactate': 3.4, 'WBC': 16.2, 'Creatinine': 1.8, 'Platelets': 120}
-        Output: Prediction dictionary with probability, organ stress status, STAT lab triggers,
-                SHAP attributions, and LLM clinical pathology reasoning.
+        Output: Prediction dictionary with probability, organ stress status, STAT lab triggers, and structured report.
         """
         features = {}
         missing_count = 0
-        stat_orders = []
-        abnormal_flags = []
-
-        # 1. Feature extraction with missingness tracking
         for key, default_val in TRAIN_MEDIANS.items():
             val = labs_dict.get(key)
             if val is None or np.isnan(val):
@@ -127,77 +119,93 @@ class LabsPredictor:
                 features[key] = float(val)
                 features[f"{key}_was_missing"] = 0
 
-        # 2. Align feature names with model
+        # Sepsis-3 Clinical Rule Flags
+        stat_orders = []
+        abnormal = []
+
+        lactate = labs_dict.get("Lactate")
+        if lactate is None:
+            stat_orders.append("STAT Blood Lactate (Martha's Rule: Occult Hypoperfusion Protocol)")
+        elif lactate >= 4.0:
+            abnormal.append(f"Severe Lactic Acidosis: {lactate} mmol/L (Severe Cellular Hypoperfusion)")
+            stat_orders.append("Serial Blood Lactate q2h (Resuscitation Clearance Protocol)")
+        elif lactate >= 2.0:
+            abnormal.append(f"Elevated Lactate: {lactate} mmol/L (Occult Tissue Hypoperfusion)")
+            stat_orders.append("STAT Repeat Lactate in 2-4 Hours")
+
+        creat = labs_dict.get("Creatinine")
+        if creat is not None and creat >= 2.0:
+            abnormal.append(f"Acute Kidney Injury Risk: Creatinine {creat} mg/dL (2x Baseline)")
+            stat_orders.append("STAT Urinalysis & Nephrotoxic Medication Review")
+
+        plat = labs_dict.get("Platelets")
+        if plat is not None and plat < 100.0:
+            abnormal.append(f"Thrombocytopenia: Platelet count {plat} x10^3/uL (Consumptive Coagulopathy)")
+            stat_orders.append("Coagulation Panel (PT/INR, PTT, Fibrinogen)")
+
+        wbc = labs_dict.get("WBC")
+        if wbc is not None:
+            if wbc >= 12.0:
+                abnormal.append(f"Leukocytosis: WBC {wbc} x10^3/uL (Systemic Immune Response)")
+            elif wbc <= 4.0:
+                abnormal.append(f"Leukopenia: WBC {wbc} x10^3/uL (Severe Sepsis Bone Marrow Suppression)")
+
         feature_order = list(self.model.feature_names_in_)
         df_row = pd.DataFrame([features])[feature_order]
         prob = float(self.model.predict_proba(df_row)[0, 1])
 
-        # 3. Clinical Pathology Rules (Surviving Sepsis Campaign / SOFA)
-        lactate = features["Lactate"]
-        if features["Lactate_was_missing"] == 1:
-            stat_orders.append("STAT Blood Lactate (Martha's Rule: Uncorroborated Vitals Strain)")
-        elif lactate >= 4.0:
-            abnormal_flags.append(f"Severe Lactic Acidosis: {lactate:.1f} mmol/L (Severe Hypoxia / Septic Shock)")
-        elif lactate >= 2.0:
-            abnormal_flags.append(f"Elevated Lactate: {lactate:.1f} mmol/L (Metabolic Stress Warning)")
-
-        wbc = features["WBC"]
-        if features["WBC_was_missing"] == 0:
-            if wbc >= 12.0:
-                abnormal_flags.append(f"Leukocytosis: WBC {wbc:.1f} x10^3/uL (Active Systemic Infection)")
-            elif wbc <= 4.0:
-                abnormal_flags.append(f"Leukopenia: WBC {wbc:.1f} x10^3/uL (Severe Immunosuppressive Sepsis)")
-
-        platelets = features["Platelets"]
-        if features["Platelets_was_missing"] == 0 and platelets < 100.0:
-            abnormal_flags.append(f"Thrombocytopenia: Platelets {platelets:.0f} x10^3/uL (Sepsis Coagulopathy)")
-
-        creatinine = features["Creatinine"]
-        if features["Creatinine_was_missing"] == 0 and creatinine >= 1.6:
-            abnormal_flags.append(f"Acute Kidney Injury (AKI): Creatinine {creatinine:.2f} mg/dL")
-
-        # 4. Organ Stress Tiering
-        if lactate >= 4.0 or (platelets < 50.0 and features["Platelets_was_missing"] == 0):
+        # Sepsis-3 Organ Failure / Stress Staging
+        if prob >= 0.60 or (lactate and lactate >= 4.0) or (creat and creat >= 2.0) or (plat and plat < 100.0):
             stress_level = "SEVERE_ORGAN_DYSFUNCTION"
-        elif len(abnormal_flags) >= 2 or lactate >= 2.0:
+        elif prob >= 0.30 or (lactate and lactate >= 2.0) or (wbc and wbc >= 12.0):
             stress_level = "MODERATE_HYPOXIA"
-        elif missing_count >= 3:
+        elif missing_count == len(TRAIN_MEDIANS):
             stress_level = "UNASSESSED_MISSING_LABS"
         else:
             stress_level = "NORMAL_HOMEOSTASIS"
 
-        result = {
+        shap_contribs = self._compute_shap_contributions(df_row)
+
+        raw_result = {
             "labs_risk_probability": round(prob, 4),
             "organ_stress_level": stress_level,
             "stat_lab_draws_required": stat_orders,
-            "abnormal_biomarkers": abnormal_flags,
-            "shap_contributions": self._compute_shap_contributions(df_row),
+            "abnormal_biomarkers": abnormal,
+            "shap_contributions": shap_contribs,
             "labs_snapshot": {k: labs_dict.get(k) for k in TRAIN_MEDIANS}
         }
 
-        # 5. LLM Clinical Pathology Reasoning Wrap
-        if generate_reasoning:
-            report: LabsEvidenceReport = self.reasoning_agent.explain(result)
-            result["organ_stress_level"] = report.organ_stress_level
-            result["cellular_hypoxia_grade"] = report.cellular_hypoxia_grade
-            result["freshness_status"] = report.freshness_status
-            result["stat_orders_recommended"] = report.stat_orders_recommended
-            result["abnormal_biomarkers"] = report.abnormal_biomarkers
-            result["pathology_summary"] = report.pathology_summary
-            result["clinical_reasoning"] = report.clinical_reasoning
-            result["shap_summary"] = report.shap_summary
-            result["llm_source"] = report.llm_source
+        # Synthesize structured evidence report via reasoning agent
+        evidence_report = self.reasoning_agent.explain(raw_result)
 
-        return result
+        return {
+            "agent_name": evidence_report.agent_name,
+            "timestamp": evidence_report.timestamp,
+            "confidence": evidence_report.confidence,
+            "organ_stress_level": evidence_report.organ_stress_level,
+            "labs_risk_probability": evidence_report.lab_probability,
+            "cellular_hypoxia_grade": evidence_report.cellular_hypoxia_grade,
+            "freshness_status": evidence_report.freshness_status,
+            "safety_notice": evidence_report.safety_notice,
+            "stat_lab_draws_required": evidence_report.stat_orders_recommended,
+            "stat_orders_recommended": evidence_report.stat_orders_recommended,
+            "abnormal_biomarkers": evidence_report.abnormal_biomarkers,
+            "shap_summary": evidence_report.shap_summary,
+            "pathology_summary": evidence_report.pathology_summary,
+            "clinical_reasoning": evidence_report.clinical_reasoning,
+            "shap_contributions": evidence_report.shap_contributions,
+            "labs_snapshot": evidence_report.labs_snapshot,
+            "llm_source": evidence_report.llm_source
+        }
 
 if __name__ == "__main__":
     predictor = LabsPredictor()
-
-    # Test Case: Real Sepsis Pathology (Rory Staunton / Martha Mills profile)
+    
+    # Severe Sepsis Test Panel
     sepsis_labs = {
-        "Lactate": 3.4,
-        "WBC": 17.5,
-        "Creatinine": 1.7,
+        "Lactate": 3.8,
+        "WBC": 17.4,
+        "Creatinine": 1.9,
         "Platelets": 95.0
     }
     result = predictor.predict(sepsis_labs)
@@ -206,10 +214,14 @@ if __name__ == "__main__":
     print("\n" + "=" * 65)
     print("       AEGIS-ICU: MODEL 2 (LABS AGENT) INFERENCE & LLM REASONING")
     print("=" * 65)
+    print(f" [+] Agent Name                       : {result['agent_name']}")
+    print(f" [+] Evaluation Timestamp             : {result['timestamp']}")
+    print(f" [+] Agent Confidence                 : {result['confidence'] * 100:.0f}%")
+    print(f" [+] Freshness Status                 : {result['freshness_status']}")
     print(f" [+] Lab-Confirmed Sepsis Probability : {prob_pct:.1f}%")
     print(f" [+] Organ Dysfunction Tier           : {result['organ_stress_level']}")
     print(f" [+] Cellular Hypoxia Grade           : {result.get('cellular_hypoxia_grade')}")
-    print(f" [+] Freshness Status                 : {result.get('freshness_status')}")
+    print(f" [+] Safety Guardrail Notice          : {result['safety_notice']}")
     print(f" [+] Reasoning Engine                 : {result.get('llm_source')}")
     print("-" * 65)
     print(" [+] Abnormal Blood Biomarkers Identified:")

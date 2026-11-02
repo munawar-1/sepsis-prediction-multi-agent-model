@@ -4,17 +4,19 @@ import { useGSAP } from '@gsap/react';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { ArrowUpRight, ArrowDown, Activity, ShieldCheck, Check } from 'lucide-react';
 import { scrollTo } from '../utils/lenis';
+import { useTheme } from '../context/ThemeContext';
 
 gsap.registerPlugin(ScrollTrigger);
 
 export default function HeroSection({ onOpenFlightDeck }) {
+  const { isDark } = useTheme();
   const containerRef = useRef(null);
   const textColRef = useRef(null);
   const visualCardRef = useRef(null);
   const showcaseContainerRef = useRef(null);
 
   useGSAP(() => {
-    // 1. Initial Entrance (Clean, no blur/glow)
+    // 1. Initial Entrance
     const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
 
     tl.fromTo('.hero-tag',
@@ -42,9 +44,7 @@ export default function HeroSection({ onOpenFlightDeck }) {
       '-=0.5'
     );
 
-    // 2. Impilo-style Motion Transformation on Scroll:
-    // As user scrolls, the text moves aside while the clinical monitoring visual
-    // physically scales up, re-centers, and expands into a large dominant showcase
+    // 2. Motion Transformation on Scroll
     const scrollTl = gsap.timeline({
       scrollTrigger: {
         trigger: containerRef.current,
@@ -76,15 +76,16 @@ export default function HeroSection({ onOpenFlightDeck }) {
         minHeight: '88vh',
         paddingTop: '96px',
         paddingBottom: '48px',
-        background: '#080E18',
+        background: isDark ? '#080E18' : '#F4F6F9',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
-        borderBottom: '1px solid #1A2738',
-        overflow: 'hidden'
+        borderBottom: isDark ? '1px solid #1A2738' : '1px solid #E2E8F0',
+        overflow: 'hidden',
+        transition: 'background-color 0.2s ease, border-color 0.2s ease'
       }}
     >
-      {/* Cinematic ICU Background Image with Subtle Dark Navy & Teal Overlays */}
+      {/* Cinematic ICU Background Image with Atmospheric Overlays */}
       <div
         style={{
           position: 'absolute',
@@ -104,23 +105,27 @@ export default function HeroSection({ onOpenFlightDeck }) {
             objectFit: 'cover',
             objectPosition: 'center 40%',
             filter: 'blur(3px)',
-            opacity: 0.22,
+            opacity: isDark ? 0.22 : 0.12,
             transform: 'scale(1.05)'
           }}
         />
-        {/* Dark Navy Atmospheric Overlays & Subtle Teal Tones */}
+        {/* Dark Navy / Daylight Slate Atmospheric Overlays */}
         <div
           style={{
             position: 'absolute',
             inset: 0,
-            background: 'radial-gradient(ellipse at 75% 35%, rgba(20, 184, 166, 0.08) 0%, transparent 60%), linear-gradient(180deg, rgba(8, 14, 24, 0.72) 0%, rgba(8, 14, 24, 0.85) 50%, #080E18 100%)'
+            background: isDark
+              ? 'radial-gradient(ellipse at 75% 35%, rgba(20, 184, 166, 0.08) 0%, transparent 60%), linear-gradient(180deg, rgba(8, 14, 24, 0.72) 0%, rgba(8, 14, 24, 0.85) 50%, #080E18 100%)'
+              : 'radial-gradient(ellipse at 75% 35%, rgba(13, 148, 136, 0.08) 0%, transparent 60%), linear-gradient(180deg, rgba(244, 246, 249, 0.72) 0%, rgba(244, 246, 249, 0.85) 50%, #F4F6F9 100%)'
           }}
         />
         <div
           style={{
             position: 'absolute',
             inset: 0,
-            background: 'linear-gradient(90deg, #080E18 0%, rgba(8, 14, 24, 0.88) 42%, rgba(8, 14, 24, 0.6) 100%)'
+            background: isDark
+              ? 'linear-gradient(90deg, #080E18 0%, rgba(8, 14, 24, 0.88) 42%, rgba(8, 14, 24, 0.6) 100%)'
+              : 'linear-gradient(90deg, #F4F6F9 0%, rgba(244, 246, 249, 0.88) 42%, rgba(244, 246, 249, 0.6) 100%)'
           }}
         />
       </div>
@@ -143,19 +148,19 @@ export default function HeroSection({ onOpenFlightDeck }) {
           {/* Eyebrow Label */}
           <div className="hero-tag" style={{ marginBottom: '20px' }}>
             <span className="eyebrow-tag">
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#35D6C5' }} />
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: isDark ? '#35D6C5' : '#0D9488' }} />
               CLINICAL DECISION SUPPORT CONCEPT • Sepsis-3
             </span>
           </div>
 
-          {/* Headline (Inter Tight, 2 balanced lines, clean, zero gradient) */}
+          {/* Headline */}
           <h1
             className="font-display"
             style={{
               fontSize: 'clamp(2.4rem, 4.4vw, 3.6rem)',
               fontWeight: 650,
               lineHeight: 1.15,
-              color: '#F1F5FA',
+              color: isDark ? '#F1F5FA' : '#0F172A',
               marginBottom: '20px'
             }}
           >
@@ -173,7 +178,7 @@ export default function HeroSection({ onOpenFlightDeck }) {
             style={{
               fontSize: '16px',
               lineHeight: 1.6,
-              color: '#9AA9BA',
+              color: isDark ? '#9AA9BA' : '#475569',
               maxWidth: '520px',
               marginBottom: '32px'
             }}
@@ -199,47 +204,56 @@ export default function HeroSection({ onOpenFlightDeck }) {
             </button>
           </div>
 
-          {/* Clinical Assurance Pillars (Flat, minimal) */}
+          {/* Clinical Assurance Pillars */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
             gap: '20px',
             paddingTop: '20px',
-            borderTop: '1px solid #1A2738',
+            borderTop: isDark ? '1px solid #1A2738' : '1px solid #E2E8F0',
             fontSize: '12px',
             fontFamily: 'var(--font-mono)',
-            color: '#9AA9BA'
+            color: isDark ? '#9AA9BA' : '#64748B'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Check size={14} color="#35D6C5" />
+              <Check size={14} color={isDark ? "#35D6C5" : "#0D9488"} />
               <span>Human-in-the-Loop</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Check size={14} color="#35D6C5" />
+              <Check size={14} color={isDark ? "#35D6C5" : "#0D9488"} />
               <span>Transparent Evidence</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Check size={14} color="#35D6C5" />
+              <Check size={14} color={isDark ? "#35D6C5" : "#0D9488"} />
               <span>Zero Black-Box Alerts</span>
             </div>
           </div>
         </div>
 
-        {/* Right Column: Clean Telemetry Visual (Transforms on scroll) */}
+        {/* Right Column: Clean Telemetry Visual */}
         <div ref={visualCardRef} style={{ transformOrigin: 'center center' }}>
-          <div className="ui-panel" style={{ padding: '20px', background: '#0D1624' }}>
+          <div
+            className="ui-panel"
+            style={{
+              padding: '20px',
+              background: isDark ? '#0D1624' : '#FFFFFF',
+              border: isDark ? '1px solid #243247' : '1px solid #E2E8F0',
+              borderRadius: '16px',
+              boxShadow: isDark ? '0 12px 30px rgba(0,0,0,0.3)' : '0 10px 30px rgba(0,0,0,0.06)'
+            }}
+          >
             {/* Telemetry Header */}
             <div style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               paddingBottom: '14px',
-              borderBottom: '1px solid #1A2738',
+              borderBottom: isDark ? '1px solid #1A2738' : '1px solid #E2E8F0',
               marginBottom: '16px'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#35D6C5' }} />
-                <span style={{ fontSize: '12px', fontFamily: 'var(--font-mono)', fontWeight: 600, color: '#F1F5FA' }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: isDark ? '#35D6C5' : '#0D9488' }} />
+                <span style={{ fontSize: '12px', fontFamily: 'var(--font-mono)', fontWeight: 600, color: isDark ? '#F1F5FA' : '#0F172A' }}>
                   ICU-BED-04 (P-10492) • ILLUSTRATIVE FEED
                 </span>
               </div>
@@ -248,21 +262,21 @@ export default function HeroSection({ onOpenFlightDeck }) {
                 fontFamily: 'var(--font-mono)',
                 padding: '2px 8px',
                 borderRadius: '4px',
-                background: '#162337',
-                color: '#FF5268',
-                border: '1px solid #243247',
+                background: isDark ? '#162337' : '#FEE2E2',
+                color: isDark ? '#FF5268' : '#DC2626',
+                border: isDark ? '1px solid #243247' : '1px solid #FECACA',
                 fontWeight: 600
               }}>
                 SEPSIS VECTOR DETECTED
               </span>
             </div>
 
-            {/* SVG Waveform (Clean flat strokes, zero glow) */}
+            {/* SVG Waveform */}
             <div style={{
-              background: '#080E18',
+              background: isDark ? '#080E18' : '#F8FAFC',
               borderRadius: '8px',
               padding: '12px 14px',
-              border: '1px solid #1A2738',
+              border: isDark ? '1px solid #1A2738' : '1px solid #E2E8F0',
               marginBottom: '16px'
             }}>
               <div style={{
@@ -270,19 +284,19 @@ export default function HeroSection({ onOpenFlightDeck }) {
                 justifyContent: 'space-between',
                 fontSize: '10px',
                 fontFamily: 'var(--font-mono)',
-                color: '#617285',
+                color: isDark ? '#617285' : '#94A3B8',
                 marginBottom: '4px'
               }}>
-                <span style={{ color: '#35D6C5' }}>LEAD II • ECG (mV)</span>
+                <span style={{ color: isDark ? '#35D6C5' : '#0D9488' }}>LEAD II • ECG (mV)</span>
                 <span>25 mm/s • GAIN 1.0</span>
               </div>
 
               <svg viewBox="0 0 500 55" style={{ width: '100%', height: '55px', display: 'block' }}>
-                <path d="M0,27 H500" stroke="#111C2B" strokeWidth="1" />
+                <path d="M0,27 H500" stroke={isDark ? "#111C2B" : "#E2E8F0"} strokeWidth="1" />
                 <path
                   d="M0,27 L35,27 L42,23 L48,29 L54,27 L64,27 L70,16 L76,46 L82,6 L88,38 L92,25 L98,27 L130,27 L138,21 L146,27 L180,27 L187,23 L193,29 L200,27 L209,27 L215,16 L221,46 L227,6 L233,38 L237,25 L243,27 L275,27 L283,21 L291,27 L325,27 L332,23 L338,29 L345,27 L354,27 L360,16 L366,46 L372,6 L378,38 L382,25 L388,27 L420,27 L428,21 L436,27 L470,27 L477,23 L483,29 L490,27 L500,27"
                   fill="none"
-                  stroke="#35D6C5"
+                  stroke={isDark ? "#35D6C5" : "#0D9488"}
                   strokeWidth="1.8"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -290,31 +304,46 @@ export default function HeroSection({ onOpenFlightDeck }) {
               </svg>
             </div>
 
-            {/* Numerical Gauges (Flat solid cards) */}
+            {/* Numerical Gauges */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '14px' }}>
-              <div style={{ background: '#080E18', padding: '10px', borderRadius: '6px', border: '1px solid #1A2738' }}>
-                <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: '#9AA9BA' }}>HEART RATE</span>
+              <div style={{
+                background: isDark ? '#080E18' : '#F8FAFC',
+                padding: '10px',
+                borderRadius: '8px',
+                border: isDark ? '1px solid #1A2738' : '1px solid #E2E8F0'
+              }}>
+                <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: isDark ? '#9AA9BA' : '#64748B' }}>HEART RATE</span>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '3px', margin: '2px 0' }}>
                   <span className="font-display" style={{ fontSize: '18px', fontWeight: 700, color: '#FF5268' }}>101</span>
-                  <span style={{ fontSize: '10px', color: '#617285', fontFamily: 'var(--font-mono)' }}>bpm</span>
+                  <span style={{ fontSize: '10px', color: isDark ? '#617285' : '#94A3B8', fontFamily: 'var(--font-mono)' }}>bpm</span>
                 </div>
                 <span style={{ fontSize: '10px', color: '#FF5268', fontFamily: 'var(--font-mono)' }}>+20 bpm/3h</span>
               </div>
 
-              <div style={{ background: '#080E18', padding: '10px', borderRadius: '6px', border: '1px solid #1A2738' }}>
-                <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: '#9AA9BA' }}>BLOOD PRESS.</span>
+              <div style={{
+                background: isDark ? '#080E18' : '#F8FAFC',
+                padding: '10px',
+                borderRadius: '8px',
+                border: isDark ? '1px solid #1A2738' : '1px solid #E2E8F0'
+              }}>
+                <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: isDark ? '#9AA9BA' : '#64748B' }}>BLOOD PRESS.</span>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '3px', margin: '2px 0' }}>
-                  <span className="font-display" style={{ fontSize: '18px', fontWeight: 700, color: '#35D6C5' }}>116/74</span>
-                  <span style={{ fontSize: '10px', color: '#617285', fontFamily: 'var(--font-mono)' }}>mmHg</span>
+                  <span className="font-display" style={{ fontSize: '18px', fontWeight: 700, color: isDark ? '#35D6C5' : '#0D9488' }}>116/74</span>
+                  <span style={{ fontSize: '10px', color: isDark ? '#617285' : '#94A3B8', fontFamily: 'var(--font-mono)' }}>mmHg</span>
                 </div>
-                <span style={{ fontSize: '10px', color: '#9AA9BA', fontFamily: 'var(--font-mono)' }}>Compensating</span>
+                <span style={{ fontSize: '10px', color: isDark ? '#9AA9BA' : '#64748B', fontFamily: 'var(--font-mono)' }}>Compensating</span>
               </div>
 
-              <div style={{ background: '#080E18', padding: '10px', borderRadius: '6px', border: '1px solid #1A2738' }}>
-                <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: '#9AA9BA' }}>SHOCK INDEX</span>
+              <div style={{
+                background: isDark ? '#080E18' : '#F8FAFC',
+                padding: '10px',
+                borderRadius: '8px',
+                border: isDark ? '1px solid #1A2738' : '1px solid #E2E8F0'
+              }}>
+                <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: isDark ? '#9AA9BA' : '#64748B' }}>SHOCK INDEX</span>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '3px', margin: '2px 0' }}>
                   <span className="font-display" style={{ fontSize: '18px', fontWeight: 700, color: '#E5B86A' }}>0.87</span>
-                  <span style={{ fontSize: '10px', color: '#617285', fontFamily: 'var(--font-mono)' }}>HR/SBP</span>
+                  <span style={{ fontSize: '10px', color: isDark ? '#617285' : '#94A3B8', fontFamily: 'var(--font-mono)' }}>HR/SBP</span>
                 </div>
                 <span style={{ fontSize: '10px', color: '#E5B86A', fontFamily: 'var(--font-mono)' }}>Widening</span>
               </div>
@@ -326,22 +355,22 @@ export default function HeroSection({ onOpenFlightDeck }) {
               flexDirection: 'column',
               gap: '6px',
               padding: '10px',
-              borderRadius: '6px',
-              background: '#080E18',
-              border: '1px solid #1A2738',
+              borderRadius: '8px',
+              background: isDark ? '#080E18' : '#F8FAFC',
+              border: isDark ? '1px solid #1A2738' : '1px solid #E2E8F0',
               fontSize: '11px'
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#35D6C5', fontFamily: 'var(--font-mono)' }}>Agent 1 (Vitals)</span>
-                <span style={{ color: '#F1F5FA' }}>Tachycardia decoupled from SBP</span>
+                <span style={{ color: isDark ? '#35D6C5' : '#0D9488', fontFamily: 'var(--font-mono)' }}>Agent 1 (Vitals)</span>
+                <span style={{ color: isDark ? '#F1F5FA' : '#0F172A' }}>Tachycardia decoupled from SBP</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#559BFF', fontFamily: 'var(--font-mono)' }}>Agent 2 (Labs)</span>
-                <span style={{ color: '#9AA9BA' }}>Lactate stale (&gt;8h) • Draw recommended</span>
+                <span style={{ color: isDark ? '#559BFF' : '#2563EB', fontFamily: 'var(--font-mono)' }}>Agent 2 (Labs)</span>
+                <span style={{ color: isDark ? '#9AA9BA' : '#64748B' }}>Lactate stale (&gt;8h) • Draw recommended</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#E5B86A', fontFamily: 'var(--font-mono)' }}>Agent 3 (Context)</span>
-                <span style={{ color: '#F1F5FA' }}>Albuterol discount rejected (decayed)</span>
+                <span style={{ color: isDark ? '#E5B86A' : '#D97706', fontFamily: 'var(--font-mono)' }}>Agent 3 (Context)</span>
+                <span style={{ color: isDark ? '#F1F5FA' : '#0F172A' }}>Albuterol discount rejected (decayed)</span>
               </div>
             </div>
           </div>

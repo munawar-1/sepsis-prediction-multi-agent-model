@@ -3,10 +3,12 @@ import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Clock, TrendingUp, BellOff } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 
 gsap.registerPlugin(ScrollTrigger);
 
 export default function ProblemSection() {
+  const { isDark } = useTheme();
   const sectionRef = useRef(null);
   const pinContainerRef = useRef(null);
   const [scrollProgress, setScrollProgress] = useState(0);
@@ -18,7 +20,7 @@ export default function ProblemSection() {
     ScrollTrigger.create({
       trigger: sectionRef.current,
       start: 'top 64px',
-      end: '+=120%', // Controlled, compact pinned duration
+      end: '+=120%',
       pin: pin,
       pinSpacing: true,
       scrub: 0.5,
@@ -69,7 +71,7 @@ export default function ProblemSection() {
       shockIndex: "0.61",
       news2: "0",
       bedsideAlarm: "SILENT",
-      bedsideAlarmColor: "#9AA9BA",
+      bedsideAlarmColor: isDark ? "#9AA9BA" : "#64748B",
       aegisRisk: "8%",
       explanation: "Post-surgical patient appears hemodynamically normal. Routine ICU checks show unremarkable numbers."
     },
@@ -81,7 +83,7 @@ export default function ProblemSection() {
       shockIndex: "0.89",
       news2: "3",
       bedsideAlarm: "SILENT",
-      bedsideAlarmColor: "#9AA9BA",
+      bedsideAlarmColor: isDark ? "#9AA9BA" : "#64748B",
       aegisRisk: "78%",
       explanation: "Heart rate creeps upward while compensatory vasoconstriction holds blood pressure. Standard threshold alarms remain completely silent."
     },
@@ -93,7 +95,7 @@ export default function ProblemSection() {
       shockIndex: "1.27",
       news2: "8",
       bedsideAlarm: "AUDIBLE ALARM",
-      bedsideAlarmColor: "#FF5268",
+      bedsideAlarmColor: "#DC2626",
       aegisRisk: "94%",
       explanation: "The bedside monitor finally sounds a loud alarm—hours after microvascular hypoperfusion has already commenced."
     }
@@ -107,8 +109,9 @@ export default function ProblemSection() {
       ref={sectionRef}
       style={{
         position: 'relative',
-        background: '#080E18',
-        borderBottom: '1px solid #1A2738'
+        background: isDark ? '#080E18' : '#F4F6F9',
+        borderBottom: isDark ? '1px solid #1A2738' : '1px solid #E2E8F0',
+        transition: 'background-color 0.2s ease, border-color 0.2s ease'
       }}
     >
       <div
@@ -149,7 +152,7 @@ export default function ProblemSection() {
                 fontSize: 'clamp(1.9rem, 3.2vw, 2.75rem)',
                 fontWeight: 650,
                 lineHeight: 1.15,
-                color: '#F1F5FA',
+                color: isDark ? '#F1F5FA' : '#0F172A',
                 marginBottom: '16px'
               }}
             >
@@ -159,23 +162,33 @@ export default function ProblemSection() {
             <p className="font-body" style={{
               fontSize: '15px',
               lineHeight: 1.6,
-              color: '#9AA9BA',
+              color: isDark ? '#9AA9BA' : '#475569',
               marginBottom: '20px'
             }}>
               Concerning physiological changes develop gradually. Relying only on isolated threshold alarms misses early combinations of signals—while driving severe alarm fatigue.
             </p>
 
             {/* Stage Indicator Card */}
-            <div className="ui-panel" style={{ padding: '16px', background: '#0D1624', marginBottom: '20px' }}>
+            <div
+              className="ui-panel"
+              style={{
+                padding: '16px',
+                background: isDark ? '#0D1624' : '#FFFFFF',
+                border: isDark ? '1px solid #243247' : '1px solid #E2E8F0',
+                borderRadius: '12px',
+                marginBottom: '20px',
+                boxShadow: isDark ? 'none' : '0 4px 14px rgba(0,0,0,0.04)'
+              }}
+            >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: '#35D6C5', fontWeight: 600 }}>
+                <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: isDark ? '#35D6C5' : '#0D9488', fontWeight: 600 }}>
                   SCROLL PROGRESSION: {current.stageLabel.toUpperCase()}
                 </span>
-                <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: '#F1F5FA' }}>
+                <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: isDark ? '#F1F5FA' : '#0F172A', fontWeight: 600 }}>
                   HOUR {current.hour}
                 </span>
               </div>
-              <p style={{ fontSize: '13px', color: '#9AA9BA', margin: 0, lineHeight: 1.5 }}>
+              <p style={{ fontSize: '13px', color: isDark ? '#9AA9BA' : '#475569', margin: 0, lineHeight: 1.5 }}>
                 {current.explanation}
               </p>
             </div>
@@ -183,21 +196,27 @@ export default function ProblemSection() {
             {/* Alarm Fatigue Research Citation */}
             <div style={{
               fontSize: '11.5px',
-              color: '#617285',
-              borderLeft: '2px solid #243247',
+              color: isDark ? '#617285' : '#64748B',
+              borderLeft: isDark ? '2px solid #243247' : '2px solid #CBD5E1',
               paddingLeft: '12px',
               lineHeight: 1.5
             }}>
-              <strong>Clinical Evidence:</strong> Hospital ICU studies report that 85% to 99% of acoustic telemetry alarms are clinically non-actionable, creating dangerous alarm desensitization (Joint Commission Alert #50).
+              <strong style={{ color: isDark ? '#9AA9BA' : '#334155' }}>Clinical Evidence:</strong> Hospital ICU studies report that 85% to 99% of acoustic telemetry alarms are clinically non-actionable, creating dangerous alarm desensitization (Joint Commission Alert #50).
             </div>
           </div>
 
-          {/* Right Column: Vertically Centred Clinical Monitoring Visualization */}
-          <div className="ui-panel" style={{
-            padding: '24px',
-            background: '#0D1624',
-            transformOrigin: 'center center'
-          }}>
+          {/* Right Column: Clinical Monitoring Visualization */}
+          <div
+            className="ui-panel"
+            style={{
+              padding: '24px',
+              background: isDark ? '#0D1624' : '#FFFFFF',
+              border: isDark ? '1px solid #243247' : '1px solid #E2E8F0',
+              borderRadius: '16px',
+              boxShadow: isDark ? 'none' : '0 10px 30px rgba(0,0,0,0.06)',
+              transformOrigin: 'center center'
+            }}
+          >
             {/* Visual Header */}
             <div style={{
               display: 'flex',
@@ -205,17 +224,17 @@ export default function ProblemSection() {
               justifyContent: 'space-between',
               marginBottom: '16px',
               paddingBottom: '12px',
-              borderBottom: '1px solid #1A2738'
+              borderBottom: isDark ? '1px solid #1A2738' : '1px solid #E2E8F0'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <TrendingUp size={16} color="#35D6C5" />
-                <span style={{ fontSize: '12px', fontFamily: 'var(--font-mono)', fontWeight: 600, color: '#F1F5FA' }}>
+                <TrendingUp size={16} color={isDark ? "#35D6C5" : "#0D9488"} />
+                <span style={{ fontSize: '12px', fontFamily: 'var(--font-mono)', fontWeight: 600, color: isDark ? '#F1F5FA' : '#0F172A' }}>
                   MULTI-SIGNAL DIVERGENCE ANALYSIS
                 </span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Clock size={13} color="#9AA9BA" />
-                <span style={{ fontSize: '12px', fontFamily: 'var(--font-mono)', color: '#9AA9BA' }}>
+                <Clock size={13} color={isDark ? "#9AA9BA" : "#64748B"} />
+                <span style={{ fontSize: '12px', fontFamily: 'var(--font-mono)', color: isDark ? '#9AA9BA' : '#64748B' }}>
                   Hr {current.hour}
                 </span>
               </div>
@@ -224,29 +243,29 @@ export default function ProblemSection() {
             {/* Graph Legend */}
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', fontFamily: 'var(--font-mono)', marginBottom: '8px' }}>
               <span style={{ color: '#FF5268' }}>● Heart Rate (bpm) — Upward Creep</span>
-              <span style={{ color: '#35D6C5' }}>● Systolic BP (mmHg) — Compensatory Drop</span>
+              <span style={{ color: isDark ? '#35D6C5' : '#0D9488' }}>● Systolic BP (mmHg) — Compensatory Drop</span>
             </div>
 
-            {/* SVG Trend Graph (Flat, clean strokes, clear thresholds) */}
+            {/* SVG Trend Graph */}
             <div style={{
-              background: '#080E18',
+              background: isDark ? '#080E18' : '#F8FAFC',
               borderRadius: '8px',
               padding: '12px',
-              border: '1px solid #1A2738',
+              border: isDark ? '1px solid #1A2738' : '1px solid #E2E8F0',
               marginBottom: '16px'
             }}>
               <svg viewBox="0 0 500 130" style={{ width: '100%', height: '120px', display: 'block' }}>
                 {/* Reference Grid & Thresholds */}
-                <line x1="0" y1="28" x2="500" y2="28" stroke="#243247" strokeDasharray="3 3" strokeWidth="1" />
-                <text x="6" y="24" fill="#617285" fontSize="9" fontFamily="var(--font-mono)">HR Alarm Threshold (100 bpm)</text>
+                <line x1="0" y1="28" x2="500" y2="28" stroke={isDark ? "#243247" : "#CBD5E1"} strokeDasharray="3 3" strokeWidth="1" />
+                <text x="6" y="24" fill={isDark ? "#617285" : "#94A3B8"} fontSize="9" fontFamily="var(--font-mono)">HR Alarm Threshold (100 bpm)</text>
 
-                <line x1="0" y1="98" x2="500" y2="98" stroke="#243247" strokeDasharray="3 3" strokeWidth="1" />
-                <text x="6" y="112" fill="#617285" fontSize="9" fontFamily="var(--font-mono)">BP Alarm Threshold (90 mmHg)</text>
+                <line x1="0" y1="98" x2="500" y2="98" stroke={isDark ? "#243247" : "#CBD5E1"} strokeDasharray="3 3" strokeWidth="1" />
+                <text x="6" y="112" fill={isDark ? "#617285" : "#94A3B8"} fontSize="9" fontFamily="var(--font-mono)">BP Alarm Threshold (90 mmHg)</text>
 
                 {/* Aegis Early Window Box */}
-                <rect x="200" y="10" width="140" height="110" fill="#111C2B" stroke="#35D6C5" strokeWidth="1" strokeDasharray="2 2" rx="4" />
-                <text x="210" y="24" fill="#35D6C5" fontSize="9" fontWeight="600" fontFamily="var(--font-mono)">AEGIS WINDOW</text>
-                <text x="210" y="34" fill="#9AA9BA" fontSize="8" fontFamily="var(--font-mono)">Signal Decoupling</text>
+                <rect x="200" y="10" width="140" height="110" fill={isDark ? "#111C2B" : "#F0FDFA"} stroke={isDark ? "#35D6C5" : "#0D9488"} strokeWidth="1" strokeDasharray="2 2" rx="4" />
+                <text x="210" y="24" fill={isDark ? "#35D6C5" : "#0D9488"} fontSize="9" fontWeight="600" fontFamily="var(--font-mono)">AEGIS WINDOW</text>
+                <text x="210" y="34" fill={isDark ? "#9AA9BA" : "#0F766E"} fontSize="8" fontFamily="var(--font-mono)">Signal Decoupling</text>
 
                 {/* Progressive Heart Rate Trend Path */}
                 <path
@@ -263,7 +282,7 @@ export default function ProblemSection() {
                 <path
                   d="M 10,38 Q 140,36 260,46 T 485,105"
                   fill="none"
-                  stroke="#35D6C5"
+                  stroke={isDark ? "#35D6C5" : "#0D9488"}
                   strokeWidth="2.2"
                   strokeDasharray="500"
                   strokeDashoffset="500"
@@ -272,32 +291,52 @@ export default function ProblemSection() {
               </svg>
             </div>
 
-            {/* Numerical Gauges (Real-Time Synchronized) */}
+            {/* Numerical Gauges */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '16px' }}>
-              <div style={{ background: '#080E18', padding: '10px', borderRadius: '6px', border: '1px solid #1A2738' }}>
-                <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: '#617285' }}>HEART RATE</span>
-                <div style={{ fontSize: '18px', fontWeight: 700, color: current.hr > 100 ? '#FF5268' : '#F1F5FA', fontFamily: 'var(--font-display)' }}>
-                  {current.hr} <span style={{ fontSize: '10px', color: '#617285' }}>bpm</span>
+              <div style={{
+                background: isDark ? '#080E18' : '#F8FAFC',
+                padding: '10px',
+                borderRadius: '8px',
+                border: isDark ? '1px solid #1A2738' : '1px solid #E2E8F0'
+              }}>
+                <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: isDark ? '#617285' : '#64748B' }}>HEART RATE</span>
+                <div style={{ fontSize: '18px', fontWeight: 700, color: current.hr > 100 ? '#FF5268' : (isDark ? '#F1F5FA' : '#0F172A'), fontFamily: 'var(--font-display)' }}>
+                  {current.hr} <span style={{ fontSize: '10px', color: isDark ? '#617285' : '#94A3B8' }}>bpm</span>
                 </div>
               </div>
 
-              <div style={{ background: '#080E18', padding: '10px', borderRadius: '6px', border: '1px solid #1A2738' }}>
-                <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: '#617285' }}>BLOOD PRESS.</span>
-                <div style={{ fontSize: '18px', fontWeight: 700, color: '#35D6C5', fontFamily: 'var(--font-display)' }}>
+              <div style={{
+                background: isDark ? '#080E18' : '#F8FAFC',
+                padding: '10px',
+                borderRadius: '8px',
+                border: isDark ? '1px solid #1A2738' : '1px solid #E2E8F0'
+              }}>
+                <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: isDark ? '#617285' : '#64748B' }}>BLOOD PRESS.</span>
+                <div style={{ fontSize: '18px', fontWeight: 700, color: isDark ? '#35D6C5' : '#0D9488', fontFamily: 'var(--font-display)' }}>
                   {current.bp}
                 </div>
               </div>
 
-              <div style={{ background: '#080E18', padding: '10px', borderRadius: '6px', border: '1px solid #1A2738' }}>
-                <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: '#617285' }}>SHOCK INDEX</span>
-                <div style={{ fontSize: '18px', fontWeight: 700, color: parseFloat(current.shockIndex) > 0.85 ? '#E5B86A' : '#F1F5FA', fontFamily: 'var(--font-display)' }}>
+              <div style={{
+                background: isDark ? '#080E18' : '#F8FAFC',
+                padding: '10px',
+                borderRadius: '8px',
+                border: isDark ? '1px solid #1A2738' : '1px solid #E2E8F0'
+              }}>
+                <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: isDark ? '#617285' : '#64748B' }}>SHOCK INDEX</span>
+                <div style={{ fontSize: '18px', fontWeight: 700, color: parseFloat(current.shockIndex) > 0.85 ? '#E5B86A' : (isDark ? '#F1F5FA' : '#0F172A'), fontFamily: 'var(--font-display)' }}>
                   {current.shockIndex}
                 </div>
               </div>
 
-              <div style={{ background: '#080E18', padding: '10px', borderRadius: '6px', border: '1px solid #1A2738' }}>
-                <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: '#617285' }}>NEWS2 SCORE</span>
-                <div style={{ fontSize: '18px', fontWeight: 700, color: '#9AA9BA', fontFamily: 'var(--font-display)' }}>
+              <div style={{
+                background: isDark ? '#080E18' : '#F8FAFC',
+                padding: '10px',
+                borderRadius: '8px',
+                border: isDark ? '1px solid #1A2738' : '1px solid #E2E8F0'
+              }}>
+                <span style={{ fontSize: '10px', fontFamily: 'var(--font-mono)', color: isDark ? '#617285' : '#64748B' }}>NEWS2 SCORE</span>
+                <div style={{ fontSize: '18px', fontWeight: 700, color: isDark ? '#9AA9BA' : '#475569', fontFamily: 'var(--font-display)' }}>
                   {current.news2}
                 </div>
               </div>
@@ -307,24 +346,24 @@ export default function ProblemSection() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <div style={{
                 padding: '10px 12px',
-                borderRadius: '6px',
-                background: '#080E18',
-                border: '1px solid #1A2738',
+                borderRadius: '8px',
+                background: isDark ? '#080E18' : '#F8FAFC',
+                border: isDark ? '1px solid #1A2738' : '1px solid #E2E8F0',
                 fontSize: '11px'
               }}>
-                <div style={{ color: '#617285', fontFamily: 'var(--font-mono)', marginBottom: '2px' }}>TRADITIONAL MONITOR</div>
+                <div style={{ color: isDark ? '#617285' : '#64748B', fontFamily: 'var(--font-mono)', marginBottom: '2px' }}>TRADITIONAL MONITOR</div>
                 <div style={{ color: current.bedsideAlarmColor, fontWeight: 600 }}>{current.bedsideAlarm}</div>
               </div>
 
               <div style={{
                 padding: '10px 12px',
-                borderRadius: '6px',
-                background: '#080E18',
-                border: '1px solid #243247',
+                borderRadius: '8px',
+                background: isDark ? '#080E18' : '#F0FDFA',
+                border: isDark ? '1px solid #243247' : '1px solid #CCFBF1',
                 fontSize: '11px'
               }}>
-                <div style={{ color: '#35D6C5', fontFamily: 'var(--font-mono)', marginBottom: '2px' }}>AEGIS DECISION ENGINE</div>
-                <div style={{ color: '#F1F5FA', fontWeight: 600 }}>RISK PROBABILITY: {current.aegisRisk}</div>
+                <div style={{ color: isDark ? '#35D6C5' : '#0D9488', fontFamily: 'var(--font-mono)', marginBottom: '2px' }}>AEGIS DECISION ENGINE</div>
+                <div style={{ color: isDark ? '#F1F5FA' : '#0F172A', fontWeight: 600 }}>RISK PROBABILITY: {current.aegisRisk}</div>
               </div>
             </div>
 

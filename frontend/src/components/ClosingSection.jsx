@@ -1,15 +1,17 @@
 import React from 'react';
+import { useTheme } from '../context/ThemeContext';
 import { Shield, ArrowRight, LayoutDashboard, ArrowUpRight } from 'lucide-react';
 import { scrollTo } from '../utils/lenis';
 
 export default function ClosingSection({ onOpenFlightDeck }) {
+  const { isDark } = useTheme();
   return (
     <section
       style={{
         position: 'relative',
         padding: '80px 24px 60px 24px',
-        background: '#080E18',
-        borderBottom: '1px solid #1A2738',
+        background: isDark ? '#080E18' : '#F8FAFC',
+        borderBottom: isDark ? '1px solid #1A2738' : '1px solid #E2E8F0',
         textAlign: 'center'
       }}
     >
@@ -20,8 +22,8 @@ export default function ClosingSection({ onOpenFlightDeck }) {
           width: '48px',
           height: '48px',
           borderRadius: '10px',
-          background: '#111C2B',
-          border: '1px solid #243247',
+          background: isDark ? '#111C2B' : '#F1F5F9',
+          border: isDark ? '1px solid #243247' : '1px solid #E2E8F0',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -35,7 +37,7 @@ export default function ClosingSection({ onOpenFlightDeck }) {
           fontSize: 'clamp(2rem, 3.8vw, 3.2rem)',
           fontWeight: 650,
           lineHeight: 1.25,
-          color: '#F1F5FA',
+          color: isDark ? '#F1F5FA' : '#0F172A',
           marginBottom: '20px'
         }}>
           Explore how Aegis{' '}
@@ -61,7 +63,7 @@ export default function ClosingSection({ onOpenFlightDeck }) {
         <p className="font-body" style={{
           fontSize: '16px',
           lineHeight: 1.6,
-          color: '#9AA9BA',
+          color: isDark ? '#9AA9BA' : '#475569',
           maxWidth: '620px',
           margin: '0 auto 32px auto'
         }}>
@@ -87,7 +89,7 @@ export default function ClosingSection({ onOpenFlightDeck }) {
           justifyContent: 'center',
           gap: '16px',
           flexWrap: 'wrap',
-          color: '#617285',
+          color: isDark ? '#617285' : '#64748B',
           fontSize: '11px',
           fontFamily: 'var(--font-mono)'
         }}>
