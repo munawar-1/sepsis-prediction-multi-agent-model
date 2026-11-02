@@ -174,6 +174,8 @@ Return ONLY a valid JSON object with the following exact keys:
         return None
 
     def _query_ollama(self, prompt: str) -> Optional[Dict[str, Any]]:
+        if os.environ.get("SKIP_LOCAL_LLM") == "1":
+            return None
         url = f"{self.ollama_base_url.rstrip('/')}/api/generate"
         headers = {"Content-Type": "application/json"}
         payload = {
@@ -183,8 +185,9 @@ Return ONLY a valid JSON object with the following exact keys:
             "stream": False,
             "options": {"temperature": 0.1}
         }
+        timeout = float(os.environ.get("OLLAMA_TIMEOUT", 8))
         try:
-            resp = requests.post(url, headers=headers, json=payload, timeout=25)
+            resp = requests.post(url, headers=headers, json=payload, timeout=timeout)
             if resp.status_code == 200:
                 data = resp.json()
                 raw_response = data.get("response", "")

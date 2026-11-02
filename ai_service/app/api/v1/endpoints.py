@@ -77,8 +77,7 @@ def evaluate_patient_state(tick: TelemetryTickRequest):
         labs_dict=labs,
         meds_list=meds,
         previous_vitals=tick.previous_vitals,
-        lab_age_hours=tick.lab_age_hours,
-        nurse_verified_hardware_fault=tick.nurse_verified_hardware_fault
+        lab_age_hours=tick.lab_age_hours
     )
     return result.model_dump() if hasattr(result, "model_dump") else result.dict()
 
@@ -142,6 +141,7 @@ def answer_doctor_inquiry(req: DoctorChatRequest):
     SHAP contributions, organ tier, shock index, and discount factor.
     Guarantees no hallucination: all answers reference actual patient measurements.
     """
+    import os, requests, json
     ctx = req.clinical_context or {}
     vitals = ctx.get("vitals_evidence", {})
     labs = ctx.get("labs_evidence", {})
@@ -163,8 +163,6 @@ Attending Doctor's Question: "{req.doctor_question}"
 Provide a concise, direct, evidence-based answer (under 120 words).
 Ground your answer explicitly in the mathematical telemetry, SHAP values, and Sepsis-3 guidelines."""
 
-    # Attempt Gemini call if API key present
-    import os, requests, json
     gemini_key = os.getenv("GEMINI_API_KEY")
     llm_answer = None
 
@@ -183,7 +181,6 @@ Ground your answer explicitly in the mathematical telemetry, SHAP values, and Se
             pass
 
     if not llm_answer:
-        # Heuristic fallback grounded in evidence
         llm_answer = (
             f"Regarding Bed {req.patient_id}: The alert is driven by a Shock Index of {si:.2f} "
             f"and elevated hemodynamic instability. Top SHAP contributors: {', '.join([d.get('feature','') for d in top_shap[:2]]) if top_shap else 'vital signs'}. "

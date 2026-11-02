@@ -149,13 +149,14 @@ class TestTriageOrchestrator(unittest.TestCase):
             meds_list=meds
         )
 
-        # Check structured findings
-        self.assertEqual(len(eval_res.agent_findings), 4)
+        # Check structured findings from the 3 clinical intelligence agents
+        self.assertEqual(len(eval_res.agent_findings), 3)
         agent_names = [f["agent_name"] for f in eval_res.agent_findings]
-        self.assertIn("Data Quality Agent", agent_names)
         self.assertIn("Vitals Agent", agent_names)
         self.assertIn("Labs Agent", agent_names)
         self.assertIn("Skeptic Agent", agent_names)
+        self.assertIsNotNone(eval_res.data_quality_evidence)
+        self.assertTrue(eval_res.data_quality_evidence.get("is_valid"))
 
         # Verify timestamps and confidences present
         for finding in eval_res.agent_findings:
