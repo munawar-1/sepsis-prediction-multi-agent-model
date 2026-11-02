@@ -44,13 +44,6 @@ class TelemetryTickRequest(BaseModel):
     lab_age_hours: Optional[float] = None
     previous_vitals: Optional[Dict[str, Any]] = None
 
-class DataQualityEvaluationRequest(BaseModel):
-    patient_id: Optional[str] = "unknown"
-    hour_index: Optional[int] = 0
-    vitals: Optional[Dict[str, Any]] = Field(default_factory=dict)
-    labs: Optional[Dict[str, Any]] = Field(default_factory=dict)
-    lab_age_hours: Optional[float] = None
-    previous_vitals: Optional[Dict[str, Any]] = None
 
 class PatientEvaluationResponse(BaseModel):
     patient_id: str

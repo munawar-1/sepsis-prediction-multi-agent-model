@@ -19,7 +19,9 @@ except ImportError:
                 setattr(self, k, v)
         def dict(self):
             return self.__dict__
-    def Field(default=None, description=""):
+    def Field(default=None, default_factory=None, description=""):
+        if default_factory is not None:
+            return default_factory()
         return default
 
 import requests

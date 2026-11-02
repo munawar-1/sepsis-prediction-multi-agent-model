@@ -1,22 +1,16 @@
 """
-Model 4 (Triage Orchestrator): Multi-Agent Execution Pipeline
-Executes Model 1 (Vitals), Model 2 (Labs), Model 3 (Skeptic False Alarm Filter),
-and Model 0 (Data Quality Agent).
-Synthesizes structured findings, detects transparent disagreements, and generates
-an auditable Evidence Chain and Action Bundle adhering strictly to clinical safety rules:
-1. Never suppress a sepsis warning solely because medication might explain a symptom.
-2. Missing or normal lab results must not automatically rule out sepsis (Martha's Rule).
+Multi-Agent Sepsis Triage Orchestrator (Aegis-ICU)
+Coordinates the 3 clinical intelligence agents and the Hybrid Data Validator:
+- Tool: DataValidator (Sub-millisecond sensor integrity check & Nurse alert dispatch)
+- Model 1: Vitals Agent (Predictor & Neuro-Symbolic LLM Reasoning)
+- Model 2: Labs Agent (Predictor & Pathology Reasoning, Martha's Rule)
+- Model 3: Skeptic Agent (False Alarm Filter & Medication Confounder Analysis - Gated)
+Synthesizes calibrated composite risk and Human-in-the-Loop (HITL) action bundles.
 """
 
-import os
-import sys
-
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PROJECT_ROOT = os.path.dirname(os.path.dirname(BASE_DIR))
-if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, PROJECT_ROOT)
-
 from typing import List, Dict, Any, Optional
+from datetime import datetime, timezone
+
 try:
     from pydantic import BaseModel, Field
 except ImportError:
@@ -40,7 +34,7 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(o
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from models.data_quality_agent.src.quality_checker import DataQualityAgent
+from models.triage_orchestrator.src.data_validator import DataValidator, ValidationResult
 from models.vitals_agent.src.predictor import VitalsPredictor
 from models.labs_agent.src.predictor import LabsPredictor
 from models.skeptic_agent.src.predictor import SkepticPredictor
@@ -51,12 +45,14 @@ from models.triage_orchestrator.src.hitl_recommender import generate_action_bund
 class UnifiedSepsisEvaluation(BaseModel):
     patient_id: str
     hour_index: int
-    urgency_level: str = Field(description="'LOW', 'MODERATE', or 'CRITICAL_SEPSIS'")
+    urgency_level: str = Field(description="'LOW', 'MODERATE', 'CRITICAL_SEPSIS', or 'HARDWARE_SENSOR_FAULT'")
     composite_sepsis_risk: float = Field(description="Calibrated composite probability between 0.0 and 1.0")
     news2_score: int
     shock_index: float
     discrepancy_detected: bool = Field(description="True if AI detects early deterioration while NEWS2 is low")
-    data_quality_evidence: Dict[str, Any]
+    target_role: str = Field(default="ROLE_DOCTOR", description="'ROLE_NURSE' for equipment alerts; 'ROLE_DOCTOR' for clinical alerts")
+    sensor_valid: bool = Field(default=True, description="True if telemetry passed hardware validation")
+    data_quality_evidence: Optional[Dict[str, Any]] = Field(default=None)
     vitals_evidence: Dict[str, Any]
     labs_evidence: Dict[str, Any]
     skeptic_evidence: Dict[str, Any]
@@ -75,7 +71,12 @@ class SepsisOrchestrator:
         ollama_base_url: Optional[str] = None,
         ollama_model: Optional[str] = None
     ):
-        self.data_quality_agent = DataQualityAgent()
+        self.validator = DataValidator(
+            gemini_api_key=gemini_api_key,
+            openai_api_key=openai_api_key,
+            ollama_base_url=ollama_base_url,
+            ollama_model=ollama_model
+        )
         self.vitals_predictor = VitalsPredictor(
             gemini_api_key=gemini_api_key,
             openai_api_key=openai_api_key,
@@ -108,56 +109,119 @@ class SepsisOrchestrator:
         lab_age_hours: Optional[float] = None
     ) -> UnifiedSepsisEvaluation:
         """
-        Executes end-to-end multi-agent evaluation:
-        1. Agent 0 (Data Quality) checks sensor artifacts, missingness, and freshness.
-        2. Agent 1 (Vitals) predicts risk + NEWS2 + SHAP attributions + structured findings.
-        3. Agent 2 (Labs) evaluates organ dysfunction + SHAP + STAT orders + Martha's rule.
-        4. Agent 3 (Skeptic) evaluates EHR confounders while ensuring sepsis warnings are never suppressed.
-        5. Orchestrator detects transparent disagreements between agents and resolves them safely.
-        6. Synthesizes calibrated composite risk & HITL action bundle.
+        Executes gated multi-agent triage:
+        0. Data Validator Tool screens for physical hardware/sensor faults.
+           -> If broken: Early abort, route directly to ROLE_NURSE without false doctor alert.
+        1. Agent 1 (Vitals) predicts hemodynamics, shock index, and NEWS2 blindspots.
+        2. Agent 2 (Labs) evaluates cellular hypoxia, organ stress, and Martha's rule.
+        3. Risk Gate: If either model detects risk -> invoke Agent 3 (Skeptic Filter).
+           -> If both models are normal -> bypass Skeptic (saves 50% compute/latency).
+        4. Synthesize final clinical composite verdict & HITL action bundle for ROLE_DOCTOR.
         """
-        # 1. Agent 0: Data Quality & Reliability
-        dq_finding = self.data_quality_agent.evaluate(
-            vitals_dict=vitals_dict,
-            labs_dict=labs_dict,
-            hour_index=hour,
-            patient_id=patient_id,
-            lab_age_hours=lab_age_hours,
-            previous_vitals=previous_vitals
-        )
-        dq_res = dq_finding.model_dump() if hasattr(dq_finding, "model_dump") else dq_finding.dict()
+        now_iso = datetime.now(timezone.utc).isoformat()
 
-        # 2. Agent 1: Vitals
+        # -------------------------------------------------------------
+        # STEP 0: SENSOR & HARDWARE VALIDATION (Fail-Fast Gate)
+        # -------------------------------------------------------------
+        val_res: ValidationResult = self.validator.validate(
+            current_vitals=vitals_dict,
+            previous_vitals=previous_vitals,
+            lab_age_hours=lab_age_hours
+        )
+
+        if not val_res.is_valid:
+            # Immediate fail-fast: Alert Nurse, abort clinical sepsis alarm
+            return UnifiedSepsisEvaluation(
+                patient_id=patient_id,
+                hour_index=hour,
+                urgency_level="HARDWARE_SENSOR_FAULT",
+                composite_sepsis_risk=0.0,
+                news2_score=0,
+                shock_index=0.0,
+                discrepancy_detected=False,
+                target_role="ROLE_NURSE",
+                sensor_valid=False,
+                data_quality_evidence={
+                    "is_valid": False,
+                    "fault_type": val_res.fault_type,
+                    "alert_title": val_res.alert_title,
+                    "bedside_action": val_res.bedside_action,
+                    "clinical_explanation": val_res.clinical_explanation,
+                    "detected_anomalies": val_res.detected_anomalies
+                },
+                vitals_evidence={"telemetry_snapshot": vitals_dict, "sensor_fault": val_res.fault_type},
+                labs_evidence={"labs_snapshot": labs_dict},
+                skeptic_evidence={"alarm_suppression_recommended": True, "recommended_action": "VERIFY_BEDSIDE_HARDWARE"},
+                agent_findings=[{
+                    "agent_name": "Data Validator Tool",
+                    "timestamp": now_iso,
+                    "confidence": 0.99,
+                    "target_role": "ROLE_NURSE",
+                    "fault_type": val_res.fault_type,
+                    "alert_title": val_res.alert_title,
+                    "bedside_action": val_res.bedside_action,
+                    "clinical_explanation": val_res.clinical_explanation
+                }],
+                agent_disagreements=[],
+                recommended_action_bundle=[{
+                    "order_id": f"BEDSIDE_{val_res.fault_type}",
+                    "name": val_res.bedside_action,
+                    "category": "BEDSIDE_HARDWARE",
+                    "status": "REQUIRED",
+                    "evidence_rationale": val_res.clinical_explanation
+                }],
+                evidence_chain_narrative=f"[NURSE ALERT - {val_res.alert_title}]: {val_res.clinical_explanation} Bedside Task: {val_res.bedside_action}",
+                requires_hitl_action=False
+            )
+
+        # -------------------------------------------------------------
+        # STEP 1: PARALLEL ASSESSMENT (Vitals & Labs)
+        # -------------------------------------------------------------
+        # Agent 1: Vitals
         vitals_res = self.vitals_predictor.predict(vitals_dict)
         p_v = vitals_res["vitals_risk_probability"]
         shock_index = vitals_res["shock_index"]
         news2 = vitals_res["news2_score"]
         resp_rate = vitals_dict.get("Resp", 18.0) or 18.0
 
-        # 3. Agent 2: Labs
+        # Agent 2: Labs
         labs_res = self.labs_predictor.predict(labs_dict)
         p_l = labs_res["labs_risk_probability"]
         has_fresh_labs = (labs_dict.get("Lactate") is not None) or (labs_dict.get("WBC") is not None)
 
-        # 4. Agent 3: Skeptic & False Alarm Checker
-        combined_ehr = ehr_data if ehr_data else {"medications": meds_list or []}
-        skeptic_res = self.skeptic_predictor.evaluate_false_alarm(
-            vitals_result=vitals_res,
-            labs_result=labs_res,
-            ehr_data=combined_ehr
-        )
-        discount = skeptic_res["confidence_discount_factor"]
+        # -------------------------------------------------------------
+        # STEP 2: GATED RISK CHECK (Call Skeptic only if risk flagged)
+        # -------------------------------------------------------------
+        has_elevated_risk = (p_v >= 0.30 or p_l >= 0.30 or shock_index >= 0.80 or news2 >= 4)
 
-        # 5. Compile Structured Agent Findings with Evidence, Timestamps, and Confidence
+        if has_elevated_risk:
+            combined_ehr = ehr_data if ehr_data else {"medications": meds_list or []}
+            skeptic_res = self.skeptic_predictor.evaluate_false_alarm(
+                vitals_result=vitals_res,
+                labs_result=labs_res,
+                ehr_data=combined_ehr
+            )
+            discount = skeptic_res["confidence_discount_factor"]
+        else:
+            # Low Risk: Skip heavy Skeptic LLM, saving 50% compute/latency
+            skeptic_res = {
+                "agent_name": "Skeptic Agent",
+                "timestamp": now_iso,
+                "confidence": 1.0,
+                "classification": "UNCONTESTED_NORMAL",
+                "recommended_action": "ROUTINE_MONITORING",
+                "alarm_suppression_recommended": False,
+                "confidence_discount_factor": 0.0,
+                "detected_confounders": [],
+                "clinical_reasoning": "Vitals and laboratory parameters reflect baseline physiological stability. False alarm analysis bypassed.",
+                "llm_source": "gated_skip"
+            }
+            discount = 0.0
+
+        # -------------------------------------------------------------
+        # STEP 3: AGENT FINDINGS & DISAGREEMENTS
+        # -------------------------------------------------------------
         agent_findings = [
-            {
-                "agent_name": "Data Quality Agent",
-                "timestamp": dq_res["timestamp"],
-                "confidence": dq_res["confidence"],
-                "quality_tier": dq_res["quality_tier"],
-                "clinical_narrative": dq_res["clinical_narrative"],
-                "evidence": dq_res["evidence"]
-            },
             {
                 "agent_name": "Vitals Agent",
                 "timestamp": vitals_res["timestamp"],
@@ -199,12 +263,9 @@ class SepsisOrchestrator:
             }
         ]
 
-        # 6. Transparent Disagreement Detection & Resolution
         disagreements = []
 
         # Disagreement A: Vitals vs Labs Discordance (Occult Sepsis / Martha's Rule)
-        # Vitals show deterioration (prob >= 0.40 or shock_index >= 0.75 or Resp >= 22),
-        # but Labs biomarkers are normal (NORMAL_HOMEOSTASIS, lactate < 2.0, or zero abnormal biomarkers) or uncollected
         has_normal_or_missing_labs = (
             not has_fresh_labs or
             labs_res.get("organ_stress_level") == "NORMAL_HOMEOSTASIS" or
@@ -235,7 +296,6 @@ class SepsisOrchestrator:
             })
 
         # Disagreement B: Vitals vs Skeptic Confounder Conflict
-        # Vitals flag risk, but Skeptic identifies a medication confounder (e.g. Albuterol)
         confounders = skeptic_res.get("detected_confounders", [])
         has_drug_confounder = any("Pharmacological" in c or "Confounder" in c for c in confounders)
         if p_v >= 0.40 and has_drug_confounder:
@@ -248,36 +308,18 @@ class SepsisOrchestrator:
                     f"while Vitals Agent flagged significant overall sepsis probability ({p_v*100:.1f}%)."
                 ),
                 "clinical_rationale": (
-                    "Clinical Safety Rule: Never suppress a sepsis warning solely because medication might explain a symptom. "
-                    "Non-cardiac vitals (tachypnea, fever, shock index) cannot be attributed to medication alone."
-                ),
-                "resolution_strategy": (
                     "Sepsis alert remains ACTIVE (STAND_ALERT). Confounder context is transparently displayed to bedside "
                     "clinicians so they are aware of drug-induced tachycardia without missing underlying sepsis."
-                )
-            })
-
-        # Disagreement C: Data Quality Degradation vs Predictive Scoring
-        if dq_res["quality_tier"] in ["UNRELIABLE_SENSOR_ARTIFACT", "DEGRADED_MISSING_DATA"] or dq_res["detected_artifacts"]:
-            disagreements.append({
-                "disagreement_type": "DATA_QUALITY_DEGRADED_DISCORDANCE",
-                "agents_involved": ["Data Quality Agent", "Vitals Agent", "Labs Agent"],
-                "severity": "HIGH" if dq_res["detected_artifacts"] else "MODERATE",
-                "description": (
-                    f"Data Quality Agent flagged telemetry degradation ({dq_res['quality_tier']}): "
-                    f"{'; '.join(dq_res['detected_artifacts'] or dq_res['stale_features'])}."
-                ),
-                "clinical_rationale": (
-                    "Algorithmic predictive confidence is diminished when sensor artifacts or missing telemetry "
-                    "jeopardize feature reliability."
                 ),
                 "resolution_strategy": (
-                    "Require manual bedside physical vitals check and telemetry lead inspection prior to invasive "
-                    "escalation, while proceeding with non-invasive sepsis evaluation."
+                    "Maintain active sepsis monitoring and serial bedside evaluation. Do not discontinue sepsis therapy "
+                    "solely due to beta-agonist or chronotropic medication."
                 )
             })
 
-        # 7. Meta-Ensemble Consensus & Composite Risk
+        # -------------------------------------------------------------
+        # STEP 4: META-ENSEMBLE CONSENSUS & COMPOSITE RISK
+        # -------------------------------------------------------------
         raw_composite = self.ensemble.compute_composite_risk(
             p_vitals=p_v,
             p_labs=p_l,
@@ -287,7 +329,6 @@ class SepsisOrchestrator:
             resp_rate=resp_rate
         )
 
-        # Elevate vigilance if patient is immunocompromised
         if skeptic_res.get("ehr_risk_modifier") == "ELEVATE_RISK":
             raw_composite = min(1.0, raw_composite + 0.15)
 
@@ -301,7 +342,6 @@ class SepsisOrchestrator:
         )
         bundle = generate_action_bundle(urgency)
 
-        # Append STAT lab escalation to action bundle if indicated by disagreements or labs
         if any(d["disagreement_type"] == "VITALS_LABS_DISCORDANCE" for d in disagreements):
             bundle.insert(0, {
                 "order_id": "STAT_LAB_OCCULT_SEPSIS",
@@ -311,13 +351,12 @@ class SepsisOrchestrator:
                 "evidence_rationale": "Compensated shock / tachypnea detected while lab results are uncollected or normal."
             })
 
-        # 8. Synthesized Evidence Chain Narrative
+        # Synthesized Evidence Chain Narrative
         v_reason = vitals_res.get("clinical_reasoning") or vitals_res.get("clinical_explanation") or f"Shock Index: {shock_index:.2f}, NEWS2: {news2}"
         l_reason = labs_res.get("clinical_reasoning") or labs_res.get("pathology_summary") or f"Organ Stress: {labs_res.get('organ_stress_level')}"
         s_reason = skeptic_res.get("clinical_reasoning") or skeptic_res.get("recommended_action") or "Skeptic evaluated alert validity."
 
         narrative_parts = [
-            f"[DATA QUALITY: {dq_res['quality_tier']} ({dq_res['confidence']*100:.0f}% confidence)] {dq_res['clinical_narrative']}",
             f"[VITALS AGENT: {p_v*100:.1f}% risk] Shock Index: {shock_index:.2f}, NEWS2: {news2}. {v_reason}",
             f"[LABS AGENT: {p_l*100:.1f}% risk] Tier: {labs_res.get('organ_stress_level', 'UNKNOWN')}. {l_reason}",
             f"[SKEPTIC AGENT: {skeptic_res.get('classification', 'ANALYZED')}] Action: {skeptic_res.get('recommended_action', 'EVALUATED')}. {s_reason}"
@@ -330,8 +369,6 @@ class SepsisOrchestrator:
             )
 
         narrative = " ".join(narrative_parts)
-
-        # Discrepancy detection: AI detects early deterioration while NEWS2 is low
         discrepancy = (composite_risk >= 0.40 and news2 < 5)
 
         return UnifiedSepsisEvaluation(
@@ -342,7 +379,12 @@ class SepsisOrchestrator:
             news2_score=news2,
             shock_index=shock_index,
             discrepancy_detected=discrepancy,
-            data_quality_evidence=dq_res,
+            target_role="ROLE_DOCTOR",
+            sensor_valid=True,
+            data_quality_evidence={
+                "is_valid": True,
+                "clinical_explanation": "All core vital signals verified and physically plausible."
+            },
             vitals_evidence=vitals_res,
             labs_evidence=labs_res,
             skeptic_evidence=skeptic_res,
@@ -357,40 +399,18 @@ class SepsisOrchestrator:
 if __name__ == "__main__":
     orchestrator = SepsisOrchestrator()
 
-    # Scenario: Albuterol given, HR 108, Resp 22 (tachypneic), Shock Index 0.88, Lactate 1.1 (normal)
-    # Must NOT suppress alert! Must report VITALS_LABS_DISCORDANCE and VITALS_SKEPTIC_DISCORDANCE.
+    # Test 1: Slipped clip -> Nurse alert directly
+    slipped_clip_vitals = {"HR": 72.0, "SBP": 118.0, "DBP": 78.0, "Resp": 14.0, "O2Sat": 68.0}
+    res_clip = orchestrator.evaluate("p_sensor_fault", 1, slipped_clip_vitals, {}, [])
+    print(f"\n[Test 1] Slipped Clip -> Urgency: {res_clip.urgency_level}, Target: {res_clip.target_role}")
+    print(f"         Bedside Action: {res_clip.recommended_action_bundle[0]['name']}")
+
+    # Test 2: Sepsis Patient -> Doctor alert with action bundle
     sample_vitals = {"HR": 108.0, "SBP": 122.0, "MAP": 80.0, "Resp": 22.0, "O2Sat": 96.0, "Temp": 37.8}
     sample_labs = {"Lactate": 1.1, "WBC": 7.0, "Creatinine": 0.9, "Platelets": 230.0}
     sample_meds = ["Albuterol 0.83 mg/mL Inhalation Solution"]
 
-    res = orchestrator.evaluate(
-        patient_id="p000011",
-        hour=2,
-        vitals_dict=sample_vitals,
-        labs_dict=sample_labs,
-        meds_list=sample_meds
-    )
-
-    print("\n" + "=" * 70)
-    print("      AEGIS-ICU: FULL MULTI-AGENT ORCHESTRATION PIPELINE")
-    print("=" * 70)
-    print(f" [+] Patient ID               : {res.patient_id}")
-    print(f" [+] Composite Sepsis Risk    : {res.composite_sepsis_risk * 100:.1f}%")
-    print(f" [+] Urgency Tier             : {res.urgency_level}")
-    print(f" [+] Discrepancy Detected     : {res.discrepancy_detected}")
-    print(f" [+] Data Quality Tier        : {res.data_quality_evidence['quality_tier']}")
-    print(f" [+] Skeptic Action           : {res.skeptic_evidence['recommended_action']}")
-    print(f" [+] Alarm Suppressed?        : {res.skeptic_evidence['alarm_suppression_recommended']}")
-    print("-" * 70)
-    print(f" [+] Agent Findings Collected : {len(res.agent_findings)}")
-    for f in res.agent_findings:
-        print(f"     * {f['agent_name']}: Confidence {f['confidence']*100:.0f}%")
-    print("-" * 70)
-    print(f" [+] Disagreements Caught     : {len(res.agent_disagreements)}")
-    for d in res.agent_disagreements:
-        print(f"     ! [{d['disagreement_type']}] Severity: {d['severity']}")
-        print(f"       Rationale : {d['clinical_rationale']}")
-        print(f"       Resolution: {d['resolution_strategy']}")
-    print("-" * 70)
-    print(f" [+] Synthesized Narrative:\n     {res.evidence_chain_narrative}")
-    print("=" * 70 + "\n")
+    res_sepsis = orchestrator.evaluate("p000011", 2, sample_vitals, sample_labs, sample_meds)
+    print(f"\n[Test 2] Sepsis Patient -> Urgency: {res_sepsis.urgency_level}, Target: {res_sepsis.target_role}")
+    print(f"         Composite Risk : {res_sepsis.composite_sepsis_risk*100:.1f}%")
+    print(f"         Action Orders  : {len(res_sepsis.recommended_action_bundle)}")

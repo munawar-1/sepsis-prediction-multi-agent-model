@@ -35,8 +35,7 @@ except ImportError:
 
 from ai_service.app.schemas.clinical_schemas import (
     TelemetryTickRequest,
-    PatientEvaluationResponse,
-    DataQualityEvaluationRequest
+    PatientEvaluationResponse
 )
 from models.triage_orchestrator.src.orchestrator import SepsisOrchestrator
 
@@ -86,21 +85,6 @@ def evaluate_patient_state(tick: TelemetryTickRequest):
 # =====================================================================
 # 2. INDIVIDUAL AGENT ENDPOINTS (MICROSERVICE WRAPPERS)
 # =====================================================================
-@router.post("/data-quality/evaluate")
-def evaluate_data_quality_agent(payload: DataQualityEvaluationRequest):
-    """
-    Agent 0 (Data Quality Agent): Evaluates completeness, sensor signal noise,
-    inverted pulse pressure artifacts, and staleness.
-    """
-    res = orchestrator.data_quality_agent.evaluate(
-        vitals_dict=payload.vitals or {},
-        labs_dict=payload.labs or {},
-        hour_index=payload.hour_index or 0,
-        patient_id=payload.patient_id or "unknown",
-        lab_age_hours=payload.lab_age_hours,
-        previous_vitals=payload.previous_vitals
-    )
-    return res.model_dump() if hasattr(res, "model_dump") else res.dict()
 
 
 @router.post("/vitals/evaluate")

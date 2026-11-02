@@ -15,50 +15,10 @@ import unittest
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
-
-from models.data_quality_agent.src.quality_checker import DataQualityAgent
 from models.vitals_agent.src.predictor import VitalsPredictor
 from models.labs_agent.src.predictor import LabsPredictor
 from models.skeptic_agent.src.predictor import SkepticPredictor
 from models.triage_orchestrator.src.orchestrator import SepsisOrchestrator
-
-
-class TestDataQualityAgent(unittest.TestCase):
-    def setUp(self):
-        self.agent = DataQualityAgent()
-
-    def test_high_integrity_data(self):
-        vitals = {"HR": 82.0, "SBP": 120.0, "DBP": 80.0, "MAP": 93.0, "Resp": 16.0, "O2Sat": 99.0, "Temp": 37.0}
-        labs = {"Lactate": 1.2, "WBC": 7.5, "Creatinine": 0.8, "Platelets": 240.0}
-        res = self.agent.evaluate(vitals, labs, patient_id="test_01")
-        self.assertEqual(res.quality_tier, "HIGH_INTEGRITY")
-        self.assertGreaterEqual(res.confidence, 0.85)
-        self.assertEqual(res.vital_completeness_ratio, 1.0)
-        self.assertEqual(res.lab_completeness_ratio, 1.0)
-        self.assertEqual(len(res.detected_artifacts), 0)
-
-    def test_missing_critical_labs(self):
-        vitals = {"HR": 90.0, "SBP": 115.0, "MAP": 85.0, "Resp": 18.0, "O2Sat": 98.0, "Temp": 37.1}
-        labs = {}  # All labs missing
-        res = self.agent.evaluate(vitals, labs, patient_id="test_02")
-        self.assertIn("Lactate", res.missing_labs)
-        self.assertIn("WBC", res.missing_labs)
-        self.assertTrue(any("STAT Blood Lactate" in r for r in res.actionable_recommendations))
-
-    def test_inverted_blood_pressure_artifact(self):
-        # SBP 75 <= DBP 85 indicates cuff or calibration defect
-        vitals = {"HR": 95.0, "SBP": 75.0, "DBP": 85.0, "MAP": 80.0, "Resp": 18.0, "O2Sat": 98.0, "Temp": 37.0}
-        labs = {"Lactate": 1.5, "WBC": 8.0, "Creatinine": 0.9, "Platelets": 200.0}
-        res = self.agent.evaluate(vitals, labs, patient_id="test_03")
-        self.assertTrue(any("Inverted Blood Pressure" in a for a in res.detected_artifacts))
-        self.assertLess(res.signal_reliability_score, 1.0)
-
-    def test_oximeter_detachment_artifact(self):
-        # SpO2 72% but completely normal Resp 15 and HR 75
-        vitals = {"HR": 75.0, "SBP": 120.0, "DBP": 80.0, "MAP": 93.0, "Resp": 15.0, "O2Sat": 72.0, "Temp": 36.8}
-        labs = {"Lactate": 1.2, "WBC": 7.0, "Creatinine": 0.8, "Platelets": 220.0}
-        res = self.agent.evaluate(vitals, labs, patient_id="test_04")
-        self.assertTrue(any("Pulse Oximeter Detachment" in a for a in res.detected_artifacts))
 
 
 class TestVitalsAgent(unittest.TestCase):
@@ -249,24 +209,6 @@ class TestTriageOrchestrator(unittest.TestCase):
         discordance_types = [d["disagreement_type"] for d in eval_res.agent_disagreements]
         self.assertIn("VITALS_SKEPTIC_DISCORDANCE", discordance_types)
 
-    def test_data_quality_degradation_discordance(self):
-        """
-        Inverted BP artifact causes DATA_QUALITY_DEGRADED_DISCORDANCE.
-        """
-        vitals = {"HR": 100.0, "SBP": 70.0, "DBP": 85.0, "MAP": 75.0, "Resp": 18.0, "O2Sat": 97.0, "Temp": 37.0}
-        labs = {"Lactate": 1.5, "WBC": 8.0, "Creatinine": 0.9, "Platelets": 200.0}
-        meds = []
-
-        eval_res = self.orchestrator.evaluate(
-            patient_id="p_artifact_scenario",
-            hour=1,
-            vitals_dict=vitals,
-            labs_dict=labs,
-            meds_list=meds
-        )
-
-        discordance_types = [d["disagreement_type"] for d in eval_res.agent_disagreements]
-        self.assertIn("DATA_QUALITY_DEGRADED_DISCORDANCE", discordance_types)
 
 
 if __name__ == "__main__":
