@@ -1,11 +1,18 @@
 """
 Multi-Agent Sepsis Triage Orchestrator (Aegis-ICU)
-Coordinates the 3 clinical intelligence agents and the Hybrid Data Validator:
-- Tool: DataValidator (Sub-millisecond sensor integrity check & Nurse alert dispatch)
-- Model 1: Vitals Agent (Predictor & Neuro-Symbolic LLM Reasoning)
-- Model 2: Labs Agent (Predictor & Pathology Reasoning, Martha's Rule)
-- Model 3: Skeptic Agent (False Alarm Filter & Medication Confounder Analysis - Gated)
-Synthesizes calibrated composite risk and Human-in-the-Loop (HITL) action bundles.
+Implements the exact clinical human-in-the-loop workflow:
+1. Orchestrator is the Master Controller (Agent 4) receiving all telemetry.
+2. Data Validator Tool screens for hardware/sensor faults:
+   - If fault detected: LLM explains artifact to Bedside Nurse.
+   - If Nurse confirms hardware fault -> Workflow STOPS (zero doctor false alarms).
+   - If Nurse overrides ("Sensors are fine, patient is bad") -> Continues to models.
+3. Dual Screening (Agent 1 Vitals & Agent 2 Labs run in parallel).
+4. Gated Risk Check:
+   - If risk detected -> Invoke Agent 3 (Skeptic False Alarm Filter).
+   - If no risk -> Agent 1 & 2 LLMs reason over mathematical SHAP values directly.
+5. Meta-Ensemble generates calibrated consensus risk and Sepsis Action Bundle.
+6. If Clinical Sepsis Risk -> Orchestrator calls Backend Notification Dispatcher
+   to trigger urgent Doctor Email and Dashboard alert!
 """
 
 from typing import List, Dict, Any, Optional
@@ -35,6 +42,7 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 from models.triage_orchestrator.src.data_validator import DataValidator, ValidationResult
+from models.triage_orchestrator.src.notification_dispatcher import BackendNotificationDispatcher
 from models.vitals_agent.src.predictor import VitalsPredictor
 from models.labs_agent.src.predictor import LabsPredictor
 from models.skeptic_agent.src.predictor import SkepticPredictor
@@ -52,6 +60,8 @@ class UnifiedSepsisEvaluation(BaseModel):
     discrepancy_detected: bool = Field(description="True if AI detects early deterioration while NEWS2 is low")
     target_role: str = Field(default="ROLE_DOCTOR", description="'ROLE_NURSE' for equipment alerts; 'ROLE_DOCTOR' for clinical alerts")
     sensor_valid: bool = Field(default=True, description="True if telemetry passed hardware validation")
+    workflow_halted_reason: Optional[str] = Field(default=None, description="Reason workflow stopped early, if any")
+    notification_dispatch: Optional[Dict[str, Any]] = Field(default=None, description="Backend notification trigger status")
     data_quality_evidence: Optional[Dict[str, Any]] = Field(default=None)
     vitals_evidence: Dict[str, Any]
     labs_evidence: Dict[str, Any]
@@ -69,7 +79,8 @@ class SepsisOrchestrator:
         gemini_api_key: Optional[str] = None,
         openai_api_key: Optional[str] = None,
         ollama_base_url: Optional[str] = None,
-        ollama_model: Optional[str] = None
+        ollama_model: Optional[str] = None,
+        backend_base_url: Optional[str] = None
     ):
         self.validator = DataValidator(
             gemini_api_key=gemini_api_key,
@@ -77,6 +88,7 @@ class SepsisOrchestrator:
             ollama_base_url=ollama_base_url,
             ollama_model=ollama_model
         )
+        self.dispatcher = BackendNotificationDispatcher(backend_base_url=backend_base_url)
         self.vitals_predictor = VitalsPredictor(
             gemini_api_key=gemini_api_key,
             openai_api_key=openai_api_key,
@@ -106,22 +118,27 @@ class SepsisOrchestrator:
         meds_list: list,
         ehr_data: Optional[Any] = None,
         previous_vitals: Optional[dict] = None,
-        lab_age_hours: Optional[float] = None
+        lab_age_hours: Optional[float] = None,
+        nurse_verified_hardware_fault: Optional[bool] = None
     ) -> UnifiedSepsisEvaluation:
         """
-        Executes gated multi-agent triage:
-        0. Data Validator Tool screens for physical hardware/sensor faults.
-           -> If broken: Early abort, route directly to ROLE_NURSE without false doctor alert.
-        1. Agent 1 (Vitals) predicts hemodynamics, shock index, and NEWS2 blindspots.
-        2. Agent 2 (Labs) evaluates cellular hypoxia, organ stress, and Martha's rule.
-        3. Risk Gate: If either model detects risk -> invoke Agent 3 (Skeptic Filter).
-           -> If both models are normal -> bypass Skeptic (saves 50% compute/latency).
-        4. Synthesize final clinical composite verdict & HITL action bundle for ROLE_DOCTOR.
+        Master Triage Workflow:
+        0. Data Validator Tool screens for physical hardware/sensor anomalies.
+           - If fault detected AND nurse verifies (or verification pending):
+             -> Dispatch Nurse Alert, STOP WORKFLOW, DO NOT page doctor.
+           - If nurse overrides ('Sensors are attached properly, patient is truly sick'):
+             -> Continue to clinical AI models.
+        1. Agent 1 (Vitals) and Agent 2 (Labs) evaluate in parallel.
+        2. Gated Risk Gate:
+           - If risk detected -> Invoke Agent 3 (Skeptic Filter).
+           - If no risk -> Agent 1 & 2 LLMs reason over math directly to Orchestrator.
+        3. Meta-Ensemble calculates calibrated composite risk & generates action bundle.
+        4. If Clinical Sepsis Risk -> Call Backend to fire Doctor's urgent email!
         """
         now_iso = datetime.now(timezone.utc).isoformat()
 
         # -------------------------------------------------------------
-        # STEP 0: SENSOR & HARDWARE VALIDATION (Fail-Fast Gate)
+        # STEP 0: SENSOR & HARDWARE VALIDATION (Nurse Gate)
         # -------------------------------------------------------------
         val_res: ValidationResult = self.validator.validate(
             current_vitals=vitals_dict,
@@ -129,8 +146,20 @@ class SepsisOrchestrator:
             lab_age_hours=lab_age_hours
         )
 
-        if not val_res.is_valid:
-            # Immediate fail-fast: Alert Nurse, abort clinical sepsis alarm
+        # Check if we should halt for hardware fault:
+        # Halt if an anomaly is detected UNLESS the nurse explicitly confirmed sensors are fine (False)
+        if not val_res.is_valid and nurse_verified_hardware_fault is not False:
+            # Dispatch Nurse Bedside Hardware Alert
+            dispatch_info = self.dispatcher.dispatch_nurse_hardware_alert(
+                patient_id=patient_id,
+                hour_index=hour,
+                fault_type=val_res.fault_type,
+                alert_title=val_res.alert_title,
+                bedside_action=val_res.bedside_action,
+                clinical_explanation=val_res.clinical_explanation
+            )
+
+            # STOP WORKFLOW: Zero false doctor alarms
             return UnifiedSepsisEvaluation(
                 patient_id=patient_id,
                 hour_index=hour,
@@ -141,6 +170,8 @@ class SepsisOrchestrator:
                 discrepancy_detected=False,
                 target_role="ROLE_NURSE",
                 sensor_valid=False,
+                workflow_halted_reason=f"Workflow halted: {val_res.alert_title}. Dispatched to Bedside Nurse.",
+                notification_dispatch=dispatch_info,
                 data_quality_evidence={
                     "is_valid": False,
                     "fault_type": val_res.fault_type,
@@ -175,7 +206,7 @@ class SepsisOrchestrator:
             )
 
         # -------------------------------------------------------------
-        # STEP 1: PARALLEL ASSESSMENT (Vitals & Labs)
+        # STEP 1: PARALLEL ASSESSMENT (Agent 1 Vitals & Agent 2 Labs)
         # -------------------------------------------------------------
         # Agent 1: Vitals
         vitals_res = self.vitals_predictor.predict(vitals_dict)
@@ -195,6 +226,7 @@ class SepsisOrchestrator:
         has_elevated_risk = (p_v >= 0.30 or p_l >= 0.30 or shock_index >= 0.80 or news2 >= 4)
 
         if has_elevated_risk:
+            # Risk detected -> Invoke Agent 3 (Skeptic Filter)
             combined_ehr = ehr_data if ehr_data else {"medications": meds_list or []}
             skeptic_res = self.skeptic_predictor.evaluate_false_alarm(
                 vitals_result=vitals_res,
@@ -203,7 +235,8 @@ class SepsisOrchestrator:
             )
             discount = skeptic_res["confidence_discount_factor"]
         else:
-            # Low Risk: Skip heavy Skeptic LLM, saving 50% compute/latency
+            # No Risk -> LLMs of Agent 1 & 2 reason over math directly to Orchestrator
+            discount = 0.0
             skeptic_res = {
                 "agent_name": "Skeptic Agent",
                 "timestamp": now_iso,
@@ -213,10 +246,9 @@ class SepsisOrchestrator:
                 "alarm_suppression_recommended": False,
                 "confidence_discount_factor": 0.0,
                 "detected_confounders": [],
-                "clinical_reasoning": "Vitals and laboratory parameters reflect baseline physiological stability. False alarm analysis bypassed.",
+                "clinical_reasoning": "Vitals and blood pathology reflect physiological homeostasis. False alarm analysis bypassed.",
                 "llm_source": "gated_skip"
             }
-            discount = 0.0
 
         # -------------------------------------------------------------
         # STEP 3: AGENT FINDINGS & DISAGREEMENTS
@@ -265,7 +297,7 @@ class SepsisOrchestrator:
 
         disagreements = []
 
-        # Disagreement A: Vitals vs Labs Discordance (Occult Sepsis / Martha's Rule)
+        # Disagreement A: Vitals vs Labs Discordance (Martha's Rule)
         has_normal_or_missing_labs = (
             not has_fresh_labs or
             labs_res.get("organ_stress_level") == "NORMAL_HOMEOSTASIS" or
@@ -351,7 +383,7 @@ class SepsisOrchestrator:
                 "evidence_rationale": "Compensated shock / tachypnea detected while lab results are uncollected or normal."
             })
 
-        # Synthesized Evidence Chain Narrative
+        # Synthesized Evidence Narrative
         v_reason = vitals_res.get("clinical_reasoning") or vitals_res.get("clinical_explanation") or f"Shock Index: {shock_index:.2f}, NEWS2: {news2}"
         l_reason = labs_res.get("clinical_reasoning") or labs_res.get("pathology_summary") or f"Organ Stress: {labs_res.get('organ_stress_level')}"
         s_reason = skeptic_res.get("clinical_reasoning") or skeptic_res.get("recommended_action") or "Skeptic evaluated alert validity."
@@ -371,6 +403,22 @@ class SepsisOrchestrator:
         narrative = " ".join(narrative_parts)
         discrepancy = (composite_risk >= 0.40 and news2 < 5)
 
+        # -------------------------------------------------------------
+        # STEP 5: DOCTOR EMAIL DISPATCH (If Clinical Sepsis Risk)
+        # -------------------------------------------------------------
+        dispatch_info = None
+        if urgency in ["MODERATE", "CRITICAL_SEPSIS"]:
+            # Orchestrator triggers backend to fire urgent physician email!
+            dispatch_info = self.dispatcher.dispatch_doctor_sepsis_alert(
+                patient_id=patient_id,
+                hour_index=hour,
+                urgency=urgency,
+                composite_risk=composite_risk,
+                shock_index=shock_index,
+                action_bundle=bundle,
+                evidence_narrative=narrative
+            )
+
         return UnifiedSepsisEvaluation(
             patient_id=patient_id,
             hour_index=hour,
@@ -381,6 +429,8 @@ class SepsisOrchestrator:
             discrepancy_detected=discrepancy,
             target_role="ROLE_DOCTOR",
             sensor_valid=True,
+            workflow_halted_reason=None,
+            notification_dispatch=dispatch_info,
             data_quality_evidence={
                 "is_valid": True,
                 "clinical_explanation": "All core vital signals verified and physically plausible."
@@ -399,18 +449,33 @@ class SepsisOrchestrator:
 if __name__ == "__main__":
     orchestrator = SepsisOrchestrator()
 
-    # Test 1: Slipped clip -> Nurse alert directly
-    slipped_clip_vitals = {"HR": 72.0, "SBP": 118.0, "DBP": 78.0, "Resp": 14.0, "O2Sat": 68.0}
-    res_clip = orchestrator.evaluate("p_sensor_fault", 1, slipped_clip_vitals, {}, [])
-    print(f"\n[Test 1] Slipped Clip -> Urgency: {res_clip.urgency_level}, Target: {res_clip.target_role}")
-    print(f"         Bedside Action: {res_clip.recommended_action_bundle[0]['name']}")
+    print("\n" + "=" * 70)
+    print("      AEGIS-ICU: END-TO-END PIPELINE & NOTIFICATION HOOK TEST")
+    print("=" * 70)
 
-    # Test 2: Sepsis Patient -> Doctor alert with action bundle
-    sample_vitals = {"HR": 108.0, "SBP": 122.0, "MAP": 80.0, "Resp": 22.0, "O2Sat": 96.0, "Temp": 37.8}
-    sample_labs = {"Lactate": 1.1, "WBC": 7.0, "Creatinine": 0.9, "Platelets": 230.0}
-    sample_meds = ["Albuterol 0.83 mg/mL Inhalation Solution"]
+    # SCENARIO 1: Slipped finger clip -> Nurse Alert & Workflow STOP
+    clip_vitals = {"HR": 72.0, "SBP": 118.0, "DBP": 78.0, "Resp": 14.0, "O2Sat": 68.0}
+    res_clip = orchestrator.evaluate("BED_04", 1, clip_vitals, {}, [])
+    print(f"\n[Case 1: Slipped Clip]")
+    print(f"  * Urgency       : {res_clip.urgency_level}")
+    print(f"  * Target Role   : {res_clip.target_role}")
+    print(f"  * Workflow Stop : {res_clip.workflow_halted_reason}")
+    print(f"  * Nurse Action  : {res_clip.recommended_action_bundle[0]['name']}")
 
-    res_sepsis = orchestrator.evaluate("p000011", 2, sample_vitals, sample_labs, sample_meds)
-    print(f"\n[Test 2] Sepsis Patient -> Urgency: {res_sepsis.urgency_level}, Target: {res_sepsis.target_role}")
-    print(f"         Composite Risk : {res_sepsis.composite_sepsis_risk*100:.1f}%")
-    print(f"         Action Orders  : {len(res_sepsis.recommended_action_bundle)}")
+    # SCENARIO 2: Nurse Overrides ("Sensors are fine, patient is actually cold/sick")
+    res_override = orchestrator.evaluate("BED_04", 1, clip_vitals, {}, [], nurse_verified_hardware_fault=False)
+    print(f"\n[Case 2: Nurse Overrides Hardware Anomaly]")
+    print(f"  * Urgency       : {res_override.urgency_level}")
+    print(f"  * Target Role   : {res_override.target_role}")
+    print(f"  * Models Ran?   : {res_override.sensor_valid}")
+
+    # SCENARIO 3: Sepsis Patient -> Doctor Email & Resuscitation Bundle
+    sepsis_vitals = {"HR": 118.0, "SBP": 96.0, "MAP": 68.0, "Resp": 24.0, "O2Sat": 94.0, "Temp": 38.6}
+    sepsis_labs = {"Lactate": 3.4, "WBC": 16.5, "Creatinine": 1.6, "Platelets": 110.0}
+    res_sepsis = orchestrator.evaluate("BED_08", 3, sepsis_vitals, sepsis_labs, ["Albuterol Inhalation"])
+    print(f"\n[Case 3: Acute Septic Shock]")
+    print(f"  * Urgency       : {res_sepsis.urgency_level} ({res_sepsis.composite_sepsis_risk*100:.1f}%)")
+    print(f"  * Target Role   : {res_sepsis.target_role}")
+    print(f"  * Doctor Email  : {res_sepsis.notification_dispatch['status']}")
+    print(f"  * Resuscitation : {len(res_sepsis.recommended_action_bundle)} orders dispatched")
+    print("=" * 70 + "\n")

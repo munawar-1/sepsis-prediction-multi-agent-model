@@ -43,6 +43,10 @@ class TelemetryTickRequest(BaseModel):
     # Data Quality parameters (Agent 0)
     lab_age_hours: Optional[float] = None
     previous_vitals: Optional[Dict[str, Any]] = None
+    nurse_verified_hardware_fault: Optional[bool] = Field(
+        default=None,
+        description="If True, nurse confirms hardware fault (workflow stops). If False, nurse confirms true clinical emergency (workflow proceeds)."
+    )
 
 
 class PatientEvaluationResponse(BaseModel):
@@ -53,6 +57,10 @@ class PatientEvaluationResponse(BaseModel):
     news2_score: int
     shock_index: float
     discrepancy_detected: bool
+    target_role: Optional[str] = Field(default="ROLE_DOCTOR", description="Target role: ROLE_NURSE or ROLE_DOCTOR")
+    sensor_valid: Optional[bool] = Field(default=True, description="False if sensor/hardware artifact detected")
+    workflow_halted_reason: Optional[str] = Field(default=None, description="Reason if workflow halted early")
+    notification_dispatch: Optional[Dict[str, Any]] = Field(default=None, description="Backend notification dispatch status")
     data_quality_evidence: Optional[Dict[str, Any]] = Field(default_factory=dict)
     vitals_evidence: Dict[str, Any]
     labs_evidence: Dict[str, Any]
