@@ -5,14 +5,26 @@ Evaluates blood pathology and organ dysfunction biomarkers:
 2. Freshness / Missingness Status (STAT Lab Draw Escalation)
 3. Cellular Hypoxia & Organ Dysfunction Drivers (SOFA criteria)
 4. SHAP-based per-prediction feature contributions
+5. LLM-powered pathological reasoning explaining the biomarker numbers
 """
 
 import os
-os.environ.setdefault("MPLCONFIGDIR", "/tmp/matplotlib")
+import tempfile
+os.environ.setdefault("MPLCONFIGDIR", os.path.join(tempfile.gettempdir(), "matplotlib"))
 import joblib
 import numpy as np
 import pandas as pd
 import shap
+import sys
+
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+try:
+    from models.labs_agent.src.reasoning_agent import LabsReasoningAgent, LabsEvidenceReport
+except ImportError:
+    from reasoning_agent import LabsReasoningAgent, LabsEvidenceReport
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODEL_PATH = os.path.join(BASE_DIR, "artifacts", "labs_rf_model.pkl")
@@ -27,11 +39,24 @@ TRAIN_MEDIANS = {
 }
 
 class LabsPredictor:
-    def __init__(self, model_path=MODEL_PATH):
+    def __init__(
+        self,
+        model_path: str = MODEL_PATH,
+        gemini_api_key: Optional[str] = None,
+        openai_api_key: Optional[str] = None,
+        ollama_base_url: Optional[str] = None,
+        ollama_model: Optional[str] = None
+    ):
         self.model_path = model_path
         self.model = None
         self.shap_explainer = None
         self.load_model()
+        self.reasoning_agent = LabsReasoningAgent(
+            gemini_api_key=gemini_api_key,
+            openai_api_key=openai_api_key,
+            ollama_base_url=ollama_base_url,
+            ollama_model=ollama_model
+        )
 
     def load_model(self):
         if os.path.exists(self.model_path):
@@ -74,10 +99,17 @@ class LabsPredictor:
         )
         return sorted_contributions
 
-    def predict(self, labs_dict: dict) -> dict:
+    def explain(self, labs_result: dict) -> LabsEvidenceReport:
+        """
+        Explicit reasoning method producing typed LabsEvidenceReport.
+        """
+        return self.reasoning_agent.explain(labs_result)
+
+    def predict(self, labs_dict: dict, generate_reasoning: bool = True) -> dict:
         """
         Input: Dictionary of blood pathology e.g. {'Lactate': 3.4, 'WBC': 16.2, 'Creatinine': 1.8, 'Platelets': 120}
-        Output: Prediction dictionary with probability, organ stress status, and STAT lab triggers.
+        Output: Prediction dictionary with probability, organ stress status, STAT lab triggers,
+                SHAP attributions, and LLM clinical pathology reasoning.
         """
         features = {}
         missing_count = 0
@@ -134,7 +166,7 @@ class LabsPredictor:
         else:
             stress_level = "NORMAL_HOMEOSTASIS"
 
-        return {
+        result = {
             "labs_risk_probability": round(prob, 4),
             "organ_stress_level": stress_level,
             "stat_lab_draws_required": stat_orders,
@@ -143,11 +175,25 @@ class LabsPredictor:
             "labs_snapshot": {k: labs_dict.get(k) for k in TRAIN_MEDIANS}
         }
 
+        # 5. LLM Clinical Pathology Reasoning Wrap
+        if generate_reasoning:
+            report: LabsEvidenceReport = self.reasoning_agent.explain(result)
+            result["organ_stress_level"] = report.organ_stress_level
+            result["cellular_hypoxia_grade"] = report.cellular_hypoxia_grade
+            result["freshness_status"] = report.freshness_status
+            result["stat_orders_recommended"] = report.stat_orders_recommended
+            result["abnormal_biomarkers"] = report.abnormal_biomarkers
+            result["pathology_summary"] = report.pathology_summary
+            result["clinical_reasoning"] = report.clinical_reasoning
+            result["shap_summary"] = report.shap_summary
+            result["llm_source"] = report.llm_source
+
+        return result
+
 if __name__ == "__main__":
     predictor = LabsPredictor()
 
     # Test Case: Real Sepsis Pathology (Rory Staunton / Martha Mills profile)
-    # Lactic acidosis (3.4 mmol/L) + Leukocytosis (17.5) + Elevated Creatinine
     sepsis_labs = {
         "Lactate": 3.4,
         "WBC": 17.5,
@@ -157,22 +203,28 @@ if __name__ == "__main__":
     result = predictor.predict(sepsis_labs)
     prob_pct = result["labs_risk_probability"] * 100
 
-    print("\n" + "=" * 60)
-    print("       AEGIS-ICU: MODEL 2 (LABS AGENT) INFERENCE")
-    print("=" * 60)
+    print("\n" + "=" * 65)
+    print("       AEGIS-ICU: MODEL 2 (LABS AGENT) INFERENCE & LLM REASONING")
+    print("=" * 65)
     print(f" [+] Lab-Confirmed Sepsis Probability : {prob_pct:.1f}%")
     print(f" [+] Organ Dysfunction Tier           : {result['organ_stress_level']}")
-    print("-" * 60)
+    print(f" [+] Cellular Hypoxia Grade           : {result.get('cellular_hypoxia_grade')}")
+    print(f" [+] Freshness Status                 : {result.get('freshness_status')}")
+    print(f" [+] Reasoning Engine                 : {result.get('llm_source')}")
+    print("-" * 65)
     print(" [+] Abnormal Blood Biomarkers Identified:")
     for flag in result["abnormal_biomarkers"]:
         print(f"     * {flag}")
-    if result["stat_lab_draws_required"]:
+    if result.get("stat_orders_recommended"):
         print(" [+] Immediate Diagnostic Escalations Required:")
-        for order in result["stat_lab_draws_required"]:
+        for order in result["stat_orders_recommended"]:
             print(f"     ! {order}")
-    print("-" * 60)
-    print(" [+] SHAP Feature Contributions (per-prediction):")
-    for feat, val in result['shap_contributions'].items():
+    print("-" * 65)
+    print(" [+] Clinical Pathology Reasoning:")
+    print(f"     \"{result.get('pathology_summary')}\"")
+    print("-" * 65)
+    print(" [+] Top SHAP Feature Contributions:")
+    for feat, val in list(result['shap_contributions'].items())[:4]:
         direction = "↑ Risk" if val > 0 else "↓ Risk"
         print(f"     {'+'if val > 0 else ''}{val:.4f}  {feat}  ({direction})")
-    print("=" * 60 + "\n")
+    print("=" * 65 + "\n")

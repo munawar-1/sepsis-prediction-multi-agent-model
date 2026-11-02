@@ -17,6 +17,13 @@ except ImportError:
     def Field(default=None, description=""):
         return default
 
+import os
+import sys
+
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
 from models.vitals_agent.src.predictor import VitalsPredictor
 from models.labs_agent.src.predictor import LabsPredictor
 from models.skeptic_agent.src.predictor import SkepticPredictor
@@ -48,8 +55,18 @@ class SepsisOrchestrator:
         ollama_base_url: Optional[str] = None,
         ollama_model: Optional[str] = None
     ):
-        self.vitals_predictor = VitalsPredictor()
-        self.labs_predictor = LabsPredictor()
+        self.vitals_predictor = VitalsPredictor(
+            gemini_api_key=gemini_api_key,
+            openai_api_key=openai_api_key,
+            ollama_base_url=ollama_base_url,
+            ollama_model=ollama_model
+        )
+        self.labs_predictor = LabsPredictor(
+            gemini_api_key=gemini_api_key,
+            openai_api_key=openai_api_key,
+            ollama_base_url=ollama_base_url,
+            ollama_model=ollama_model
+        )
         self.skeptic_predictor = SkepticPredictor(
             gemini_api_key=gemini_api_key,
             openai_api_key=openai_api_key,
@@ -109,10 +126,13 @@ class SepsisOrchestrator:
         bundle = generate_action_bundle(urgency)
 
         # Build synthesized evidence chain narrative
+        v_reason = vitals_res.get("clinical_reasoning") or f"Vitals Risk: {p_v*100:.1f}% (Shock Index: {shock_index:.2f}, NEWS2: {news2})"
+        l_reason = labs_res.get("clinical_reasoning") or f"Labs Risk: {p_l*100:.1f}% ({labs_res.get('organ_stress_level')})"
+        s_reason = skeptic_res.get("clinical_reasoning") or "Skeptic evaluated alert validity."
         narrative = (
-            f"Vitals Agent assessed {p_v*100:.1f}% risk (Shock Index: {shock_index:.2f}, NEWS2: {news2}). "
-            f"Labs Agent assessed {p_l*100:.1f}% risk ({labs_res['organ_stress_level']}). "
-            f"Skeptic Agent: {skeptic_res['clinical_reasoning']}"
+            f"[Agent 1 - Vitals]: {v_reason} "
+            f"[Agent 2 - Labs]: {l_reason} "
+            f"[Agent 3 - Skeptic]: {s_reason}"
         )
 
         # Discrepancy detection: AI detects early deterioration while NEWS2 is low

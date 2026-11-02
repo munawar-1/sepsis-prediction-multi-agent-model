@@ -57,20 +57,28 @@ def run_evaluation(
     # Display Agent 1 (Vitals)
     print("\n" + "-" * 75)
     print(" [AGENT 1: VITALS AGENT]")
+    print(f"  * Engine Used             : {v_ev.get('llm_source')}")
     print(f"  * Sepsis Risk Probability : {v_ev.get('vitals_risk_probability', 0)*100:.1f}%")
+    print(f"  * Risk Tier               : {v_ev.get('risk_level')}")
+    print(f"  * Hemodynamic Stage       : {v_ev.get('hemodynamic_stage')}")
     print(f"  * Shock Index             : {v_ev.get('shock_index')} (Normal < 0.70)")
     print(f"  * NEWS2 Score             : {v_ev.get('news2_score')}")
     print(f"  * Risk Drivers Identified : {v_ev.get('risk_drivers')}")
+    print(f"  * Discrepancy Rationale   : {v_ev.get('discrepancy_rationale')}")
     print("  * Top SHAP Feature Contributions:")
     for feat, val in list(v_ev.get("shap_contributions", {}).items())[:4]:
         direction = "↑ Increases Risk" if val > 0 else "↓ Lowers Risk"
         print(f"    - {feat:<15}: {'+' if val > 0 else ''}{val:.4f} ({direction})")
+    print(f"  * Clinical Reasoning:\n    \"{v_ev.get('clinical_explanation')}\"")
 
     # Display Agent 2 (Labs)
     print("\n" + "-" * 75)
     print(" [AGENT 2: LABS & PATHOLOGY AGENT]")
+    print(f"  * Engine Used             : {l_ev.get('llm_source')}")
     print(f"  * Sepsis Risk Probability : {l_ev.get('labs_risk_probability', 0)*100:.1f}%")
     print(f"  * Organ Stress Level      : {l_ev.get('organ_stress_level')}")
+    print(f"  * Cellular Hypoxia Grade  : {l_ev.get('cellular_hypoxia_grade')}")
+    print(f"  * Freshness Status        : {l_ev.get('freshness_status')}")
     print(f"  * Abnormal Biomarkers     : {l_ev.get('abnormal_biomarkers')}")
     if l_ev.get("stat_lab_draws_required"):
         print(f"  * STAT Escalations        : {l_ev.get('stat_lab_draws_required')}")
@@ -78,6 +86,7 @@ def run_evaluation(
     for feat, val in list(l_ev.get("shap_contributions", {}).items())[:4]:
         direction = "↑ Increases Risk" if val > 0 else "↓ Lowers Risk"
         print(f"    - {feat:<15}: {'+' if val > 0 else ''}{val:.4f} ({direction})")
+    print(f"  * Clinical Reasoning:\n    \"{l_ev.get('pathology_summary')}\"")
 
     # Display Agent 3 (Skeptic False Alarm Filter)
     print("\n" + "-" * 75)

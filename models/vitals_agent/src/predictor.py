@@ -6,14 +6,26 @@ Outputs:
 2. Classical NEWS2 Score comparison
 3. Top Mathematical Risk Drivers (Shock Index, Tachypnea, etc.)
 4. SHAP-based per-prediction feature contributions
+5. LLM-powered physiological reasoning explaining the exact numbers
 """
 
 import os
-os.environ.setdefault("MPLCONFIGDIR", "/tmp/matplotlib")
+import tempfile
+os.environ.setdefault("MPLCONFIGDIR", os.path.join(tempfile.gettempdir(), "matplotlib"))
 import joblib
 import numpy as np
 import pandas as pd
 import shap
+import sys
+
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+try:
+    from models.vitals_agent.src.reasoning_agent import VitalsReasoningAgent, VitalsEvidenceReport
+except ImportError:
+    from reasoning_agent import VitalsReasoningAgent, VitalsEvidenceReport
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODEL_PATH = os.path.join(BASE_DIR, "artifacts", "vitals_rf_model.pkl")
@@ -59,11 +71,24 @@ def calculate_news2(vitals: dict) -> int:
     return score
 
 class VitalsPredictor:
-    def __init__(self, model_path=MODEL_PATH):
+    def __init__(
+        self,
+        model_path: str = MODEL_PATH,
+        gemini_api_key: Optional[str] = None,
+        openai_api_key: Optional[str] = None,
+        ollama_base_url: Optional[str] = None,
+        ollama_model: Optional[str] = None
+    ):
         self.model_path = model_path
         self.model = None
         self.shap_explainer = None
         self.load_model()
+        self.reasoning_agent = VitalsReasoningAgent(
+            gemini_api_key=gemini_api_key,
+            openai_api_key=openai_api_key,
+            ollama_base_url=ollama_base_url,
+            ollama_model=ollama_model
+        )
 
     def load_model(self):
         if os.path.exists(self.model_path):
@@ -106,10 +131,17 @@ class VitalsPredictor:
         )
         return sorted_contributions
 
-    def predict(self, vitals_dict: dict) -> dict:
+    def explain(self, vitals_result: dict) -> VitalsEvidenceReport:
+        """
+        Explicit reasoning method producing typed VitalsEvidenceReport.
+        """
+        return self.reasoning_agent.explain(vitals_result)
+
+    def predict(self, vitals_dict: dict, generate_reasoning: bool = True) -> dict:
         """
         Input: Dictionary of vital signs e.g. {'HR': 105, 'SBP': 102, 'Resp': 22, ...}
-        Output: Prediction dictionary with risk probability, NEWS2, and risk drivers.
+        Output: Prediction dictionary with risk probability, NEWS2, risk drivers,
+                SHAP attributions, and LLM clinical reasoning.
         """
         # 1. Feature extraction with missingness handling
         features = {}
@@ -158,7 +190,7 @@ class VitalsPredictor:
         # 6. Per-prediction SHAP feature contributions
         shap_contributions = self._compute_shap_contributions(df_row)
 
-        return {
+        result = {
             "vitals_risk_probability": round(prob, 4),
             "news2_score": news2_score,
             "shock_index": round(shock_index, 2),
@@ -168,11 +200,23 @@ class VitalsPredictor:
             "telemetry_snapshot": {k: features[k] for k in TRAIN_MEDIANS}
         }
 
+        # 7. LLM Clinical Reasoning Wrap
+        if generate_reasoning:
+            report: VitalsEvidenceReport = self.reasoning_agent.explain(result)
+            result["risk_level"] = report.risk_level
+            result["hemodynamic_stage"] = report.hemodynamic_stage
+            result["clinical_explanation"] = report.clinical_explanation
+            result["clinical_reasoning"] = report.clinical_explanation
+            result["discrepancy_rationale"] = report.discrepancy_rationale
+            result["shap_summary"] = report.shap_summary
+            result["llm_source"] = report.llm_source
+
+        return result
+
 if __name__ == "__main__":
     predictor = VitalsPredictor()
     
-    # Test Case 1: Rory Staunton / Martha Mills scenario (Compensated early sepsis)
-    # HR is high (106), Resp is elevated (23), but SBP looks normal (112). NEWS2 is low!
+    # Test Case: Compensated early sepsis (Rory Staunton / Martha Mills scenario)
     sample_patient = {
         "HR": 106.0,
         "SBP": 112.0,
@@ -183,30 +227,26 @@ if __name__ == "__main__":
     }
     result = predictor.predict(sample_patient)
     prob_pct = result['vitals_risk_probability'] * 100
-    
-    # Clinical risk categorization relative to 2% baseline ICU rate
-    if prob_pct >= 50.0:
-        risk_tier = "CRITICAL SEPSIS RISK (25x baseline)"
-    elif prob_pct >= 30.0:
-        risk_tier = "ELEVATED RISK - SUBCLINICAL (15x-20x baseline)"
-    else:
-        risk_tier = "LOW / ROUTINE RISK"
 
-    print("\n" + "=" * 60)
-    print("      AEGIS-ICU: MODEL 1 (VITALS AGENT) INFERENCE")
-    print("=" * 60)
+    print("\n" + "=" * 65)
+    print("      AEGIS-ICU: MODEL 1 (VITALS AGENT) INFERENCE & LLM REASONING")
+    print("=" * 65)
     print(f" [+] ML Sepsis Probability : {prob_pct:.1f}%")
-    print(f" [+] Clinical Risk Tier    : {risk_tier}")
+    print(f" [+] Risk Tier             : {result.get('risk_level')}")
+    print(f" [+] Hemodynamic Stage     : {result.get('hemodynamic_stage')}")
     print(f" [+] Shock Index (HR/SBP)  : {result['shock_index']} (Normal: < 0.70)")
-    print(f" [+] Traditional NEWS2     : {result['news2_score']} / 20 (Classified as Low Risk)")
+    print(f" [+] Traditional NEWS2     : {result['news2_score']} / 20")
     print(f" [+] Discrepancy Caught    : {result['discrepancy_detected']}")
-    print("-" * 60)
-    print(" [+] Key Physiological Risk Drivers:")
-    for driver in result['risk_drivers']:
-        print(f"     * {driver}")
-    print("-" * 60)
-    print(" [+] SHAP Feature Contributions (per-prediction):")
-    for feat, val in result['shap_contributions'].items():
+    print(f" [+] Reasoning Engine      : {result.get('llm_source')}")
+    print("-" * 65)
+    print(" [+] Discrepancy Rationale:")
+    print(f"     \"{result.get('discrepancy_rationale')}\"")
+    print("-" * 65)
+    print(" [+] Clinical Physiological Reasoning:")
+    print(f"     \"{result.get('clinical_explanation')}\"")
+    print("-" * 65)
+    print(" [+] Top SHAP Feature Contributions:")
+    for feat, val in list(result['shap_contributions'].items())[:4]:
         direction = "↑ Risk" if val > 0 else "↓ Risk"
         print(f"     {'+'if val > 0 else ''}{val:.4f}  {feat}  ({direction})")
-    print("=" * 60 + "\n")
+    print("=" * 65 + "\n")

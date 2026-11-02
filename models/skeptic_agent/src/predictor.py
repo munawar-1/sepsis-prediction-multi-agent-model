@@ -5,8 +5,17 @@ the Confidence Discount Factor D in [0.0, 1.0] to suppress ICU alert fatigue.
 """
 
 import os
+import sys
 from typing import Dict, Any, Optional
-from models.skeptic_agent.src.reasoning_agent import SkepticReasoningAgent, SkepticEvidenceReport
+
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+try:
+    from models.skeptic_agent.src.reasoning_agent import SkepticReasoningAgent, SkepticEvidenceReport
+except ImportError:
+    from reasoning_agent import SkepticReasoningAgent, SkepticEvidenceReport
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODEL_PATH = os.path.join(BASE_DIR, "artifacts", "skeptic_rf_model.pkl")
