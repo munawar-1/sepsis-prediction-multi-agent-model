@@ -489,10 +489,60 @@ if __name__ == "__main__":
     sepsis_labs = {"Lactate": 3.2, "WBC": 16.5, "Creatinine": 1.7, "Platelets": 110.0}
     sepsis_meds = ["Albuterol 0.83 mg/mL Inhalation"]
     res2 = orchestrator.evaluate("bed_02", 2, sepsis_vitals, sepsis_labs, sepsis_meds)
-    print(f" -> Status       : {res2['workflow_status']}")
-    print(f" -> Urgency      : {res2['urgency_level']}")
-    print(f" -> Target Role  : {res2['target_role']}")
-    print(f" -> Sepsis Risk  : {res2['composite_sepsis_risk']*100:.1f}%")
-    print(f" -> Action Bundle: {len(res2['action_bundle'])} orders")
-    print(f" -> Notification : {res2['notification_result']['delivery_status']} to {res2['notification_result']['recipient']}")
+
+    v_ev = res2.get("vitals_evidence") or {}
+    l_ev = res2.get("labs_evidence") or {}
+    s_ev = res2.get("skeptic_evidence") or {}
+
+    print("\n" + "-" * 70)
+    print("  [AGENT 1: VITALS AGENT - HEMODYNAMIC REASONING]")
+    print(f"  * Risk Probability : {float(v_ev.get('vitals_risk_probability', 0.0))*100:.1f}%")
+    print(f"  * Shock Index      : {v_ev.get('shock_index', 'N/A')} (Tachycardia / compensated hypoperfusion)")
+    print(f"  * NEWS2 Score      : {v_ev.get('news2_score', 'N/A')}")
+    top_drivers = v_ev.get("risk_drivers") or v_ev.get("shap_summary", {}).get("top_drivers", [])
+    if top_drivers:
+        driver_str = ", ".join([f"{d.get('feature')}: +{d.get('shap_value', 0):.3f}" if isinstance(d, dict) else str(d) for d in top_drivers[:3]])
+        print(f"  * Key SHAP Drivers : {driver_str}")
+    print(f"  * Clinical Reason  : {v_ev.get('clinical_reasoning') or v_ev.get('clinical_explanation')}")
+
+    print("\n" + "-" * 70)
+    print("  [AGENT 2: LABS AGENT - PATHOLOGY REASONING]")
+    print(f"  * Risk Probability : {float(l_ev.get('labs_risk_probability', 0.0))*100:.1f}%")
+    print(f"  * Organ Stress Tier: {l_ev.get('organ_stress_level')}")
+    print(f"  * Hypoxia Grade    : {l_ev.get('cellular_hypoxia_grade', 'N/A')}")
+    print(f"  * Biomarkers Flag  : {', '.join(l_ev.get('abnormal_biomarkers', []))}")
+    print(f"  * Clinical Reason  : {l_ev.get('clinical_reasoning') or l_ev.get('pathology_summary')}")
+
+    print("\n" + "-" * 70)
+    print("  [AGENT 3: SKEPTIC AGENT - EHR CONFOUNDER ANALYSIS]")
+    print(f"  * Classification   : {s_ev.get('classification')}")
+    print(f"  * Recommended Rule : {s_ev.get('recommended_action')}")
+    print(f"  * Discount Applied : {float(s_ev.get('confidence_discount_factor', 0.0))*100:.1f}%")
+    print(f"  * Confounders Found: {', '.join(s_ev.get('detected_confounders', ['None']))}")
+    print(f"  * Clinical Reason  : {s_ev.get('clinical_reasoning')}")
+
+    print("\n" + "=" * 70)
+    print("  [AGENT 4: MASTER ORCHESTRATOR - FINAL VERDICT & ACTION BUNDLE]")
+    print("=" * 70)
+    print(f"  * Urgency Level    : {res2['urgency_level']}")
+    print(f"  * Composite Risk   : {res2['composite_sepsis_risk']*100:.1f}%")
+    print(f"  * Target Role      : {res2['target_role']}")
+    print(f"  * Notification     : {res2['notification_result']['delivery_status']} -> {res2['notification_result']['recipient']}")
+
+    disagreements = res2.get("agent_disagreements") or []
+    if disagreements:
+        print("\n  [CROSS-AGENT DISAGREEMENT CHECK]")
+        for d in disagreements:
+            print(f"  - [{d.get('disagreement_type')}]: {d.get('clinical_rationale')}")
+            print(f"    -> Strategy: {d.get('resolution_strategy')}")
+
+    print("\n  [CLINICAL ACTION BUNDLE - RESUSCITATION STEPS NEEDED]")
+    for idx, order in enumerate(res2.get("action_bundle", []), start=1):
+        name = order.get("action") or order.get("name") or "Order"
+        cat = order.get("category") or ("STAT RESUSCITATION" if order.get("urgent") else "SUPPORTIVE")
+        rat = order.get("rationale") or order.get("evidence_rationale")
+        priority = "STAT" if order.get("urgent") else order.get("status", "RECOMMENDED")
+        print(f"  {idx}. [{cat}] {name} (Priority: {priority})")
+        if rat:
+            print(f"     Rationale: {rat}")
     print("=" * 70 + "\n")
