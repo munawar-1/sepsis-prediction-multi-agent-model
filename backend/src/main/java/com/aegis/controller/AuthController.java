@@ -40,7 +40,8 @@ public class AuthController {
             return ResponseEntity.badRequest().body(Map.of(
                     "status", HttpStatus.BAD_REQUEST.value(),
                     "error", "VALIDATION_ERROR",
-                    "validationErrors", errors
+                    "validationErrors", errors,
+                    "message", errors.values().stream().findFirst().orElse("Validation failed")
             ));
         }
 
@@ -53,6 +54,12 @@ public class AuthController {
                     "error", "SIGNUP_FAILED",
                     "message", e.getMessage()
             ));
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "status", HttpStatus.BAD_REQUEST.value(),
+                    "error", "SIGNUP_FAILED",
+                    "message", "User with this email or username is already registered."
+            ));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
                     "status", HttpStatus.INTERNAL_SERVER_ERROR.value(),
@@ -64,11 +71,11 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request, BindingResult bindingResult) {
-        if (bindingResult.hasErrors()) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "status", HttpStatus.BAD_REQUEST.value(),
-                    "error", "VALIDATION_ERROR",
-                    "message", "Username and password are required"
+        if (bindingResult.hasErrors() || request.getIdentifier() == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+                    "status", HttpStatus.UNAUTHORIZED.value(),
+                    "error", "AUTHENTICATION_FAILED",
+                    "message", "Invalid credentials"
             ));
         }
 
@@ -79,7 +86,7 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
                     "status", HttpStatus.UNAUTHORIZED.value(),
                     "error", "AUTHENTICATION_FAILED",
-                    "message", "Invalid username or password"
+                    "message", "Invalid credentials"
             ));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(

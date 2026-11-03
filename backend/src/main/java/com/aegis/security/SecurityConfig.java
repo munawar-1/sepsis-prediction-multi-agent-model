@@ -48,7 +48,9 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
-                    "/api/v1/auth/**",
+                    "/api/v1/auth/signup",
+                    "/api/v1/auth/login",
+                    "/api/v1/auth/roles",
                     "/api/v1/clinical/public/**",
                     "/api/v1/clinical/ai-health",
                     "/h2-console/**",
@@ -57,6 +59,10 @@ public class SecurityConfig {
                     "/swagger-ui.html",
                     "/error"
                 ).permitAll()
+                .requestMatchers("/api/v1/clinical/doctor/**").hasRole("DOCTOR")
+                .requestMatchers("/api/v1/clinical/nurse/**").hasRole("NURSE")
+                .requestMatchers("/api/v1/clinical/shared/**").hasAnyRole("DOCTOR", "NURSE")
+                .requestMatchers("/api/v1/auth/me").authenticated()
                 .anyRequest().authenticated()
             )
             .authenticationProvider(authenticationProvider())

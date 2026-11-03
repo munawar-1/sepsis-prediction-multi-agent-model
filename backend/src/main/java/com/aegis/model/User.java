@@ -37,12 +37,25 @@ public class User implements UserDetails {
     @Column(name = "department", length = 128)
     private String department;
 
+    @Column(name = "specialty", length = 128)
+    private String specialty;
+
     @Column(name = "license_number", length = 64)
     private String licenseNumber;
+
+    @Column(name = "phone_number", length = 32)
+    private String phoneNumber;
+
+    @Column(name = "pager_number", length = 32)
+    private String pagerNumber;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false, length = 32)
     private Role role;
+
+    @Builder.Default
+    @Column(name = "shift_status", length = 32)
+    private String shiftStatus = "ON_DUTY"; // ON_DUTY, OFF_DUTY, ON_CALL
 
     @Builder.Default
     @Column(name = "enabled")
@@ -76,5 +89,12 @@ public class User implements UserDetails {
     public boolean isEnabled() {
         return enabled;
     }
-}
 
+    public boolean isDoctor() {
+        return this.role == Role.DOCTOR;
+    }
+
+    public boolean isNurse() {
+        return this.role == Role.NURSE;
+    }
+}

@@ -13,14 +13,19 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class AuthService {
+
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -29,34 +34,55 @@ public class AuthService {
 
     @Transactional
     public AuthResponse signup(SignupRequest request) {
-        if (userRepository.existsByUsername(request.getUsername())) {
-            throw new IllegalArgumentException("Username '" + request.getUsername() + "' is already taken.");
+        if (request.getEmail() == null || !isValidEmail(request.getEmail())) {
+            throw new IllegalArgumentException("Email format is invalid.");
         }
 
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("Email '" + request.getEmail() + "' is already registered.");
+        String normalizedEmail = request.getEmail().trim().toLowerCase();
+
+        if (userRepository.existsByEmail(normalizedEmail)) {
+            throw new IllegalArgumentException("Email '" + normalizedEmail + "' is already registered.");
         }
 
-        Role role = request.getRole();
-        if (role == null) {
-            throw new IllegalArgumentException("A valid role (DOCTOR or NURSE) is required.");
+        String username = (request.getUsername() != null && !request.getUsername().trim().isEmpty())
+                ? request.getUsername().trim()
+                : normalizedEmail;
+
+        if (userRepository.existsByUsername(username)) {
+            throw new IllegalArgumentException("Username '" + username + "' is already taken.");
         }
+
+        if (request.getPassword() == null || request.getPassword().length() < 6) {
+            throw new IllegalArgumentException("Password must be at least 6 characters.");
+        }
+
+        Role role = request.getRole() != null ? request.getRole() : Role.DOCTOR;
+
+        String fullName = (request.getFullName() != null && !request.getFullName().trim().isEmpty())
+                ? request.getFullName().trim()
+                : (role == Role.DOCTOR ? "Dr. " : "Nurse ") + normalizedEmail.split("@")[0];
 
         User user = User.builder()
-                .username(request.getUsername().trim())
-                .email(request.getEmail().trim().toLowerCase())
+                .username(username)
+                .email(normalizedEmail)
                 .password(passwordEncoder.encode(request.getPassword()))
-                .fullName(request.getFullName().trim())
+                .fullName(fullName)
                 .role(role)
-                .department(request.getDepartment() != null ? request.getDepartment().trim() : "ICU Department")
-                .licenseNumber(request.getLicenseNumber() != null ? request.getLicenseNumber().trim() : "LIC-" + System.currentTimeMillis() % 100000)
+                .department(request.getDepartment() != null && !request.getDepartment().trim().isEmpty()
+                        ? request.getDepartment().trim() : "ICU Department")
+                .specialty(request.getSpecialty() != null ? request.getSpecialty().trim()
+                        : (role == Role.DOCTOR ? "Critical Care" : "ICU Bedside Care"))
+                .licenseNumber(request.getLicenseNumber() != null && !request.getLicenseNumber().trim().isEmpty()
+                        ? request.getLicenseNumber().trim() : "LIC-" + System.currentTimeMillis() % 100000)
+                .phoneNumber(request.getPhoneNumber() != null ? request.getPhoneNumber().trim() : null)
+                .pagerNumber(request.getPagerNumber() != null ? request.getPagerNumber().trim() : null)
                 .enabled(true)
                 .build();
 
         User savedUser = userRepository.save(user);
         String jwtToken = jwtService.generateToken(savedUser);
 
-        log.info("Registered new clinician: username={}, role={}", savedUser.getUsername(), savedUser.getRole());
+        log.info("Registered new clinician: email={}, username={}, role={}", savedUser.getEmail(), savedUser.getUsername(), savedUser.getRole());
 
         return AuthResponse.builder()
                 .token(jwtToken)
@@ -74,20 +100,27 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest request) {
-        // Find user by username or email first
-        User user = userRepository.findByUsernameOrEmail(request.getUsername(), request.getUsername())
-                .orElseThrow(() -> new BadCredentialsException("Invalid username or password"));
+        String identifier = request.getIdentifier();
+        if (identifier == null || identifier.isBlank() || request.getPassword() == null || request.getPassword().isBlank()) {
+            throw new BadCredentialsException("Invalid credentials");
+        }
+
+        // Lookup user by email or username
+        User user = userRepository.findByEmail(identifier.toLowerCase())
+                .or(() -> userRepository.findByUsername(identifier))
+                .or(() -> userRepository.findByUsernameOrEmail(identifier, identifier.toLowerCase()))
+                .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
 
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(user.getUsername(), request.getPassword())
             );
-        } catch (Exception e) {
-            throw new BadCredentialsException("Invalid username or password");
+        } catch (AuthenticationException e) {
+            throw new BadCredentialsException("Invalid credentials");
         }
 
         String jwtToken = jwtService.generateToken(user);
-        log.info("Clinician logged in: username={}, role={}", user.getUsername(), user.getRole());
+        log.info("Clinician logged in: email={}, username={}, role={}", user.getEmail(), user.getUsername(), user.getRole());
 
         return AuthResponse.builder()
                 .token(jwtToken)
@@ -106,6 +139,7 @@ public class AuthService {
 
     public UserDto getCurrentUser(String username) {
         User user = userRepository.findByUsername(username)
+                .or(() -> userRepository.findByEmail(username))
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
 
         return UserDto.builder()
@@ -118,6 +152,10 @@ public class AuthService {
                 .licenseNumber(user.getLicenseNumber())
                 .createdAt(user.getCreatedAt())
                 .build();
+    }
+
+    public static boolean isValidEmail(String email) {
+        return email != null && EMAIL_PATTERN.matcher(email.trim()).matches();
     }
 }
 
