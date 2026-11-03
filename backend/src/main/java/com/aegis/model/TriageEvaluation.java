@@ -28,10 +28,18 @@ public class TriageEvaluation {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "patient_id", nullable = false)
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private Patient patient;
+
+    @Transient
+    @com.fasterxml.jackson.annotation.JsonProperty("patientId")
+    public String getPatientId() {
+        return patient != null ? patient.getPatientId() : null;
+    }
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "telemetry_id")
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private PatientTelemetry telemetry;
 
     @Column(name = "composite_sepsis_risk", nullable = false)
@@ -74,4 +82,8 @@ public class TriageEvaluation {
     @Builder.Default
     @Column(name = "evaluated_at", nullable = false)
     private LocalDateTime evaluatedAt = LocalDateTime.now();
+
+    public boolean isSensorValid() {
+        return sensorValid == null || Boolean.TRUE.equals(sensorValid);
+    }
 }

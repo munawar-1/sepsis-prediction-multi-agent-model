@@ -1,6 +1,8 @@
 package com.aegis.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -28,7 +30,14 @@ public class ClinicalActionOrder {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "evaluation_id", nullable = false)
+    @JsonIgnore
     private TriageEvaluation evaluation;
+
+    @Transient
+    @JsonProperty("evaluationId")
+    public Long getEvaluationId() {
+        return evaluation != null ? evaluation.getId() : null;
+    }
 
     @Column(name = "order_code", nullable = false, length = 64)
     private String orderCode; // e.g. "ACT_LACTATE", "ACT_BLOOD_CULTURES", "ACT_ANTIBIOTICS"
@@ -49,10 +58,25 @@ public class ClinicalActionOrder {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "signed_by_user_id")
+    @JsonIgnore
     private User signedBy; // Doctor or Nurse who executed/authorized the bundle item
+
+    @Transient
+    @JsonProperty("signedByDoctor")
+    public String getSignedByDoctor() {
+        return signedBy != null ? signedBy.getUsername() : null;
+    }
 
     @Column(name = "rationale", columnDefinition = "TEXT")
     private String rationale;
+
+    @Builder.Default
+    @Column(name = "simulated_recommendation")
+    private Boolean simulatedRecommendation = true;
+
+    @Builder.Default
+    @Column(name = "clinical_review_required")
+    private Boolean clinicalReviewRequired = true;
 
     @Builder.Default
     @Column(name = "ordered_at", nullable = false)

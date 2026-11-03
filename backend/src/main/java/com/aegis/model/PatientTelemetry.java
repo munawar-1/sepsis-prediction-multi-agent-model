@@ -76,4 +76,26 @@ public class PatientTelemetry {
     @Builder.Default
     @Column(name = "recorded_at", nullable = false)
     private LocalDateTime recordedAt = LocalDateTime.now();
+
+    public Double getShockIndex() {
+        if (heartRate != null && systolicBp != null && systolicBp > 0) {
+            return Math.round((heartRate / systolicBp) * 100.0) / 100.0;
+        }
+        return 0.8;
+    }
+
+    public Integer getNews2Score() {
+        int score = 0;
+        if (respiratoryRate != null && (respiratoryRate <= 8 || respiratoryRate >= 25)) score += 3;
+        else if (respiratoryRate != null && respiratoryRate >= 21) score += 2;
+        if (o2Saturation != null && o2Saturation <= 91) score += 3;
+        else if (o2Saturation != null && o2Saturation <= 93) score += 2;
+        if (systolicBp != null && systolicBp <= 90) score += 3;
+        else if (systolicBp != null && systolicBp <= 100) score += 2;
+        if (heartRate != null && (heartRate <= 40 || heartRate >= 131)) score += 3;
+        else if (heartRate != null && (heartRate >= 111 || heartRate <= 50)) score += 1;
+        if (temperature != null && temperature <= 35.0) score += 3;
+        else if (temperature != null && temperature >= 39.1) score += 2;
+        return score;
+    }
 }

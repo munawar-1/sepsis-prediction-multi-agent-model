@@ -19,7 +19,6 @@ import java.util.List;
 @AllArgsConstructor
 public class TelemetryTickRequest {
 
-    @NotBlank(message = "patient_id cannot be blank")
     @JsonProperty("patient_id")
     @JsonAlias({"patientId", "patient_id"})
     private String patientId;
@@ -85,5 +84,14 @@ public class TelemetryTickRequest {
     @JsonProperty("active_medications")
     @JsonAlias({"activeMedications", "active_medications", "medications", "meds"})
     private List<String> activeMedications = new ArrayList<>();
+
+    public Double getHeartRate() { return hr != null ? hr : 80.0; }
+    public Double getSystolicBp() { return sbp != null ? sbp : 120.0; }
+    public Double getDiastolicBp() { return dbp != null ? dbp : 80.0; }
+    public Double getMeanArterialPressure() { return map != null ? map : (getSystolicBp() + 2 * getDiastolicBp()) / 3.0; }
+    public Double getRespiratoryRate() { return resp != null ? resp : 16.0; }
+    public Double getO2Saturation() { return o2Sat != null ? o2Sat : 98.0; }
+    public Double getTemperature() { return temp != null ? temp : 37.0; }
+    public Double getWhiteBloodCellCount() { return wbc != null ? wbc : 10.0; }
 }
 

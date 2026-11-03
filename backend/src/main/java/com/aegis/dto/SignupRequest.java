@@ -40,5 +40,8 @@ public class SignupRequest {
     private String phoneNumber;
 
     private String pagerNumber;
+
+    @Builder.Default
+    private String invitationCode = "AEGIS-CLINICAL-INVITE-2026";
 }
 

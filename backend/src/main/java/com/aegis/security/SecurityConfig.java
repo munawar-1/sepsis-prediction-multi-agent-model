@@ -53,12 +53,19 @@ public class SecurityConfig {
                     "/api/v1/auth/roles",
                     "/api/v1/clinical/public/**",
                     "/api/v1/clinical/ai-health",
+                    "/api/notifications/**",
+                    "/api/v1/notifications/**",
                     "/h2-console/**",
                     "/v3/api-docs/**",
                     "/swagger-ui/**",
                     "/swagger-ui.html",
                     "/error"
                 ).permitAll()
+                .requestMatchers("/api/v1/patients/**").hasAnyRole("DOCTOR", "NURSE")
+                .requestMatchers("/api/v1/orders/patient/**").hasAnyRole("DOCTOR", "NURSE")
+                .requestMatchers("/api/v1/orders/*/sign").hasRole("DOCTOR")
+                .requestMatchers("/api/v1/orders/*/administer").hasRole("NURSE")
+                .requestMatchers("/api/v1/alerts/**").hasAnyRole("DOCTOR", "NURSE")
                 .requestMatchers("/api/v1/clinical/doctor/**").hasRole("DOCTOR")
                 .requestMatchers("/api/v1/clinical/nurse/**").hasRole("NURSE")
                 .requestMatchers("/api/v1/clinical/shared/**").hasAnyRole("DOCTOR", "NURSE")
@@ -74,7 +81,12 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of("*"));
+        configuration.setAllowedOriginPatterns(Arrays.asList(
+                "http://localhost:[*]",
+                "http://127.0.0.1:[*]",
+                "https://*.aegis.icu",
+                "https://*.vercel.app"
+        ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin"));
         configuration.setExposedHeaders(List.of("Authorization"));

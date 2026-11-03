@@ -44,8 +44,8 @@ public class Patient {
     @Column(name = "gender", length = 16)
     private Gender gender;
 
-    @Column(name = "icu_bed_number", nullable = false, length = 32)
-    private String icuBedNumber; // e.g. "ICU-BED-02"
+    @Column(name = "icu_bed_number", nullable = true, length = 32)
+    private String icuBedNumber; // e.g. "ICU-BED-02" (null when discharged)
 
     @Column(name = "admission_time", nullable = false)
     private LocalDateTime admissionTime;
@@ -90,5 +90,9 @@ public class Patient {
     @PreUpdate
     public void preUpdate() {
         this.updatedAt = LocalDateTime.now();
+    }
+
+    public String getFullName() {
+        return (firstName != null ? firstName : "") + (lastName != null ? " " + lastName : "");
     }
 }

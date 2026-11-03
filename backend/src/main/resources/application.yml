@@ -4,6 +4,9 @@ server:
 spring:
   application:
     name: aegis-clinical-core
+  jackson:
+    serialization:
+      fail-on-empty-beans: false
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/aegis_icu?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
     driver-class-name: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME:com.mysql.cj.jdbc.Driver}

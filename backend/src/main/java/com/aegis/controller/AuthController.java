@@ -54,6 +54,12 @@ public class AuthController {
                     "error", "SIGNUP_FAILED",
                     "message", e.getMessage()
             ));
+        } catch (SecurityException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
+                    "status", HttpStatus.FORBIDDEN.value(),
+                    "error", "CLINICIAN_AUTHORIZATION_REQUIRED",
+                    "message", e.getMessage()
+            ));
         } catch (org.springframework.dao.DataIntegrityViolationException e) {
             return ResponseEntity.badRequest().body(Map.of(
                     "status", HttpStatus.BAD_REQUEST.value(),

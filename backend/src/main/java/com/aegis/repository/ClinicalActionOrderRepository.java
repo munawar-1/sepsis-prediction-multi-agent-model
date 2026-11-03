@@ -12,7 +12,8 @@ import java.util.List;
 @Repository
 public interface ClinicalActionOrderRepository extends JpaRepository<ClinicalActionOrder, Long> {
 
-    List<ClinicalActionOrder> findByEvaluationId(Long evaluationId);
+    @Query("SELECT o FROM ClinicalActionOrder o WHERE o.evaluation.id = :evaluationId")
+    List<ClinicalActionOrder> findByEvaluationId(@Param("evaluationId") Long evaluationId);
 
     List<ClinicalActionOrder> findByEvaluationPatientPatientId(String patientId);
 

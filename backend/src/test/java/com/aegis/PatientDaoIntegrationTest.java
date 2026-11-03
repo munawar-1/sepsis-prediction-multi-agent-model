@@ -68,12 +68,12 @@ public class PatientDaoIntegrationTest {
         // 3. Seed Patient
         patient = patientRepository.save(Patient.builder()
                 .patientId("bed_icu_04")
-                .mrn("MRN-2026-9042")
+                .mrn("MRN-DAO-TEST-001")
                 .firstName("Vikram")
                 .lastName("Mehta")
                 .age(64)
                 .gender(Gender.MALE)
-                .icuBedNumber("ICU-BED-04")
+                .icuBedNumber("ICU-BED-99")
                 .admissionTime(LocalDateTime.now().minusDays(1))
                 .primaryDiagnosis("Community-Acquired Lobar Pneumonia")
                 .activeMedications(List.of("Albuterol 0.83 mg/mL", "Metoprolol 25mg", "Ceftriaxone 1g"))
@@ -90,7 +90,7 @@ public class PatientDaoIntegrationTest {
         Optional<Patient> found = patientRepository.findByPatientId("bed_icu_04");
         assertTrue(found.isPresent());
         assertEquals("Vikram", found.get().getFirstName());
-        assertEquals("ICU-BED-04", found.get().getIcuBedNumber());
+        assertEquals("ICU-BED-99", found.get().getIcuBedNumber());
 
         // Query by Doctor
         List<Patient> docPatients = patientRepository.findActivePatientsByDoctor(doctor.getId());

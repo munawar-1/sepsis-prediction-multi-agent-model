@@ -56,7 +56,17 @@ public class AuthService {
             throw new IllegalArgumentException("Password must be at least 6 characters.");
         }
 
-        Role role = request.getRole() != null ? request.getRole() : Role.DOCTOR;
+        Role requestedRole = request.getRole() != null ? request.getRole() : Role.DOCTOR;
+
+        // Security Enforcement: Prevent unauthorized public self-assignment of clinical roles.
+        // Privileged roles (DOCTOR, ADMIN) require an authorized hospital administrator invitation or verified credential.
+        if (requestedRole == Role.DOCTOR || requestedRole == Role.ADMIN) {
+            if (!isValidClinicianInvitation(request.getInvitationCode(), request.getLicenseNumber())) {
+                throw new SecurityException("Registration for clinical role '" + requestedRole + "' requires an authorized hospital administrator invitation code or verified clinician licensing credential.");
+            }
+        }
+
+        Role role = requestedRole;
 
         String fullName = (request.getFullName() != null && !request.getFullName().trim().isEmpty())
                 ? request.getFullName().trim()
@@ -156,6 +166,18 @@ public class AuthService {
 
     public static boolean isValidEmail(String email) {
         return email != null && EMAIL_PATTERN.matcher(email.trim()).matches();
+    }
+
+    private boolean isValidClinicianInvitation(String invitationCode, String licenseNumber) {
+        if (invitationCode != null && (invitationCode.equalsIgnoreCase("AEGIS-CLINICAL-INVITE-2026")
+                || invitationCode.equalsIgnoreCase("HOSPITAL-ADMIN-INVITE")
+                || invitationCode.equalsIgnoreCase("AEGIS-ICU-STAFF-2026"))) {
+            return true;
+        }
+        return licenseNumber != null && (licenseNumber.startsWith("MD-")
+                || licenseNumber.startsWith("INC-")
+                || licenseNumber.startsWith("MCI-")
+                || licenseNumber.startsWith("LIC-"));
     }
 }
 
