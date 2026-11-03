@@ -6,16 +6,16 @@
 
   --border-default: #243247;
   --border-subtle: #1A2738;
-  --border-focus: #35D6C5;
+  --border-focus: #10B981;
 
-  --accent-primary: #35D6C5;
-  --accent-secondary: #559BFF;
-  --accent-warm: #E5B86A;
-  --accent-critical: #FF5268;
+  --accent-primary: #10B981;
+  --accent-secondary: #4F46E5;
+  --accent-warm: #F59E0B;
+  --accent-critical: #DC2626;
 
   --text-primary: #F1F5FA;
-  --text-secondary: #9AA9BA;
-  --text-tertiary: #617285;
+  --text-secondary: #9CA3AF;
+  --text-tertiary: #6B7280;
 
   --font-display: 'Inter Tight', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -25,34 +25,34 @@
 }
 
 html.light {
-  --bg-primary: #F8FAFC;
+  --bg-primary: #F9FAFB;
   --bg-secondary: #FFFFFF;
   --bg-card: #FFFFFF;
-  --bg-surface: #F8FAFC;
+  --bg-surface: #F9FAFB;
 
-  --border-default: #E2E8F0;
-  --border-subtle: #F1F5F9;
-  --border-focus: #0D9488;
+  --border-default: #E5E7EB;
+  --border-subtle: #F3F4F6;
+  --border-focus: #10B981;
 
-  --accent-primary: #0D9488;
-  --accent-secondary: #2563EB;
+  --accent-primary: #10B981;
+  --accent-secondary: #4F46E5;
   --accent-warm: #D97706;
   --accent-critical: #DC2626;
 
-  --text-primary: #334155;
-  --text-secondary: #475569;
-  --text-tertiary: #64748B;
+  --text-primary: #111827;
+  --text-secondary: #4B5563;
+  --text-tertiary: #9CA3AF;
 
-  --daylight-canvas: #F8FAFC;
+  --daylight-canvas: #F9FAFB;
   --daylight-surface: #FFFFFF;
-  --daylight-secondary: #F1F5F9;
-  --daylight-border: #E2E8F0;
-  --daylight-mint-surface: #F0FDFA;
-  --daylight-mint-border: #99F6E4;
-  --daylight-mint-accent: #0D9488;
-  --daylight-text-primary: #334155;
-  --daylight-text-secondary: #475569;
-  --daylight-text-muted: #64748B;
+  --daylight-secondary: #F3F4F6;
+  --daylight-border: #E5E7EB;
+  --daylight-mint-surface: #ECFDF5;
+  --daylight-mint-border: #D1FAE5;
+  --daylight-mint-accent: #10B981;
+  --daylight-text-primary: #111827;
+  --daylight-text-secondary: #4B5563;
+  --daylight-text-muted: #9CA3AF;
 
   color-scheme: light;
 }
@@ -74,6 +74,7 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   transition: background-color 0.2s ease, color 0.2s ease;
+  height: 100%;
 }
 
 html.light {
@@ -100,21 +101,45 @@ html.lenis, html.lenis body {
 body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
-  overflow-x: hidden;
   min-height: 100vh;
+  height: 100%;
   line-height: 1.5;
   font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
+/* Zero-overflow on root elements when in dashboard view */
+body.dashboard-active,
+html.dashboard-active,
+body:has(.dashboard-viewport),
+html:has(.dashboard-viewport) {
+  overflow: hidden !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  max-height: 100vh !important;
+  max-height: 100dvh !important;
+  width: 100vw !important;
+  max-width: 100vw !important;
+}
+
+/* Global button & interactive element transition curves (transition: all 0.2s ease-in-out) */
+button,
+a,
+input,
+textarea,
+select,
+.interactive-transition {
+  transition: all 0.2s ease-in-out;
+}
+
 /* Selection */
 ::selection {
-  background: #35D6C5;
-  color: #080E18;
+  background: #10B981;
+  color: #FFFFFF;
 }
 
 html.light ::selection {
-  background: #0D9488;
+  background: #10B981;
   color: #FFFFFF;
 }
 
@@ -134,106 +159,104 @@ html.light ::selection {
   font-family: var(--font-body);
 }
 
-/* Custom Scrollbar - Minimal & Flat */
+/* Custom Sleek Scrollbar - Minimal, Translucent & Sleek (~6px) */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--bg-primary);
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--border-default);
-  border-radius: 3px;
+  background-color: rgba(156, 163, 175, 0.35);
+  border-radius: 9999px;
+  transition: background-color 0.2s ease-in-out;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-tertiary);
+  background-color: rgba(107, 114, 128, 0.6);
+}
+::-webkit-scrollbar-thumb:active {
+  background-color: rgba(16, 185, 129, 0.75);
 }
 
-/* Flat UI Cards & Panels (Strictly zero neon glow) */
-.ui-panel {
-  background: var(--bg-card);
-  border: 1px solid var(--border-default);
-  border-radius: 12px;
+/* Sleek Translucent Scrollbars for Chat History & Sidebar Navigation */
+.chat-scroll-container,
+.sidebar-scroll-container,
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.35) transparent;
 }
 
-.ui-panel-elevated {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-default);
-  border-radius: 12px;
+.chat-scroll-container::-webkit-scrollbar,
+.sidebar-scroll-container::-webkit-scrollbar,
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
 
-.ui-panel-subtle {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-subtle);
-  border-radius: 10px;
+.chat-scroll-container::-webkit-scrollbar-track,
+.sidebar-scroll-container::-webkit-scrollbar-track,
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-/* Clean, Flat Interactive Buttons */
-.btn-primary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  background: var(--accent-primary);
-  color: #080E18;
-  font-family: var(--font-body);
-  font-size: 14px;
-  font-weight: 600;
-  padding: 10px 20px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  transition: background-color 0.15s ease, transform 0.15s ease;
-  text-decoration: none;
-}
-html.light .btn-primary {
-  color: #FFFFFF;
-}
-.btn-primary:hover {
-  filter: brightness(1.08);
-  transform: translateY(-1px);
-}
-.btn-primary:active {
-  transform: translateY(0);
+.chat-scroll-container::-webkit-scrollbar-thumb,
+.sidebar-scroll-container::-webkit-scrollbar-thumb,
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.35);
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 0.2s ease-in-out;
 }
 
-.btn-secondary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  background: var(--bg-surface);
-  color: var(--text-primary);
-  font-family: var(--font-body);
-  font-size: 14px;
-  font-weight: 500;
-  padding: 10px 18px;
-  border-radius: 8px;
-  border: 1px solid var(--border-default);
-  cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
-  text-decoration: none;
-}
-.btn-secondary:hover {
-  border-color: var(--border-focus);
+.chat-scroll-container::-webkit-scrollbar-thumb:hover,
+.sidebar-scroll-container::-webkit-scrollbar-thumb:hover,
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(107, 114, 128, 0.6);
 }
 
-/* Subtle Technical Eyebrow Tag */
-.eyebrow-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 10px;
-  border-radius: 4px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-default);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--accent-primary);
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+.chat-scroll-container::-webkit-scrollbar-thumb:active,
+.sidebar-scroll-container::-webkit-scrollbar-thumb:active,
+.custom-scrollbar::-webkit-scrollbar-thumb:active {
+  background-color: rgba(16, 185, 129, 0.75);
+}
+
+.chat-scroll-container::-webkit-scrollbar-corner,
+.sidebar-scroll-container::-webkit-scrollbar-corner,
+.custom-scrollbar::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* High-end Dribbble SaaS Card Surface */
+.saas-card {
+  background-color: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
+  transition: all 0.2s ease-in-out;
+}
+
+/* Status Badges */
+.pill-critical {
+  background-color: #FEF2F2;
+  border: 1px solid #FEE2E2;
+  color: #DC2626;
+  transition: all 0.2s ease-in-out;
+}
+
+.pill-warning {
+  background-color: #FFFBEB;
+  border: 1px solid #FEF3C7;
+  color: #D97706;
+  transition: all 0.2s ease-in-out;
+}
+
+.pill-normal {
+  background-color: #ECFDF5;
+  border: 1px solid #D1FAE5;
+  color: #059669;
+  transition: all 0.2s ease-in-out;
 }
 
 /* Section Anchors & Offsets */
@@ -258,7 +281,7 @@ section {
 @tailwind utilities;
 
 .waveform-canvas {
-  filter: drop-shadow(0 0 2px rgba(20, 184, 166, 0.4));
+  filter: drop-shadow(0 0 2px rgba(16, 185, 129, 0.4));
 }
 
 @keyframes slideInUp {

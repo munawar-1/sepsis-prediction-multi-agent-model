@@ -97,35 +97,25 @@ export default function HeroSection({ onOpenFlightDeck }) {
       >
         <img
           src="/assets/hero-icu-cinematic.jpg"
-          alt=""
+          alt="Aegis-ICU Cinematic Environment"
           aria-hidden="true"
           style={{
             width: '100%',
             height: '100%',
             objectFit: 'cover',
             objectPosition: 'center 40%',
-            filter: 'blur(3px)',
-            opacity: isDark ? 0.22 : 0.12,
-            transform: 'scale(1.05)'
+            opacity: isDark ? 0.65 : 0.25,
+            transform: 'scale(1.02)'
           }}
         />
-        {/* Dark Navy / Daylight Slate Atmospheric Overlays */}
+        {/* Dark Navy / Daylight Slate Atmospheric Overlays with subtle teal tones */}
         <div
           style={{
             position: 'absolute',
             inset: 0,
             background: isDark
-              ? 'radial-gradient(ellipse at 75% 35%, rgba(20, 184, 166, 0.08) 0%, transparent 60%), linear-gradient(180deg, rgba(8, 14, 24, 0.72) 0%, rgba(8, 14, 24, 0.85) 50%, #080E18 100%)'
-              : 'radial-gradient(ellipse at 75% 35%, rgba(13, 148, 136, 0.08) 0%, transparent 60%), linear-gradient(180deg, rgba(244, 246, 249, 0.72) 0%, rgba(244, 246, 249, 0.85) 50%, #F4F6F9 100%)'
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            background: isDark
-              ? 'linear-gradient(90deg, #080E18 0%, rgba(8, 14, 24, 0.88) 42%, rgba(8, 14, 24, 0.6) 100%)'
-              : 'linear-gradient(90deg, #F4F6F9 0%, rgba(244, 246, 249, 0.88) 42%, rgba(244, 246, 249, 0.6) 100%)'
+              ? 'linear-gradient(90deg, rgba(8, 14, 24, 0.88) 0%, rgba(8, 14, 24, 0.65) 48%, rgba(8, 14, 24, 0.35) 100%), linear-gradient(180deg, rgba(8, 14, 24, 0.45) 0%, transparent 25%, transparent 70%, #080E18 100%), radial-gradient(circle at 80% 30%, rgba(20, 184, 166, 0.12) 0%, transparent 60%)'
+              : 'linear-gradient(90deg, rgba(244, 246, 249, 0.92) 0%, rgba(244, 246, 249, 0.75) 48%, rgba(244, 246, 249, 0.45) 100%), linear-gradient(180deg, rgba(244, 246, 249, 0.4) 0%, transparent 25%, transparent 70%, #F4F6F9 100%)'
           }}
         />
       </div>
