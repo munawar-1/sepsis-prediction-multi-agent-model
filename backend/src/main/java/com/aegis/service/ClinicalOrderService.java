@@ -29,10 +29,16 @@ public class ClinicalOrderService {
     private final ClinicalActionOrderRepository orderRepository;
     private final UserRepository userRepository;
     private final HitlAuditLogRepository auditLogRepository;
+    private final NotificationService notificationService;
 
     @Transactional(readOnly = true)
     public List<ClinicalActionOrder> getOrdersForPatient(String patientId) {
         return orderRepository.findByEvaluationPatientPatientId(patientId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ClinicalActionOrder> getNursePendingTasks() {
+        return orderRepository.findByStatus(OrderStatus.APPROVED);
     }
 
     @Transactional
@@ -77,6 +83,22 @@ public class ClinicalOrderService {
                 .recordedAt(LocalDateTime.now())
                 .build();
         auditLogRepository.save(audit);
+
+        // When doctor approves medication/resuscitation, dispatch message directly to Bedside Nurse Task List
+        if (request.isApproved()) {
+            try {
+                notificationService.dispatchAlert(com.aegis.dto.AlertDispatchDto.builder()
+                        .patientId(patientId)
+                        .targetRole("ROLE_NURSE")
+                        .urgency("DOCTOR_AUTHORIZED_ORDER")
+                        .alertTitle("DOCTOR AUTHORIZED: " + order.getActionName())
+                        .clinicalMessage("Dr. " + doctorUsername + " authorized order " + order.getOrderCode() + " (" + order.getActionName() + ") for bedside administration.")
+                        .recommendedActions(List.of("Administer " + order.getActionName(), "Document administered dose in Aegis ICU"))
+                        .build());
+            } catch (Exception e) {
+                log.warn("Could not dispatch nurse task alert: {}", e.getMessage());
+            }
+        }
 
         log.info("Doctor {} digitally signed order {} ({}) -> status {}",
                 doctorUsername, order.getId(), order.getOrderCode(), order.getStatus());

@@ -62,9 +62,9 @@ public class SecurityConfig {
                     "/error"
                 ).permitAll()
                 .requestMatchers("/api/v1/patients/**").hasAnyRole("DOCTOR", "NURSE")
-                .requestMatchers("/api/v1/orders/patient/**").hasAnyRole("DOCTOR", "NURSE")
                 .requestMatchers("/api/v1/orders/*/sign").hasRole("DOCTOR")
                 .requestMatchers("/api/v1/orders/*/administer").hasRole("NURSE")
+                .requestMatchers("/api/v1/orders/**").hasAnyRole("DOCTOR", "NURSE")
                 .requestMatchers("/api/v1/alerts/**").hasAnyRole("DOCTOR", "NURSE")
                 .requestMatchers("/api/v1/clinical/doctor/**").hasRole("DOCTOR")
                 .requestMatchers("/api/v1/clinical/nurse/**").hasRole("NURSE")

@@ -34,6 +34,18 @@ public class ClinicalOrderController {
     }
 
     /**
+     * Bedside Nurse Actionable Task List:
+     * Returns all orders that have been signed & APPROVED by Attending Doctors across the ICU
+     * awaiting bedside administration.
+     */
+    @GetMapping("/nurse/tasks")
+    @PreAuthorize("hasAnyRole('DOCTOR', 'NURSE')")
+    public ResponseEntity<List<ClinicalActionOrder>> getNurseTasks() {
+        List<ClinicalActionOrder> tasks = orderService.getNursePendingTasks();
+        return ResponseEntity.ok(tasks);
+    }
+
+    /**
      * Attending Doctor digitally signs and authorizes recommended sepsis bundle order.
      * Forbidden (403) to non-doctor roles.
      */

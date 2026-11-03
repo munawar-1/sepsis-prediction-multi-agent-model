@@ -226,6 +226,13 @@ public class ClinicalAuditFixesIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.orderStatus", is("APPROVED")));
 
+        // Step 1b: Verify that the authorized order appears directly on the Bedside Nurse's Task List
+        mockMvc.perform(get("/api/v1/orders/nurse/tasks")
+                        .header("Authorization", "Bearer " + nurseJwt))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].id", hasItem(orderId.intValue())))
+                .andExpect(jsonPath("$[*].status", hasItem("APPROVED")));
+
         // Step 2: Attempting to sign already APPROVED order should be REJECTED (state-safety check)
         mockMvc.perform(post("/api/v1/orders/" + orderId + "/sign")
                         .header("Authorization", "Bearer " + doctorJwt)
