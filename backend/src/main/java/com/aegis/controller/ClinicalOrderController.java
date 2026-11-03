@@ -12,6 +12,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.Map;
 
 @RestController
@@ -19,6 +20,7 @@ import java.util.Map;
 @CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "3. Sepsis-3 Orders & Nurse Worklist", description = "Attending Physician Authorization & Bedside Nurse Medication Administration")
 public class ClinicalOrderController {
 
     private final ClinicalOrderService orderService;

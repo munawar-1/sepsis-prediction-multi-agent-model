@@ -267,4 +267,16 @@ public class ClinicalAuditFixesIntegrationTest {
         assertNotNull(completedOrder.getRationale());
         assertTrue(completedOrder.getRationale().contains("Dose: 500 mL IV Bolus"));
     }
+
+    @Test
+    @DisplayName("Fix 7: Swagger UI and OpenAPI 3 schema endpoints are operational and accessible")
+    void testSwaggerDocumentationAccessible() throws Exception {
+        mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.openapi", notNullValue()))
+                .andExpect(jsonPath("$.info.title", containsString("Aegis-ICU")));
+
+        mockMvc.perform(get("/swagger-ui/index.html"))
+                .andExpect(status().isOk());
+    }
 }

@@ -59,6 +59,8 @@ public class SecurityConfig {
                     "/v3/api-docs/**",
                     "/swagger-ui/**",
                     "/swagger-ui.html",
+                    "/swagger-resources/**",
+                    "/webjars/**",
                     "/error"
                 ).permitAll()
                 .requestMatchers("/api/v1/patients/**").hasAnyRole("DOCTOR", "NURSE")

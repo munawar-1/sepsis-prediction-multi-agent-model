@@ -11,6 +11,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.Map;
 
 @RestController
@@ -18,6 +19,7 @@ import java.util.Map;
 @CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "4. Alerts & Explainability", description = "Multi-Agent Clinical Q&A Grounded in TreeSHAP & Consensus Evidence")
 public class ClinicalAlertController {
 
     private final ClinicalAlertService alertService;

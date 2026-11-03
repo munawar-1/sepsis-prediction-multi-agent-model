@@ -18,6 +18,8 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +28,7 @@ import java.util.Map;
 @RequestMapping("/api/v1/auth")
 @CrossOrigin(origins = "*")
 @RequiredArgsConstructor
+@Tag(name = "1. Authentication", description = "Clinician Registration, Role Discovery & JWT Authentication")
 public class AuthController {
 
     private final AuthService authService;

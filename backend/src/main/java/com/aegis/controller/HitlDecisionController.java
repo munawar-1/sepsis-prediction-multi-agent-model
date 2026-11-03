@@ -18,11 +18,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 @RestController
 @RequestMapping("/api/v1/hitl")
 @CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "6. Human-in-the-Loop Audit Trail", description = "Immutable Append-Only Audit Log with Cryptographic Signatures")
 public class HitlDecisionController {
 
     private final HitlAuditLogRepository auditLogRepository;

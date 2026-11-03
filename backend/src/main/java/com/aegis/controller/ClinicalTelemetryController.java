@@ -17,6 +17,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.Map;
 
 @RestController
@@ -24,6 +25,7 @@ import java.util.Map;
 @CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "7. AI Diagnostic Engine Connectivity", description = "Direct Telemetry Ingest & FastAPI Multi-Agent Health Probing")
 public class ClinicalTelemetryController {
 
     private final AiServiceClient aiServiceClient;

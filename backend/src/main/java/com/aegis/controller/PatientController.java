@@ -18,11 +18,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 @RestController
 @RequestMapping("/api/v1/patients")
 @CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "2. Patients & ICU Beds", description = "ICU 8-Bed Heatmap Roster, Admission, Discharge, and Profile Management")
 public class PatientController {
 
     private final PatientService patientService;

@@ -44,3 +44,11 @@ aegis:
   dpdp:
     mask-pii: true
     hospital-name: "Apollo Multispeciality Hospitals"
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: method
