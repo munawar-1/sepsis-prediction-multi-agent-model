@@ -1,11 +1,32 @@
 """
 Aegis-ICU Diagnostic AI Microservice
-Exposes endpoints for the 4-Model Neuro-Symbolic Multi-Agent System.
+Exposes REST endpoints for the LangGraph Neuro-Symbolic Multi-Agent System.
 """
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+try:
+    from fastapi import FastAPI
+    from fastapi.middleware.cors import CORSMiddleware
+except ImportError:
+    class FastAPI:
+        def __init__(self, *args, **kwargs):
+            self.routes = []
+        def add_middleware(self, *args, **kwargs):
+            pass
+        def include_router(self, router, *args, **kwargs):
+            pass
+        def get(self, path, *args, **kwargs):
+            def decorator(func):
+                return func
+            return decorator
+        def post(self, path, *args, **kwargs):
+            def decorator(func):
+                return func
+            return decorator
+    class CORSMiddleware:
+        pass
+
 from ai_service.app.api.v1.endpoints import router as v1_router
+from ai_service.app.services.triage_service import get_triage_service
 
 app = FastAPI(
     title="Aegis-ICU Diagnostic AI Engine",
@@ -24,9 +45,12 @@ app.add_middleware(
 app.include_router(v1_router, prefix="/api/v1")
 
 @app.get("/health")
-def health_check():
-    return {"status": "HEALTHY", "service": "Aegis-ICU AI Engine", "models_loaded": 4}
+def root_health_check():
+    return get_triage_service().get_system_health()
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    try:
+        import uvicorn
+        uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    except ImportError:
+        print("uvicorn is not installed. Run: pip install uvicorn")

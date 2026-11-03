@@ -1,11 +1,12 @@
 """
-API Endpoints for Aegis-ICU Diagnostic AI Engine
-Exposes individual agent endpoints as well as the unified multi-agent orchestrator.
+API Controller Endpoints for Aegis-ICU Diagnostic AI Engine
+Thin REST controller delegating all domain and agent business logic to TriageService.
 """
 
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
+
 try:
-    from fastapi import APIRouter
+    from fastapi import APIRouter, Depends, HTTPException, status
 except ImportError:
     class APIRouter:
         def __init__(self, *args, **kwargs):
@@ -18,183 +19,181 @@ except ImportError:
             def decorator(func):
                 return func
             return decorator
-
-try:
-    from pydantic import BaseModel, Field
-except ImportError:
-    class BaseModel:
-        def __init__(self, **kwargs):
-            for k, v in kwargs.items():
-                setattr(self, k, v)
-        def dict(self):
-            return self.__dict__
-        def model_dump(self):
-            return self.__dict__
-    def Field(default=None, description=""):
-        return default
+    def Depends(dep):
+        return dep()
+    class HTTPException(Exception):
+        def __init__(self, status_code, detail):
+            super().__init__(detail)
+            self.status_code = status_code
+            self.detail = detail
+    class status:
+        HTTP_200_OK = 200
+        HTTP_404_NOT_FOUND = 404
+        HTTP_500_INTERNAL_SERVER_ERROR = 500
 
 from ai_service.app.schemas.clinical_schemas import (
     TelemetryTickRequest,
-    PatientEvaluationResponse
+    PatientEvaluationResponse,
+    NurseVerificationRequest,
+    NurseVerificationResponse,
+    DoctorChatRequest,
+    DoctorChatResponse,
+    ValidatorEvaluationRequest,
+    SkepticEvaluationRequest,
+    HealthCheckResponse,
+    GraphTopologyResponse
 )
-from models.triage_orchestrator.src.orchestrator import SepsisOrchestrator
+from ai_service.app.services.triage_service import TriageService, get_triage_service
 
 router = APIRouter()
-orchestrator = SepsisOrchestrator()
-
-
-class SkepticEvaluationRequest(BaseModel):
-    vitals_evidence: Dict[str, Any]
-    labs_evidence: Dict[str, Any]
-    ehr_data: Optional[Dict[str, Any]] = None
-    active_medications: Optional[List[str]] = None
 
 
 # =====================================================================
-# 1. UNIFIED MULTI-AGENT ORCHESTRATOR ENDPOINT
-# =====================================================================
-@router.post("/evaluate-patient-state", response_model=PatientEvaluationResponse)
-def evaluate_patient_state(tick: TelemetryTickRequest):
-    """
-    Main entrypoint: Coordinates Data Quality Agent (Agent 0), Vitals Agent (Agent 1),
-    Labs Agent (Agent 2), and Skeptic Agent (Agent 3) in-memory, returning the calibrated
-    Sepsis-3 consensus along with transparent agent findings and disagreement detection.
-    """
-    vitals = {
-        "HR": tick.HR, "SBP": tick.SBP, "DBP": tick.DBP,
-        "MAP": tick.MAP, "Resp": tick.Resp, "O2Sat": tick.O2Sat, "Temp": tick.Temp
-    }
-    labs = {
-        "Lactate": tick.Lactate, "WBC": tick.WBC,
-        "Creatinine": tick.Creatinine, "Platelets": tick.Platelets
-    }
-    meds = tick.active_medications or []
-
-    result = orchestrator.evaluate(
-        patient_id=tick.patient_id,
-        hour=tick.hour_index,
-        vitals_dict=vitals,
-        labs_dict=labs,
-        meds_list=meds,
-        previous_vitals=tick.previous_vitals,
-        lab_age_hours=tick.lab_age_hours
-    )
-    return result.model_dump() if hasattr(result, "model_dump") else result.dict()
-
-
-# =====================================================================
-# 2. INDIVIDUAL AGENT ENDPOINTS (MICROSERVICE WRAPPERS)
+# GROUP A: CORE CLINICAL WORKFLOW ORCHESTRATION (LANGGRAPH ENGINE)
 # =====================================================================
 
-
-@router.post("/vitals/evaluate")
-def evaluate_vitals_agent(vitals: Dict[str, float]):
-    """
-    Agent 1 (Vitals Agent): Evaluates hemodynamics, shock index, NEWS2,
-    and returns per-prediction SHAP contributions and clinical explanation.
-    """
-    return orchestrator.vitals_predictor.predict(vitals)
-
-
-@router.post("/labs/evaluate")
-def evaluate_labs_agent(labs: Dict[str, float]):
-    """
-    Agent 2 (Labs Agent): Evaluates blood biomarkers (Lactate, WBC, etc.),
-    organ hypoxia, STAT draw requirements, and Martha's rule guardrails.
-    """
-    return orchestrator.labs_predictor.predict(labs)
+@router.post(
+    "/triage/evaluate",
+    response_model=PatientEvaluationResponse,
+    summary="Evaluate Bedside Telemetry Tick",
+    description="Main entrypoint: runs the LangGraph state machine across sensor validation, ML vitals/labs, and gated skeptic analysis."
+)
+@router.post("/evaluate-patient-state", response_model=PatientEvaluationResponse, include_in_schema=False)
+def evaluate_patient_state(
+    tick: TelemetryTickRequest,
+    service: TriageService = Depends(get_triage_service)
+):
+    try:
+        return service.evaluate_patient_telemetry(tick)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Inference error in LangGraph clinical pipeline: {str(e)}")
 
 
-@router.post("/skeptic/evaluate")
-def evaluate_skeptic_agent(payload: SkepticEvaluationRequest):
-    """
-    Agent 3 (Skeptic & False Alarm Checker): Takes outputs from Agent 1 & 2
-    (with their SHAP values) + EHR data, and cross-references confounders.
-    Strictly enforces: Never suppress a sepsis warning solely because medication
-    might explain a symptom.
-    """
-    ehr = payload.ehr_data or {"medications": payload.active_medications or []}
-    return orchestrator.skeptic_predictor.evaluate_false_alarm(
-        vitals_result=payload.vitals_evidence,
-        labs_result=payload.labs_evidence,
-        ehr_data=ehr
-    )
+@router.post(
+    "/triage/nurse-verify",
+    response_model=NurseVerificationResponse,
+    summary="Bedside Nurse Hardware Verification (HITL)",
+    description="Bedside nurse confirms sensor displacement (halting workflow) or overrides as true clinical illness (triggering full resuscitation)."
+)
+def verify_nurse_action(
+    req: NurseVerificationRequest,
+    service: TriageService = Depends(get_triage_service)
+):
+    try:
+        return service.handle_nurse_verification(req)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing nurse verification: {str(e)}")
 
 
 # =====================================================================
-# 3. PHYSICIAN GROUNDED EXPLANATION CHAT ENDPOINT
+# GROUP B: ATTENDING PHYSICIAN GROUNDED COPILOT
 # =====================================================================
 
-class DoctorChatRequest(BaseModel):
-    patient_id: str
-    doctor_question: str
-    clinical_context: Optional[Dict[str, Any]] = Field(
-        default=None,
-        description="Patient evaluation context including SHAP values, vitals, labs, and sepsis risk"
-    )
+@router.post(
+    "/triage/chat",
+    response_model=DoctorChatResponse,
+    summary="Physician Bedside Explainer Chat",
+    description="Q&A assistant strictly grounded in the mathematical Shock Index, TreeSHAP drivers, and Sepsis-3 guidelines (zero hallucination)."
+)
+def answer_doctor_inquiry(
+    req: DoctorChatRequest,
+    service: TriageService = Depends(get_triage_service)
+):
+    try:
+        return service.answer_doctor_inquiry(req)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generating doctor explanation: {str(e)}")
 
 
-@router.post("/triage/chat")
-def answer_doctor_inquiry(req: DoctorChatRequest):
-    """
-    Physician Bedside Explainer: Grounds LLM reasoning directly in the mathematical
-    SHAP contributions, organ tier, shock index, and discount factor.
-    Guarantees no hallucination: all answers reference actual patient measurements.
-    """
-    import os, requests, json
-    ctx = req.clinical_context or {}
-    vitals = ctx.get("vitals_evidence", {})
-    labs = ctx.get("labs_evidence", {})
-    risk = ctx.get("composite_sepsis_risk", 0.0)
-    urgency = ctx.get("urgency_level", "UNKNOWN")
-    si = ctx.get("shock_index", 0.0)
-    top_shap = vitals.get("shap_summary", {}).get("top_drivers", [])
+# =====================================================================
+# GROUP C: MODULAR AGENT SANDBOX ENDPOINTS
+# =====================================================================
 
-    prompt = f"""You are the Aegis-ICU Diagnostic AI Assistant explaining a sepsis triage verdict to an attending physician (ROLE_DOCTOR).
-Patient ID: {req.patient_id}
-Composite Sepsis Risk: {risk*100:.1f}% ({urgency})
-Shock Index: {si:.2f}
-Top Physiological SHAP Drivers: {top_shap}
-Vitals Summary: {vitals.get('clinical_summary', 'N/A')}
-Labs Organ Stress: {labs.get('organ_stress_level', 'N/A')}
+@router.post(
+    "/agents/validator",
+    summary="Execute Sensor Integrity Tool",
+    description="Sub-millisecond biological and fluid dynamic plausibility checks."
+)
+def evaluate_sensor_validator(
+    req: ValidatorEvaluationRequest,
+    service: TriageService = Depends(get_triage_service)
+):
+    return service.evaluate_validator(req)
 
-Attending Doctor's Question: "{req.doctor_question}"
 
-Provide a concise, direct, evidence-based answer (under 120 words).
-Ground your answer explicitly in the mathematical telemetry, SHAP values, and Sepsis-3 guidelines."""
+@router.post(
+    "/agents/vitals",
+    summary="Execute Agent 1 (Vitals Agent)",
+    description="Evaluates hemodynamics, shock index, NEWS2, and TreeSHAP feature attributions."
+)
+@router.post("/vitals/evaluate", include_in_schema=False)
+def evaluate_vitals_agent(
+    vitals: Dict[str, float],
+    service: TriageService = Depends(get_triage_service)
+):
+    return service.evaluate_vitals_agent(vitals)
 
-    gemini_key = os.getenv("GEMINI_API_KEY")
-    llm_answer = None
 
-    if gemini_key:
-        try:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={gemini_key}"
-            payload = {
-                "contents": [{"parts": [{"text": prompt}]}],
-                "generationConfig": {"temperature": 0.1, "maxOutputTokens": 300}
-            }
-            resp = requests.post(url, json=payload, timeout=4)
-            if resp.status_code == 200:
-                data = resp.json()
-                llm_answer = data["candidates"][0]["content"]["parts"][0]["text"].strip()
-        except Exception:
-            pass
+@router.post(
+    "/agents/labs",
+    summary="Execute Agent 2 (Labs Agent)",
+    description="Evaluates cellular hypoxia, organ stress tier, and Martha's Rule guardrails."
+)
+@router.post("/labs/evaluate", include_in_schema=False)
+def evaluate_labs_agent(
+    labs: Dict[str, float],
+    service: TriageService = Depends(get_triage_service)
+):
+    return service.evaluate_labs_agent(labs)
 
-    if not llm_answer:
-        llm_answer = (
-            f"Regarding Bed {req.patient_id}: The alert is driven by a Shock Index of {si:.2f} "
-            f"and elevated hemodynamic instability. Top SHAP contributors: {', '.join([d.get('feature','') for d in top_shap[:2]]) if top_shap else 'vital signs'}. "
-            f"Overall calibrated sepsis risk is {risk*100:.1f}%. Immediate blood culture draw and serial lactate monitoring are recommended."
-        )
 
-    return {
-        "patient_id": req.patient_id,
-        "doctor_question": req.doctor_question,
-        "llm_response": llm_answer,
-        "clinical_grounding": {
-            "composite_sepsis_risk": risk,
-            "urgency_level": urgency,
-            "shock_index": si,
-            "top_shap_features": top_shap
-        }
-    }
+@router.post(
+    "/agents/skeptic",
+    summary="Execute Agent 3 (Skeptic Filter)",
+    description="Interrogates EHR medication confounders to suppress false alarms while strictly maintaining patient safety."
+)
+@router.post("/skeptic/evaluate", include_in_schema=False)
+def evaluate_skeptic_agent(
+    payload: SkepticEvaluationRequest,
+    service: TriageService = Depends(get_triage_service)
+):
+    return service.evaluate_skeptic_agent(payload)
+
+
+# =====================================================================
+# GROUP D: SYSTEM OBSERVABILITY & GRAPH TOPOLOGY
+# =====================================================================
+
+@router.get(
+    "/health",
+    response_model=HealthCheckResponse,
+    summary="Engine Readiness & Health Probe",
+    description="Verifies loaded ML weights, LLM connectivity, and backend notification adapter mode."
+)
+def health_check(service: TriageService = Depends(get_triage_service)):
+    return service.get_system_health()
+
+
+@router.get(
+    "/triage/graph/topology",
+    response_model=GraphTopologyResponse,
+    summary="LangGraph State Machine Topology",
+    description="Provides the node and conditional edge metadata for React dashboard visualization."
+)
+def get_graph_topology(service: TriageService = Depends(get_triage_service)):
+    return service.get_graph_topology()
+
+
+@router.get(
+    "/triage/patient/{patient_id}/state",
+    summary="Get Bed Checkpoint State",
+    description="Retrieves the latest execution state and evidence for a specific patient."
+)
+def get_patient_state(
+    patient_id: str,
+    service: TriageService = Depends(get_triage_service)
+):
+    state = service.get_patient_state(patient_id)
+    if not state:
+        raise HTTPException(status_code=404, detail=f"No telemetry state found for patient {patient_id}")
+    return state
