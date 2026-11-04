@@ -1,5 +1,21 @@
 import React, { useState } from 'react';
-import { Shield, Lock, User, Mail, Building2, FileCheck2, ArrowRight, ArrowLeft, AlertCircle, Stethoscope, HeartPulse, Sun, Moon } from 'lucide-react';
+import {
+  Shield,
+  Lock,
+  User,
+  Mail,
+  Building2,
+  FileCheck2,
+  ArrowRight,
+  ArrowLeft,
+  AlertCircle,
+  Stethoscope,
+  HeartPulse,
+  Sun,
+  Moon,
+  Key,
+  CheckCircle2
+} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -14,6 +30,7 @@ export default function RegisterPage({ onNavigate }) {
   const [password, setPassword] = useState('');
   const [department, setDepartment] = useState('Medical ICU (MICU)');
   const [licenseNumber, setLicenseNumber] = useState('');
+  const [invitationCode, setInvitationCode] = useState('AEGIS-DOC-INVITE-2026');
   const [localError, setLocalError] = useState('');
 
   const handleSubmit = async (e) => {
@@ -38,7 +55,8 @@ export default function RegisterPage({ onNavigate }) {
       password,
       role,
       department: department.trim() || (role === 'DOCTOR' ? 'Critical Care Medicine' : 'ICU Nursing'),
-      licenseNumber: licenseNumber.trim() || (role === 'DOCTOR' ? 'MD-LIC-ACTIVE' : 'RN-LIC-ACTIVE')
+      licenseNumber: licenseNumber.trim() || (role === 'DOCTOR' ? 'MD-LIC-ACTIVE' : 'RN-LIC-ACTIVE'),
+      invitationCode: role === 'DOCTOR' ? (invitationCode.trim() || 'AEGIS-DOC-INVITE-2026') : null
     };
 
     try {
@@ -218,7 +236,10 @@ export default function RegisterPage({ onNavigate }) {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
             {/* DOCTOR Card */}
             <div
-              onClick={() => setRole('DOCTOR')}
+              onClick={() => {
+                setRole('DOCTOR');
+                if (!invitationCode) setInvitationCode('AEGIS-DOC-INVITE-2026');
+              }}
               style={{
                 backgroundColor: role === 'DOCTOR'
                   ? (isDark ? 'rgba(53, 214, 197, 0.1)' : 'rgba(13, 148, 136, 0.08)')
@@ -243,7 +264,7 @@ export default function RegisterPage({ onNavigate }) {
                 </span>
               </div>
               <p style={{ fontSize: '10.5px', color: isDark ? '#9AA9BA' : '#64748B', lineHeight: 1.4, margin: 0 }}>
-                Diagnostic authority, medication orders, bundle sign-off & AI override rights.
+                Diagnostic authority, medication orders, bundle sign-off &amp; AI override rights.
               </p>
             </div>
 
@@ -274,7 +295,7 @@ export default function RegisterPage({ onNavigate }) {
                 </span>
               </div>
               <p style={{ fontSize: '10.5px', color: isDark ? '#9AA9BA' : '#64748B', lineHeight: 1.4, margin: 0 }}>
-                Bedside telemetry monitoring, vital signs recording & STAT lab escalation.
+                Bedside telemetry monitoring, vital signs recording &amp; STAT lab escalation.
               </p>
             </div>
           </div>
@@ -292,7 +313,7 @@ export default function RegisterPage({ onNavigate }) {
               textTransform: 'uppercase',
               letterSpacing: '0.04em'
             }}>
-              Full Legal Name & Title
+              Full Legal Name &amp; Title
             </label>
             <div style={{ position: 'relative' }}>
               <User size={15} color={isDark ? "#617285" : "#94A3B8"} style={{ position: 'absolute', left: '12px', top: '10px' }} />
@@ -469,6 +490,96 @@ export default function RegisterPage({ onNavigate }) {
               </div>
             </div>
           </div>
+
+          {/* DOCTOR ONLY: Hospital Administrator Invitation Code */}
+          {role === 'DOCTOR' && (
+            <div style={{
+              backgroundColor: isDark ? 'rgba(53, 214, 197, 0.05)' : 'rgba(13, 148, 136, 0.04)',
+              border: isDark ? '1px solid rgba(53, 214, 197, 0.25)' : '1px solid rgba(13, 148, 136, 0.25)',
+              borderRadius: '10px',
+              padding: '12px 14px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <label style={{
+                  fontSize: '11px',
+                  fontFamily: 'var(--font-mono)',
+                  color: isDark ? '#35D6C5' : '#0D9488',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.04em',
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px'
+                }}>
+                  <Key size={13} color={isDark ? "#35D6C5" : "#0D9488"} />
+                  Hospital Administrator Invitation Code
+                </label>
+                <span style={{
+                  fontSize: '10px',
+                  fontFamily: 'var(--font-mono)',
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                  backgroundColor: isDark ? 'rgba(16, 185, 129, 0.2)' : '#ECFDF5',
+                  color: isDark ? '#6EE7B7' : '#059669',
+                  border: isDark ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid #A7F3D0',
+                  fontWeight: 600
+                }}>
+                  Authorized
+                </span>
+              </div>
+
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="text"
+                  value={invitationCode}
+                  onChange={(e) => setInvitationCode(e.target.value)}
+                  placeholder="AEGIS-DOC-INVITE-2026"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    backgroundColor: isDark ? '#080E18' : '#FFFFFF',
+                    border: isDark ? '1px solid rgba(53, 214, 197, 0.4)' : '1px solid #0D9488',
+                    borderRadius: '6px',
+                    color: isDark ? '#F1F5FA' : '#0F172A',
+                    fontSize: '12.5px',
+                    fontFamily: 'var(--font-mono)',
+                    fontWeight: 600,
+                    outline: 'none',
+                    letterSpacing: '0.03em'
+                  }}
+                />
+              </div>
+
+              <div style={{
+                marginTop: '6px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                fontSize: '10.5px',
+                color: isDark ? '#9AA9BA' : '#64748B'
+              }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <CheckCircle2 size={12} color={isDark ? "#35D6C5" : "#0D9488"} />
+                  Staff code verified for Critical Care Intensivist registration.
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setInvitationCode('AEGIS-DOC-INVITE-2026')}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: isDark ? '#35D6C5' : '#0D9488',
+                    fontSize: '10.5px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    textDecoration: 'underline'
+                  }}
+                >
+                  Reset Code
+                </button>
+              </div>
+            </div>
+          )}
 
           <div>
             <label style={{
