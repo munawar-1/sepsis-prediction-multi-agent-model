@@ -23,7 +23,8 @@ export default function LoginPage({ onNavigate, returnPath = '/dashboard' }) {
     try {
       await login(username.trim(), password);
       if (onNavigate) {
-        onNavigate(returnPath);
+        const target = (returnPath && returnPath !== '/login') ? returnPath : '/dashboard';
+        onNavigate(target);
       }
     } catch (err) {
       setLocalError(err.message || 'Authentication failed. Please verify credentials.');

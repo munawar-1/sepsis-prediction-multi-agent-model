@@ -262,7 +262,8 @@ export default function StitchDashboard({ onExitToLanding }) {
   const [initialVacantBed, setInitialVacantBed] = useState(null);
 
   const handleOpenAddPatient = (bedNumber = null) => {
-    setInitialVacantBed(bedNumber);
+    const validBed = (typeof bedNumber === 'string') ? bedNumber : null;
+    setInitialVacantBed(validBed);
     setIsAddPatientModalOpen(true);
   };
 

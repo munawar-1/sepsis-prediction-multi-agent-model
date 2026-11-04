@@ -45,8 +45,8 @@
   transition: background-color 0.25s ease, color 0.25s ease;
 }
 
-/* Ensure buttons in dashboard never default to grey browser buttonface */
-.dashboard-viewport button {
+/* Only reset default unstyled buttons, never strip explicit bg- classes */
+.dashboard-viewport button:not([class*="bg-"]):not([style*="background"]) {
   background-color: transparent;
 }
 
@@ -189,6 +189,7 @@
 /* Critical (Red / Rose) */
 .dashboard-viewport.dashboard-theme-dark .bg-rose-50,
 .dashboard-viewport.dashboard-theme-dark .bg-rose-50\/30,
+.dashboard-viewport.dashboard-theme-dark .bg-rose-50\/50,
 .dashboard-viewport.dashboard-theme-dark .bg-rose-50\/60,
 .dashboard-viewport.dashboard-theme-dark .bg-rose-50\/70,
 .dashboard-viewport.dashboard-theme-dark .bg-rose-50\/80,
@@ -205,6 +206,7 @@
 
 .dashboard-viewport.dashboard-theme-dark .text-rose-700,
 .dashboard-viewport.dashboard-theme-dark .text-rose-600,
+.dashboard-viewport.dashboard-theme-dark .text-rose-800,
 .dashboard-viewport.dashboard-theme-dark .text-rose-900,
 .dashboard-viewport.dashboard-theme-dark .text-red-700,
 .dashboard-viewport.dashboard-theme-dark .text-red-600 {
@@ -239,14 +241,12 @@
 .dashboard-viewport.dashboard-theme-dark .bg-emerald-50\/40,
 .dashboard-viewport.dashboard-theme-dark .bg-emerald-50\/60,
 .dashboard-viewport.dashboard-theme-dark .bg-emerald-50\/70,
-.dashboard-viewport.dashboard-theme-dark .bg-emerald-100,
-.dashboard-viewport.dashboard-theme-dark .bg-teal-50 {
+.dashboard-viewport.dashboard-theme-dark .bg-emerald-100 {
   background-color: rgba(16, 185, 129, 0.14) !important;
 }
 
 .dashboard-viewport.dashboard-theme-dark .border-emerald-200,
-.dashboard-viewport.dashboard-theme-dark .border-emerald-300,
-.dashboard-viewport.dashboard-theme-dark .border-teal-200 {
+.dashboard-viewport.dashboard-theme-dark .border-emerald-300 {
   border-color: rgba(16, 185, 129, 0.4) !important;
 }
 
@@ -254,6 +254,34 @@
 .dashboard-viewport.dashboard-theme-dark .text-emerald-700,
 .dashboard-viewport.dashboard-theme-dark .text-emerald-900 {
   color: #6EE7B7 !important;
+}
+
+/* Teal Specific Mappings (Nurse Add Patient, Badges & Highlights) */
+.dashboard-viewport.dashboard-theme-dark .text-teal-800,
+.dashboard-viewport.dashboard-theme-dark .text-teal-700,
+.dashboard-viewport.dashboard-theme-dark .text-teal-600 {
+  color: #35D6C5 !important;
+}
+
+.dashboard-viewport.dashboard-theme-dark .text-teal-300,
+.dashboard-viewport.dashboard-theme-dark .text-teal-400 {
+  color: #5EEAD4 !important;
+}
+
+.dashboard-viewport.dashboard-theme-dark .bg-teal-50,
+.dashboard-viewport.dashboard-theme-dark .bg-teal-50\/40,
+.dashboard-viewport.dashboard-theme-dark .bg-teal-50\/50,
+.dashboard-viewport.dashboard-theme-dark .bg-teal-50\/60,
+.dashboard-viewport.dashboard-theme-dark .bg-teal-50\/70,
+.dashboard-viewport.dashboard-theme-dark .bg-teal-50\/80 {
+  background-color: rgba(53, 214, 197, 0.12) !important;
+}
+
+.dashboard-viewport.dashboard-theme-dark .border-teal-200,
+.dashboard-viewport.dashboard-theme-dark .border-teal-200\/60,
+.dashboard-viewport.dashboard-theme-dark .border-teal-200\/80,
+.dashboard-viewport.dashboard-theme-dark .border-teal-300 {
+  border-color: rgba(53, 214, 197, 0.35) !important;
 }
 
 /* Informational (Blue / Sky) */
@@ -295,7 +323,7 @@
   color: #D8B4FE !important;
 }
 
-/* --- Form Controls: Inputs, Textareas, Selects --- */
+/* --- Form Controls: Inputs, Textareas, Selects & Native Dropdown Options --- */
 .dashboard-viewport.dashboard-theme-dark input:not([type="checkbox"]):not([type="radio"]),
 .dashboard-viewport.dashboard-theme-dark textarea,
 .dashboard-viewport.dashboard-theme-dark select {
@@ -317,6 +345,17 @@
   color: #768CA8 !important;
 }
 
+/* Native select dropdown options styling across operating systems (Windows/Chrome/Edge) */
+.dashboard-viewport.dashboard-theme-dark select option {
+  background-color: #0D1524 !important;
+  color: #F1F5FA !important;
+}
+
+.dashboard-viewport.dashboard-theme-light select option {
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
+}
+
 /* --- Tables & Data Grids --- */
 .dashboard-viewport.dashboard-theme-dark table th {
   background-color: #0F1728 !important;
@@ -333,12 +372,24 @@
   background-color: #131F33 !important;
 }
 
-/* --- Modals & Drawers --- */
+/* --- Modals, Dialogs & Backdrop Overlay Overrides --- */
 .dashboard-viewport.dashboard-theme-dark .fixed.inset-0.bg-slate-900\/40,
 .dashboard-viewport.dashboard-theme-dark .fixed.inset-0.bg-slate-900\/50,
+.dashboard-viewport.dashboard-theme-dark .fixed.inset-0.bg-slate-900\/60,
 .dashboard-viewport.dashboard-theme-dark .bg-slate-900\/40,
-.dashboard-viewport.dashboard-theme-dark .bg-slate-900\/50 {
-  background-color: rgba(2, 6, 14, 0.85) !important;
+.dashboard-viewport.dashboard-theme-dark .bg-slate-900\/50,
+.dashboard-viewport.dashboard-theme-dark .bg-slate-900\/60 {
+  background-color: rgba(2, 6, 14, 0.75) !important;
+}
+
+/* Soften light gradients inside dark modals */
+.dashboard-viewport.dashboard-theme-dark .from-teal-50\/50,
+.dashboard-viewport.dashboard-theme-dark .from-rose-50\/50,
+.dashboard-viewport.dashboard-theme-dark .via-white,
+.dashboard-viewport.dashboard-theme-dark .to-slate-50\/50 {
+  --tw-gradient-from: rgba(13, 21, 36, 0.95) !important;
+  --tw-gradient-via: rgba(13, 21, 36, 0.98) !important;
+  --tw-gradient-to: rgba(10, 17, 30, 0.95) !important;
 }
 
 /* --- Draggable Sidebar Resizer Handle --- */

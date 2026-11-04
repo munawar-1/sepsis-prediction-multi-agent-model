@@ -8,15 +8,9 @@ export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem(THEME_STORAGE_KEY);
-      // Migrate previous dark preference to light default for the white healthcare UI
-      if (stored === 'dark') {
-        localStorage.setItem(THEME_STORAGE_KEY, 'light');
-        return 'light';
+      if (stored === 'dark' || stored === 'light') {
+        return stored;
       }
-      if (stored === 'light') {
-        return 'light';
-      }
-      return 'light';
     }
     return 'light';
   });
@@ -25,16 +19,20 @@ export function ThemeProvider({ children }) {
     if (typeof document === 'undefined') return;
     const root = document.documentElement;
 
-    if (theme === 'light') {
-      root.classList.remove('dark');
-      root.classList.add('light');
-      root.setAttribute('data-theme', 'light');
-      root.style.colorScheme = 'light';
-    } else {
+    if (theme === 'dark') {
       root.classList.remove('light');
       root.classList.add('dark');
       root.setAttribute('data-theme', 'dark');
       root.style.colorScheme = 'dark';
+      document.body?.classList.remove('light');
+      document.body?.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+      root.classList.add('light');
+      root.setAttribute('data-theme', 'light');
+      root.style.colorScheme = 'light';
+      document.body?.classList.remove('dark');
+      document.body?.classList.add('light');
     }
 
     localStorage.setItem(THEME_STORAGE_KEY, theme);

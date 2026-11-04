@@ -585,8 +585,8 @@ export default function Header({
         {isNurse && onOpenAddPatient && (
           <button
             type="button"
-            onClick={onOpenAddPatient}
-            className={`hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all duration-200 cursor-pointer shadow-2xs ${
+            onClick={() => onOpenAddPatient && onOpenAddPatient()}
+            className={`hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all duration-200 cursor-pointer shadow-sm ${
               isDark
                 ? 'bg-teal-950/60 hover:bg-teal-900/60 border-teal-800 text-teal-300'
                 : 'bg-teal-50 hover:bg-teal-100 border-teal-200 text-teal-800'

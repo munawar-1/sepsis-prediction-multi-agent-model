@@ -36,16 +36,24 @@ function AppContent() {
 
   // Programmatic client navigation
   const navigateTo = (path) => {
-    if (window.location.pathname !== path) {
-      window.history.pushState({}, '', path);
-      setCurrentPath(path);
-      window.scrollTo(0, 0);
+    const target = path || '/';
+    if (window.location.pathname !== target) {
+      window.history.pushState({}, '', target);
     }
+    setCurrentPath(target);
+    window.scrollTo(0, 0);
   };
 
   const isDashboard = currentPath.startsWith('/dashboard');
   const isLogin = currentPath === '/login';
   const isRegister = currentPath === '/register';
+
+  // Automatically redirect authenticated clinicians from /login or /register to /dashboard
+  useEffect(() => {
+    if (isAuthenticated && (currentPath === '/login' || currentPath === '/register')) {
+      navigateTo('/dashboard');
+    }
+  }, [isAuthenticated, currentPath]);
 
   // Handle Lenis smooth scroll on landing page only
   useEffect(() => {
@@ -61,7 +69,7 @@ function AppContent() {
 
   // ROUTE 1: Dedicated Login Page
   if (isLogin) {
-    return <LoginPage onNavigate={navigateTo} returnPath={typeof window !== "undefined" ? (window.location.pathname + window.location.search) : "/dashboard"} />;
+    return <LoginPage onNavigate={navigateTo} returnPath="/dashboard" />;
   }
 
   // ROUTE 2: Dedicated Registration Page

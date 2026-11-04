@@ -226,8 +226,8 @@ export default function InboxView({
           {isNurse && (
             <button
               type="button"
-              onClick={onOpenAddPatient}
-              className="h-9 px-3.5 rounded-full border-[1.5px] border-teal-300 dark:border-teal-500/40 bg-teal-50 dark:bg-[#0E2A2A] hover:bg-teal-100 dark:hover:bg-[#143636] text-teal-800 dark:text-teal-300 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+              onClick={() => onOpenAddPatient && onOpenAddPatient()}
+              className="h-9 px-3.5 rounded-full border-[1.5px] border-teal-300 dark:border-teal-500/40 bg-teal-50 dark:bg-[#0E2A2A] hover:bg-teal-100 dark:hover:bg-[#143636] text-teal-800 dark:text-teal-300 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
               title="Bedside Nurse: Admit New Patient into ICU Bed"
             >
               <UserPlus className="w-4 h-4 text-teal-700 dark:text-teal-400" />
