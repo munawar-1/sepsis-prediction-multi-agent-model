@@ -94,7 +94,7 @@ export default function Sidebar({
 
           <button
             onClick={onToggleCollapse}
-            className="p-1.5 rounded-lg border-[1.5px] border-slate-200 bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 hover:border-slate-300 transition-all duration-200 ease-in-out cursor-pointer shadow-2xs"
+            className="p-1.5 rounded-lg border-[1.5px] border-[#D0DFEF] dark:border-[#1E2D44] bg-white dark:bg-[#101C30] text-[#556D8A] dark:text-[#8BA1BD] hover:text-[#0F172A] dark:hover:text-white hover:bg-[#F0F5FA] dark:hover:bg-[#172A47] hover:border-[#B8D1EA] dark:hover:border-[#28446E] transition-all duration-200 ease-in-out cursor-pointer shadow-2xs"
             title={isCollapsed ? "Expand sidebar (Ctrl+B)" : "Collapse sidebar (Ctrl+B)"}
           >
             {isCollapsed ? <PanelLeftOpen className="w-4 h-4 text-teal-600" /> : <PanelLeftClose className="w-4 h-4" />}
@@ -114,7 +114,7 @@ export default function Sidebar({
           <div className="w-5 h-5 rounded-full bg-teal-50 border-[1.5px] border-teal-300 flex items-center justify-center text-teal-700 shrink-0 font-bold text-xs group-hover:scale-105 transition-all duration-200 ease-in-out">
             <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
           </div>
-          {!isCollapsed && <span className="text-slate-900 font-semibold truncate">New Consultation</span>}
+          {!isCollapsed && <span className="text-[#0F172A] dark:text-[#F1F5FA] font-semibold truncate">New Consultation</span>}
         </button>
 
         {/* Primary Navigation List (Platform: All 8 Items Always Visible) */}
@@ -329,7 +329,7 @@ export default function Sidebar({
                   if (onExitToLanding) onExitToLanding();
                 }}
                 title="Sign Out"
-                className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-rose-700 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-all duration-200 ease-in-out cursor-pointer"
+                className="w-7 h-7 rounded-full flex items-center justify-center bg-[#EDF3FA] dark:bg-[#101C30] border border-[#D5E3F2] dark:border-[#1C2F4D] text-[#556D8A] dark:text-[#8BA1BD] hover:text-rose-600 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:border-rose-200 dark:hover:border-rose-800/50 transition-all duration-200 ease-in-out cursor-pointer shadow-2xs"
               >
                 <LogOut className="w-3.5 h-3.5" />
               </button>
@@ -345,7 +345,7 @@ export default function Sidebar({
               if (onExitToLanding) onExitToLanding();
             }}
             title="Sign Out"
-            className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-rose-700 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 transition-all duration-200 ease-in-out cursor-pointer shadow-2xs"
+            className="w-8 h-8 rounded-full flex items-center justify-center bg-[#EDF3FA] dark:bg-[#101C30] border border-[#D5E3F2] dark:border-[#1C2F4D] text-[#556D8A] dark:text-[#8BA1BD] hover:text-rose-600 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:border-rose-200 dark:hover:border-rose-800/50 transition-all duration-200 ease-in-out cursor-pointer shadow-2xs"
           >
             <LogOut className="w-4 h-4" />
           </button>

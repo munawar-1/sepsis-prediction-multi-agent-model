@@ -60,6 +60,7 @@ public class AuthAndRoleSecurityIntegrationTest {
                 .role(Role.DOCTOR)
                 .department("Trauma ICU")
                 .licenseNumber("MD-TR-9988")
+                .invitationCode("AEGIS-CLINICAL-INVITE-2026")
                 .build();
 
         mockMvc.perform(post("/api/v1/auth/signup")

@@ -282,10 +282,10 @@ export default function Header({
       >
         <div className={`relative w-full flex items-center rounded-xl border transition-all duration-200 ${
           isDark
-            ? 'bg-[#0A111E] border-[#1E2D44] focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20'
-            : 'bg-slate-50 border-slate-200 focus-within:bg-white focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20'
+            ? 'bg-[#0B1322] border-[#1A2C46] focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20'
+            : 'bg-[#F0F5FA] border-[#D0DFEF] focus-within:bg-white focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20'
         }`}>
-          <Search className={`w-4 h-4 ml-3 shrink-0 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
+          <Search className={`w-4 h-4 ml-3 shrink-0 ${isDark ? 'text-[#768CA8]' : 'text-[#64748B]'}`} />
           <input
             ref={searchInputRef}
             type="text"
@@ -297,7 +297,7 @@ export default function Header({
             onFocus={() => setIsSearchOpen(true)}
             placeholder="Search patients, beds, agents (Ctrl+K)..."
             className={`w-full py-1.5 pl-2.5 pr-8 text-xs font-sans bg-transparent outline-none ${
-              isDark ? 'text-slate-100 placeholder:text-slate-500' : 'text-slate-900 placeholder:text-slate-400'
+              isDark ? 'text-[#F1F5FA] placeholder:text-[#768CA8]' : 'text-[#0F172A] placeholder:text-[#64748B]'
             }`}
           />
           {searchQuery ? (
@@ -306,13 +306,13 @@ export default function Header({
                 setSearchQuery('');
                 setIsSearchOpen(false);
               }}
-              className="absolute right-2.5 p-0.5 rounded-full hover:bg-slate-200/50 text-slate-400 hover:text-slate-600 cursor-pointer"
+              className="absolute right-2.5 p-0.5 rounded-full hover:bg-slate-200/50 dark:hover:bg-[#1E2D44] text-slate-400 hover:text-slate-200 cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
             </button>
           ) : (
             <kbd className={`hidden lg:inline-flex items-center gap-0.5 absolute right-2.5 px-1.5 py-0.5 rounded text-[9px] font-mono border ${
-              isDark ? 'bg-[#142036] border-[#1E2D44] text-slate-400' : 'bg-slate-200/60 border-slate-300 text-slate-500'
+              isDark ? 'bg-[#14263F] border-[#1E2D44] text-[#768CA8]' : 'bg-[#E2ECF7] border-[#CBDCEE] text-[#475569]'
             }`}>
               Ctrl K
             </kbd>
@@ -390,8 +390,8 @@ export default function Header({
           onClick={() => setIsMobileSearchVisible(!isMobileSearchVisible)}
           className={`md:hidden w-8 h-8 rounded-xl border flex items-center justify-center transition-colors cursor-pointer ${
             isDark
-              ? 'bg-[#142036] border-[#1E2D44] text-slate-300'
-              : 'bg-slate-100 border-slate-200 text-slate-600'
+              ? 'bg-[#101C30] border-[#1E2D44] text-[#8BA1BD]'
+              : 'bg-[#EBF2FA] border-[#D0DFEF] text-[#556D8A]'
           }`}
           title="Search"
           aria-label="Search"
@@ -401,10 +401,10 @@ export default function Header({
 
         {/* Live Multi-Agent Telemetry Pulse Badge */}
         <div className={`hidden xl:flex items-center gap-2 px-2.5 py-1.5 rounded-xl border text-xs font-mono ${
-          isDark ? 'bg-[#0A111E] border-[#1E2D44]' : 'bg-slate-50 border-slate-200'
+          isDark ? 'bg-[#0B1322] border-[#1A2C46]' : 'bg-[#F0F5FA] border-[#D0DFEF]'
         }`}>
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+          <span className={`text-[10px] ${isDark ? 'text-[#768CA8]' : 'text-[#64748B]'}`}>
             Ensemble:
           </span>
           <span className={`text-[10px] font-bold ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>
@@ -418,39 +418,39 @@ export default function Header({
         <div
           className={`flex items-center p-0.5 rounded-xl border transition-all duration-200 ${
             isDark
-              ? 'bg-[#0A111E] border-[#1E2D44]'
-              : 'bg-slate-100 border-slate-200'
+              ? 'bg-[#0B1322] border-[#1A2C46]'
+              : 'bg-[#EBF2FA] border-[#D0DFEF]'
           }`}
           role="radiogroup"
           aria-label="Color Theme Switcher"
         >
           <button
             onClick={() => setTheme('light')}
-            className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer ${
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer ${
               !isDark
-                ? 'bg-white text-slate-900 shadow-xs border border-slate-200/80 font-bold'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-white text-[#0F172A] shadow-xs border border-[#CBDCEE] font-bold'
+                : 'bg-transparent text-[#7A91AD] hover:text-[#CBD5E1] hover:bg-[#0E1B2E] border border-transparent'
             }`}
             title="Switch to Daylight Mode"
             aria-checked={!isDark}
             role="radio"
           >
-            <Sun className={`w-3.5 h-3.5 ${!isDark ? 'text-amber-500' : 'text-slate-400'}`} />
+            <Sun className={`w-3.5 h-3.5 ${!isDark ? 'text-amber-500' : 'text-[#7A91AD]'}`} />
             <span className="hidden sm:inline text-[11px] font-mono">Day</span>
           </button>
 
           <button
             onClick={() => setTheme('dark')}
-            className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer ${
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer ${
               isDark
-                ? 'bg-[#142036] text-emerald-400 shadow-xs border border-emerald-500/30 font-bold'
-                : 'text-slate-500 hover:text-slate-900'
+                ? 'bg-[#14263F] text-[#00E5B9] shadow-xs border border-[#00E5B9]/40 font-bold'
+                : 'bg-transparent text-[#5B718E] hover:text-[#0F172A] hover:bg-[#DFEAF5] border border-transparent'
             }`}
             title="Switch to Night Clinical Mode"
             aria-checked={isDark}
             role="radio"
           >
-            <Moon className={`w-3.5 h-3.5 ${isDark ? 'text-emerald-400' : 'text-slate-400'}`} />
+            <Moon className={`w-3.5 h-3.5 ${isDark ? 'text-[#00E5B9]' : 'text-[#5B718E]'}`} />
             <span className="hidden sm:inline text-[11px] font-mono">Night</span>
           </button>
         </div>
@@ -463,8 +463,8 @@ export default function Header({
             onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
             className={`relative w-8 h-8 rounded-xl border flex items-center justify-center transition-all duration-200 cursor-pointer ${
               isDark
-                ? 'bg-[#142036] hover:bg-[#1B2B48] border-[#1E2D44] text-slate-300 hover:text-white'
-                : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-600 hover:text-slate-900'
+                ? 'bg-[#101C30] hover:bg-[#162947] border-[#1E2D44] text-[#8BA1BD] hover:text-white'
+                : 'bg-[#EBF2FA] hover:bg-[#DFEAF5] border-[#D0DFEF] text-[#556D8A] hover:text-[#0F172A]'
             }`}
             title={`Clinical Alerts (${unreadAlerts.length} unreviewed)`}
             aria-label="Clinical Alert Notifications"

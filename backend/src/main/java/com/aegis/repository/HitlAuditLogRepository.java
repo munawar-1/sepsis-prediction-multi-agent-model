@@ -10,5 +10,5 @@ import java.util.List;
 public interface HitlAuditLogRepository extends JpaRepository<HitlAuditLog, String> {
     List<HitlAuditLog> findByPatientIdOrderByRecordedAtDesc(String patientId);
     List<HitlAuditLog> findByClinicianIdOrderByRecordedAtDesc(String clinicianId);
+    List<HitlAuditLog> findAllByOrderByRecordedAtDesc();
 }
-

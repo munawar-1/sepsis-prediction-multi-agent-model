@@ -56,13 +56,14 @@ public class AuthService {
             throw new IllegalArgumentException("Password must be at least 6 characters.");
         }
 
-        Role requestedRole = request.getRole() != null ? request.getRole() : Role.DOCTOR;
+        Role requestedRole = request.getRole() != null ? request.getRole() : Role.NURSE;
 
         // Security Enforcement: Prevent unauthorized public self-assignment of clinical roles.
         // Privileged roles (DOCTOR, ADMIN) require an authorized hospital administrator invitation or verified credential.
         if (requestedRole == Role.DOCTOR || requestedRole == Role.ADMIN) {
-            if (!isValidClinicianInvitation(request.getInvitationCode(), request.getLicenseNumber())) {
-                throw new SecurityException("Registration for clinical role '" + requestedRole + "' requires an authorized hospital administrator invitation code or verified clinician licensing credential.");
+            if (!isValidClinicianInvitation(request.getInvitationCode())) {
+                log.warn("Unauthorized attempt to self-assign clinical role '{}' without verified invite code: email={}", requestedRole, normalizedEmail);
+                throw new SecurityException("Unauthorized role assignment: Registration for clinical role '" + requestedRole + "' is forbidden without an authorized hospital administrator invitation code.");
             }
         }
 
@@ -168,16 +169,14 @@ public class AuthService {
         return email != null && EMAIL_PATTERN.matcher(email.trim()).matches();
     }
 
-    private boolean isValidClinicianInvitation(String invitationCode, String licenseNumber) {
-        if (invitationCode != null && (invitationCode.equalsIgnoreCase("AEGIS-CLINICAL-INVITE-2026")
-                || invitationCode.equalsIgnoreCase("HOSPITAL-ADMIN-INVITE")
-                || invitationCode.equalsIgnoreCase("AEGIS-ICU-STAFF-2026"))) {
-            return true;
+    private boolean isValidClinicianInvitation(String invitationCode) {
+        if (invitationCode == null || invitationCode.trim().isEmpty()) {
+            return false;
         }
-        return licenseNumber != null && (licenseNumber.startsWith("MD-")
-                || licenseNumber.startsWith("INC-")
-                || licenseNumber.startsWith("MCI-")
-                || licenseNumber.startsWith("LIC-"));
+        String code = invitationCode.trim();
+        return code.equalsIgnoreCase("AEGIS-CLINICAL-INVITE-2026")
+                || code.equalsIgnoreCase("HOSPITAL-ADMIN-INVITE")
+                || code.equalsIgnoreCase("AEGIS-DOC-INVITE-2026")
+                || code.equalsIgnoreCase("AEGIS-ICU-STAFF-2026");
     }
 }
-

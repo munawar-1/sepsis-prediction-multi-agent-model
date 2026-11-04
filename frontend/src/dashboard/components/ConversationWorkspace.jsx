@@ -24,7 +24,7 @@ export default function ConversationWorkspace({
   onOpenOverrideModal,
   onSendMessage
 }) {
-  const { user } = useAuth();
+  const { user, isDoctor, isNurse } = useAuth();
   const [inputText, setInputText] = useState('');
   const [openEvidence, setOpenEvidence] = useState({ '0-0': true });
   const [attachmentNotice, setAttachmentNotice] = useState(null);

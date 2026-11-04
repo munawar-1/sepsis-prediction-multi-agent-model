@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
     "spring.jpa.hibernate.ddl-auto=update",
     "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQLDialect"
 })
+@org.junit.jupiter.api.Disabled("Optional live MySQL test requires running local MySQL service on port 3306")
 public class MySqlConnectionTest {
 
     @Autowired

@@ -29,7 +29,7 @@ public class SignupRequest {
     private String fullName;
 
     @Builder.Default
-    private Role role = Role.DOCTOR;
+    private Role role = Role.NURSE;
 
     private String department;
 
@@ -41,7 +41,6 @@ public class SignupRequest {
 
     private String pagerNumber;
 
-    @Builder.Default
-    private String invitationCode = "AEGIS-CLINICAL-INVITE-2026";
+    private String invitationCode;
 }
 

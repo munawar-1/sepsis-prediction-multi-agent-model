@@ -37,7 +37,7 @@ export default function OverrideModal({
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full border-[1.5px] border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
+            className="w-8 h-8 rounded-full border-[1.5px] border-[#D0DFEF] dark:border-[#1E2D44] bg-[#EDF3FA] dark:bg-[#101C30] flex items-center justify-center text-[#556D8A] dark:text-[#8BA1BD] hover:text-[#0F172A] dark:hover:text-white hover:bg-[#DFEAF5] dark:hover:bg-[#172A47] transition-colors cursor-pointer shadow-2xs"
           >
             <X className="w-4 h-4" />
           </button>
@@ -83,7 +83,7 @@ export default function OverrideModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 rounded-full border-[1.5px] border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-colors cursor-pointer shadow-2xs"
+              className="px-5 py-2.5 rounded-full border-[1.5px] border-[#D0DFEF] dark:border-[#1E2D44] bg-white dark:bg-[#101C30] hover:bg-[#F0F5FA] dark:hover:bg-[#172A47] text-[#334155] dark:text-[#CBD5E1] text-xs font-bold transition-colors cursor-pointer shadow-2xs"
             >
               Cancel
             </button>

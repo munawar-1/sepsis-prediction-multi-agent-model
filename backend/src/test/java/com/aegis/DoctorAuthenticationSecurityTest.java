@@ -52,6 +52,7 @@ public class DoctorAuthenticationSecurityTest {
                 .password(password)
                 .fullName("Dr. John Watson, MD")
                 .role(Role.DOCTOR)
+                .invitationCode("AEGIS-CLINICAL-INVITE-2026")
                 .department("Pulmonology & Critical Care")
                 .specialty("Pulmonologist")
                 .licenseNumber("MD-PULM-7711")
@@ -83,6 +84,7 @@ public class DoctorAuthenticationSecurityTest {
                 .password(plainPassword)
                 .fullName("Dr. Security Audit")
                 .role(Role.DOCTOR)
+                .invitationCode("AEGIS-CLINICAL-INVITE-2026")
                 .build();
 
         mockMvc.perform(post("/api/v1/auth/signup")
@@ -124,6 +126,7 @@ public class DoctorAuthenticationSecurityTest {
                 .password(password)
                 .fullName("Dr. First Applicant")
                 .role(Role.DOCTOR)
+                .invitationCode("AEGIS-CLINICAL-INVITE-2026")
                 .build();
 
         // First registration succeeds
@@ -138,6 +141,7 @@ public class DoctorAuthenticationSecurityTest {
                 .password("AnotherPassword456!")
                 .fullName("Dr. Second Applicant")
                 .role(Role.DOCTOR)
+                .invitationCode("AEGIS-CLINICAL-INVITE-2026")
                 .build();
 
         mockMvc.perform(post("/api/v1/auth/signup")
@@ -165,6 +169,7 @@ public class DoctorAuthenticationSecurityTest {
                     .password("ValidPassword123!")
                     .fullName("Dr. Invalid Email")
                     .role(Role.DOCTOR)
+                .invitationCode("AEGIS-CLINICAL-INVITE-2026")
                     .build();
 
             mockMvc.perform(post("/api/v1/auth/signup")
@@ -182,6 +187,7 @@ public class DoctorAuthenticationSecurityTest {
                 .password("12345")
                 .fullName("Dr. Short Pass")
                 .role(Role.DOCTOR)
+                .invitationCode("AEGIS-CLINICAL-INVITE-2026")
                 .build();
 
         mockMvc.perform(post("/api/v1/auth/signup")
@@ -202,6 +208,7 @@ public class DoctorAuthenticationSecurityTest {
                 .password(password)
                 .fullName("Dr. Returning Intensivist")
                 .role(Role.DOCTOR)
+                .invitationCode("AEGIS-CLINICAL-INVITE-2026")
                 .department("Surgical ICU")
                 .licenseNumber("MD-SICU-1122")
                 .build();
@@ -239,6 +246,7 @@ public class DoctorAuthenticationSecurityTest {
                 .email(email)
                 .password(password)
                 .role(Role.DOCTOR)
+                .invitationCode("AEGIS-CLINICAL-INVITE-2026")
                 .build();
 
         mockMvc.perform(post("/api/v1/auth/signup")
@@ -298,6 +306,7 @@ public class DoctorAuthenticationSecurityTest {
                 .password(password)
                 .fullName("Dr. Attending Specialist")
                 .role(Role.DOCTOR)
+                .invitationCode("AEGIS-CLINICAL-INVITE-2026")
                 .build();
 
         MvcResult signupResult = mockMvc.perform(post("/api/v1/auth/signup")
@@ -340,6 +349,7 @@ public class DoctorAuthenticationSecurityTest {
                 .email(email)
                 .password(password)
                 .role(Role.DOCTOR)
+                .invitationCode("AEGIS-CLINICAL-INVITE-2026")
                 .build();
 
         MvcResult signupResult = mockMvc.perform(post("/api/v1/auth/signup")

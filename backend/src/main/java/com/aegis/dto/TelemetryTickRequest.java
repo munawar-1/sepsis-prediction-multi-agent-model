@@ -23,6 +23,22 @@ public class TelemetryTickRequest {
     @JsonAlias({"patientId", "patient_id"})
     private String patientId;
 
+    @JsonProperty("patient_name")
+    @JsonAlias({"patientName", "patient_name", "name", "fullName"})
+    private String patientName;
+
+    @JsonProperty("age")
+    @JsonAlias({"age"})
+    private Integer age;
+
+    @JsonProperty("gender")
+    @JsonAlias({"gender", "sex"})
+    private String gender;
+
+    @JsonProperty("diagnosis")
+    @JsonAlias({"diagnosis", "primaryDiagnosis", "primary_diagnosis"})
+    private String diagnosis;
+
     @NotNull(message = "hour_index is required")
     @Min(value = 0, message = "hour_index cannot be negative")
     @JsonProperty("hour_index")
@@ -84,6 +100,25 @@ public class TelemetryTickRequest {
     @JsonProperty("active_medications")
     @JsonAlias({"activeMedications", "active_medications", "medications", "meds"})
     private List<String> activeMedications = new ArrayList<>();
+
+    @JsonProperty("active_medications")
+    @JsonAlias({"activeMedications", "active_medications", "medications", "meds"})
+    public void setActiveMedications(Object meds) {
+        if (meds == null) {
+            this.activeMedications = new java.util.ArrayList<>();
+        } else if (meds instanceof java.util.List<?> list) {
+            this.activeMedications = new java.util.ArrayList<>(list.stream().map(Object::toString).toList());
+        } else if (meds instanceof String str) {
+            if (str.trim().isEmpty() || str.equalsIgnoreCase("None")) {
+                this.activeMedications = new java.util.ArrayList<>();
+            } else {
+                this.activeMedications = new java.util.ArrayList<>(java.util.Arrays.stream(str.split(","))
+                        .map(String::trim)
+                        .filter(s -> !s.isEmpty())
+                        .toList());
+            }
+        }
+    }
 
     public Double getHeartRate() { return hr != null ? hr : 80.0; }
     public Double getSystolicBp() { return sbp != null ? sbp : 120.0; }

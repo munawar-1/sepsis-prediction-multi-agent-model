@@ -106,6 +106,31 @@ public class ClinicalRoleDemoController {
     }
 
     /**
+     * Doctor approvals for sepsis bundle actions
+     * POST /api/v1/clinical/actions/sign
+     */
+    @PostMapping("/actions/sign")
+    @PreAuthorize("hasRole('DOCTOR')")
+    public ResponseEntity<?> signClinicalActions(
+            @RequestBody(required = false) Map<String, Object> payload,
+            Authentication authentication
+    ) {
+        String patientId = payload != null && payload.containsKey("patientId")
+                ? (String) payload.get("patientId") : "ICU-BED-04";
+        String doctorUsername = authentication != null ? authentication.getName() : "dr.sharma";
+        return ResponseEntity.ok(Map.of(
+                "status", "ACTIONS_SIGNED",
+                "signedByDoctor", doctorUsername,
+                "patientId", patientId,
+                "protocol", "Surviving Sepsis Campaign (SSC) 1-Hour Bundle",
+                "actionsAuthorized", payload != null && payload.containsKey("actionsAuthorized") 
+                        ? payload.get("actionsAuthorized") : List.of("BLOOD_CULTURES", "ANTIBIOTICS", "FLUID_RESUSCITATION"),
+                "timestamp", LocalDateTime.now().toString(),
+                "message", "Attending physician signature recorded for clinical bundle."
+        ));
+    }
+
+    /**
      * Nurse-Only Endpoint: Requires NURSE role.
      * Forbidden (403) to Doctors and unauthenticated callers.
      */
@@ -145,4 +170,3 @@ public class ClinicalRoleDemoController {
         ));
     }
 }
-
