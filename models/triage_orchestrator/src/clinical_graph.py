@@ -298,7 +298,13 @@ class AegisClinicalGraph:
             f"[SKEPTIC AGENT: {skeptic_res.get('classification')}] {s_reason}"
         )
 
-        # Trigger Doctor's Email/Notification if there is Clinical Risk
+        agent_findings = [
+            {"agent_name": "Vitals Agent", "probability": p_v, "evidence": vitals_res},
+            {"agent_name": "Labs Agent", "probability": p_l, "evidence": labs_res},
+            {"agent_name": "Skeptic Agent", "discount": discount, "evidence": skeptic_res}
+        ]
+
+        # Trigger Doctor's Email/Notification if there is Clinical Risk (Emergency Sepsis Alert)
         notif_res = None
         if urgency in ["MODERATE", "CRITICAL_SEPSIS"]:
             notif_res = self.notifier.dispatch_alert(
@@ -307,14 +313,10 @@ class AegisClinicalGraph:
                 alert_title=f"URGENT SEPSIS ALERT: {urgency.replace('_', ' ')}",
                 urgency=urgency,
                 message=f"Composite Risk: {composite_risk*100:.1f}%. {narrative}",
-                action_bundle=bundle
+                action_bundle=bundle,
+                risk_score=composite_risk,
+                agent_findings=agent_findings
             )
-
-        agent_findings = [
-            {"agent_name": "Vitals Agent", "probability": p_v, "evidence": vitals_res},
-            {"agent_name": "Labs Agent", "probability": p_l, "evidence": labs_res},
-            {"agent_name": "Skeptic Agent", "discount": discount, "evidence": skeptic_res}
-        ]
 
         return {
             "composite_sepsis_risk": composite_risk,

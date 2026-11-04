@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.Map;
 
 @Data
 @Builder
@@ -17,6 +18,8 @@ public class AlertDispatchDto {
     private String alertTitle;
     private String urgency;
     private String clinicalMessage;
+    private Double riskScore;
+    private List<Map<String, Object>> agentFindings;
     private List<String> recommendedActions;
     private String timestamp;
 }

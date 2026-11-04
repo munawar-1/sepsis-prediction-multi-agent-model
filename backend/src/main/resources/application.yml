@@ -26,19 +26,27 @@ spring:
   flyway:
     enabled: false
   mail:
-    host: smtp.gmail.com
-    port: 587
-    username: aegis.icu.alerts@gmail.com
-    password: ${EMAIL_APP_PASSWORD:mock_password}
+    host: ${SPRING_MAIL_HOST:smtp.gmail.com}
+    port: ${SPRING_MAIL_PORT:587}
+    username: ${SPRING_MAIL_USERNAME:openquest7@gmail.com}
+    password: ${SPRING_MAIL_PASSWORD:}
     properties:
-      mail.smtp.auth: true
-      mail.smtp.starttls.enable: true
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
 
 jwt:
   secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
   expiration: ${JWT_EXPIRATION:86400000} # 24 hours in ms
 
 aegis:
+  frontend-url: ${AEGIS_FRONTEND_URL:http://localhost:3000}
   ai-service:
     base-url: http://localhost:8000/api/v1
   dpdp:

@@ -61,7 +61,7 @@ function AppContent() {
 
   // ROUTE 1: Dedicated Login Page
   if (isLogin) {
-    return <LoginPage onNavigate={navigateTo} returnPath="/dashboard" />;
+    return <LoginPage onNavigate={navigateTo} returnPath={typeof window !== "undefined" ? (window.location.pathname + window.location.search) : "/dashboard"} />;
   }
 
   // ROUTE 2: Dedicated Registration Page

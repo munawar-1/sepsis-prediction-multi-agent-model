@@ -17,12 +17,41 @@ const MAX_SIDEBAR_WIDTH = 480;
 const DEFAULT_SIDEBAR_WIDTH = 260;
 
 export default function StitchDashboard({ onExitToLanding }) {
-  // Alert dataset state - default to first alert (PT-9042)
+  // Alert dataset state - default to first alert or URL query param
   const [alerts, setAlerts] = useState(INITIAL_ALERTS_DATA);
-  const [selectedAlertId, setSelectedAlertId] = useState(() => INITIAL_ALERTS_DATA[0]?.id || null);
+  const [selectedAlertId, setSelectedAlertId] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const ptParam = params.get('patientId') || params.get('patient');
+        if (ptParam) {
+          const match = INITIAL_ALERTS_DATA.find(a =>
+            a.patientId?.toLowerCase() === ptParam.toLowerCase() ||
+            a.id?.toLowerCase() === ptParam.toLowerCase()
+          );
+          if (match) return match.id;
+        }
+      } catch (e) {
+        // Fallback
+      }
+    }
+    return INITIAL_ALERTS_DATA[0]?.id || null;
+  });
 
-  // Active View: 'inbox' (Dashboard default landing page), 'consultation', 'monitoring', 'records', 'agents', 'labs', 'medications', 'settings'
-  const [activeView, setActiveView] = useState('inbox');
+  // Active View: 'consultation' if directed to specific patient, otherwise 'inbox'
+  const [activeView, setActiveView] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('patientId') || params.get('patient')) {
+          return 'consultation';
+        }
+      } catch (e) {
+        // Fallback
+      }
+    }
+    return 'inbox';
+  });
 
   // Sidebar Layout State & Width Persistence
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);

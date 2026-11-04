@@ -15,8 +15,12 @@ public class NotificationDispatchResponse {
     private String deliveryStatus;
     private String channel;
     private String targetRole;
+    private String recipientEmail;
     private String patientId;
+    private String icuBedNumber;
     private String alertTitle;
+    private Double riskScore;
     private String timestamp;
     private String message;
+    private String errorMessage;
 }
