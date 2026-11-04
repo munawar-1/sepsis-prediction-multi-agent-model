@@ -255,7 +255,15 @@ export const clinicalApi = {
   },
 
   /**
-   * Admit a new patient into an empty ICU bed
+   * Fetch all registered doctors in the hospital system
+   * GET /api/v1/patients/doctors
+   */
+  async fetchRegisteredDoctors() {
+    return apiRequest('/patients/doctors', { method: 'GET' });
+  },
+
+  /**
+   * Admit a new patient into an empty ICU bed (Role: NURSE)
    * POST /api/v1/patients/admit
    */
   async admitPatient(admitPayload) {
@@ -266,12 +274,24 @@ export const clinicalApi = {
   },
 
   /**
-   * Discharge patient and free ICU bed
+   * Reassign attending doctor to an ICU patient (Role: NURSE)
+   * PATCH /api/v1/patients/{patientId}/assign-doctor
+   */
+  async reassignDoctor(patientId, doctorId, doctorUsername = null) {
+    return apiRequest(`/patients/${encodeURIComponent(patientId)}/assign-doctor`, {
+      method: 'PATCH',
+      body: JSON.stringify({ doctorId, doctorUsername })
+    });
+  },
+
+  /**
+   * Discharge patient and free ICU bed (Role: NURSE)
    * PATCH /api/v1/patients/{patientId}/discharge
    */
-  async dischargePatient(patientId) {
+  async dischargePatient(patientId, notes = '') {
     return apiRequest(`/patients/${encodeURIComponent(patientId)}/discharge`, {
-      method: 'PATCH'
+      method: 'PATCH',
+      body: JSON.stringify({ notes })
     });
   },
 

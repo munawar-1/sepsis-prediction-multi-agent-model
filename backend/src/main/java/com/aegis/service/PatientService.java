@@ -175,6 +175,7 @@ public class PatientService {
                 .gender(p.getGender())
                 .icuBedNumber(p.getIcuBedNumber())
                 .admissionTime(p.getAdmissionTime())
+                .dischargeTime(p.getDischargeTime())
                 .primaryDiagnosis(p.getPrimaryDiagnosis())
                 .activeMedications(p.getActiveMedications() != null ? new ArrayList<>(p.getActiveMedications()) : List.of())
                 .status(p.getStatus())
@@ -284,42 +285,71 @@ public class PatientService {
                 .build();
     }
 
+    @Transactional(readOnly = true)
+    public List<ClinicianSummaryDto> getRegisteredDoctors() {
+        return userRepository.findByRole(Role.DOCTOR).stream()
+                .map(doc -> ClinicianSummaryDto.builder()
+                        .id(doc.getId())
+                        .username(doc.getUsername())
+                        .fullName(doc.getFullName())
+                        .email(doc.getEmail())
+                        .department(doc.getDepartment())
+                        .specialty(doc.getSpecialty())
+                        .licenseNumber(doc.getLicenseNumber())
+                        .role(doc.getRole())
+                        .shiftStatus(doc.getShiftStatus())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
     @Transactional
     public Patient admitPatient(PatientAdmitRequest request, String clinicianUsername) {
         String bedNum = request.getIcuBedNumber().trim().toUpperCase();
 
-        // Check if bed is already occupied by active patient
-        Optional<Patient> existing = patientRepository.findByIcuBedNumber(bedNum);
-        if (existing.isPresent() && existing.get().getStatus() != PatientStatus.DISCHARGED) {
-            throw new IllegalArgumentException("Bed " + bedNum + " is currently occupied by patient " + existing.get().getFullName());
+        // 1. Check if bed is already occupied by active non-discharged patient
+        Optional<Patient> existingBed = patientRepository.findByIcuBedNumber(bedNum);
+        if (existingBed.isPresent() && existingBed.get().getStatus() != PatientStatus.DISCHARGED) {
+            throw new IllegalArgumentException("Bed " + bedNum + " is currently occupied by active inpatient: "
+                    + existingBed.get().getFullName() + " (" + existingBed.get().getPatientId() + ")");
         }
 
-        String patientId = (request.getPatientId() != null && !request.getPatientId().trim().isEmpty())
-                ? request.getPatientId().trim()
-                : "PT-" + (1000 + new Random().nextInt(9000));
+        // 2. Validate duplicate patient ID if explicitly supplied
+        String patientId;
+        if (request.getPatientId() != null && !request.getPatientId().trim().isEmpty()) {
+            patientId = request.getPatientId().trim();
+            Optional<Patient> existingPid = patientRepository.findByPatientId(patientId);
+            if (existingPid.isPresent() && existingPid.get().getStatus() != PatientStatus.DISCHARGED) {
+                throw new IllegalArgumentException("Patient ID '" + patientId + "' is already assigned to active inpatient: "
+                        + existingPid.get().getFullName());
+            }
+        } else {
+            patientId = "PT-" + (1000 + new Random().nextInt(9000));
+        }
 
         String mrn = (request.getMrn() != null && !request.getMrn().trim().isEmpty())
                 ? request.getMrn().trim()
                 : "MRN-2026-" + (1000 + new Random().nextInt(9000));
 
-        // Find doctor and nurse
+        // 3. Resolve Attending Doctor dynamically from registered database doctors
         User doctor = null;
         if (request.getAttendingDoctorId() != null) {
-            doctor = userRepository.findById(request.getAttendingDoctorId()).orElse(null);
-        }
-        if (doctor == null) {
-            doctor = userRepository.findByUsername("dr.munawar")
-                    .or(() -> userRepository.findByUsername("dr.sharma"))
-                    .orElse(null);
+            doctor = userRepository.findById(request.getAttendingDoctorId())
+                    .filter(u -> u.getRole() == Role.DOCTOR)
+                    .orElseThrow(() -> new IllegalArgumentException("Attending doctor with ID " + request.getAttendingDoctorId() + " was not found or is not a registered doctor."));
+        } else {
+            // Dynamically select first registered doctor
+            doctor = userRepository.findByRole(Role.DOCTOR).stream().findFirst()
+                    .orElseThrow(() -> new IllegalStateException("No registered doctors found in hospital system to assign."));
         }
 
+        // 4. Resolve Primary Nurse
         User nurse = null;
         if (request.getPrimaryNurseId() != null) {
             nurse = userRepository.findById(request.getPrimaryNurseId()).orElse(null);
         }
         if (nurse == null) {
             nurse = userRepository.findByUsername(clinicianUsername)
-                    .or(() -> userRepository.findByUsername("nurse.priya"))
+                    .or(() -> userRepository.findByRole(Role.NURSE).stream().findFirst())
                     .orElse(null);
         }
 
@@ -337,7 +367,8 @@ public class PatientService {
                 .primaryNurse(nurse)
                 .status(PatientStatus.ADMITTED)
                 .admissionTime(LocalDateTime.now())
-                .clinicalNotes("Admitted to " + bedNum + " by clinician " + clinicianUsername + ". " + (request.getClinicalNotes() != null ? request.getClinicalNotes() : ""))
+                .clinicalNotes("Admitted to " + bedNum + " by bedside nurse " + clinicianUsername + ". "
+                        + (request.getClinicalNotes() != null ? request.getClinicalNotes() : ""))
                 .build();
 
         Patient saved = patientRepository.save(patient);
@@ -347,17 +378,58 @@ public class PatientService {
 
     @Transactional
     public Patient dischargePatient(String patientId, String clinicianUsername) {
+        return dischargePatient(patientId, clinicianUsername, null);
+    }
+
+    @Transactional
+    public Patient dischargePatient(String patientId, String clinicianUsername, String dischargeNotes) {
         Patient patient = getPatientProfile(patientId);
+        if (patient.getStatus() == PatientStatus.DISCHARGED) {
+            throw new IllegalStateException("Patient " + patientId + " is already discharged from ICU.");
+        }
         String oldBed = patient.getIcuBedNumber();
 
         patient.setStatus(PatientStatus.DISCHARGED);
-        patient.setIcuBedNumber(null); // Frees the bed for admission
-        patient.setClinicalNotes((patient.getClinicalNotes() != null ? patient.getClinicalNotes() + " | " : "")
-                + "Discharged/transferred from " + oldBed + " by " + clinicianUsername + " at " + LocalDateTime.now());
+        patient.setIcuBedNumber(null); // Frees the ICU bed immediately
+        patient.setDischargeTime(LocalDateTime.now());
+        String dischargeDetail = "Discharged/transferred from " + oldBed + " by clinician " + clinicianUsername + " at " + LocalDateTime.now();
+        if (dischargeNotes != null && !dischargeNotes.trim().isEmpty()) {
+            dischargeDetail += " | Discharge Notes: " + dischargeNotes.trim();
+        }
+        patient.setClinicalNotes((patient.getClinicalNotes() != null ? patient.getClinicalNotes() + " | " : "") + dischargeDetail);
 
         Patient saved = patientRepository.save(patient);
-        log.info("Discharged patient {} from bed {}", saved.getPatientId(), oldBed);
+        log.info("Discharged patient {} from ICU bed {}", saved.getPatientId(), oldBed);
         return saved;
+    }
+
+    @Transactional
+    public PatientProfileDto reassignDoctor(String patientId, DoctorAssignmentRequest request, String clinicianUsername) {
+        Patient patient = getPatientProfile(patientId);
+        if (patient.getStatus() == PatientStatus.DISCHARGED) {
+            throw new IllegalStateException("Cannot reassign attending doctor for discharged patient: " + patientId);
+        }
+
+        User doctor = null;
+        if (request.getDoctorId() != null) {
+            doctor = userRepository.findById(request.getDoctorId())
+                    .filter(u -> u.getRole() == Role.DOCTOR)
+                    .orElseThrow(() -> new IllegalArgumentException("Registered doctor not found with ID: " + request.getDoctorId()));
+        } else if (request.getDoctorUsername() != null && !request.getDoctorUsername().isBlank()) {
+            doctor = userRepository.findByUsername(request.getDoctorUsername().trim())
+                    .filter(u -> u.getRole() == Role.DOCTOR)
+                    .orElseThrow(() -> new IllegalArgumentException("Registered doctor not found with username: " + request.getDoctorUsername()));
+        } else {
+            throw new IllegalArgumentException("Either doctorId or doctorUsername must be specified for doctor reassignment.");
+        }
+
+        patient.setAttendingDoctor(doctor);
+        patient.setClinicalNotes((patient.getClinicalNotes() != null ? patient.getClinicalNotes() + " | " : "")
+                + "Attending doctor reassigned to Dr. " + doctor.getFullName() + " (" + doctor.getEmail() + ") by " + clinicianUsername + " at " + LocalDateTime.now());
+
+        Patient saved = patientRepository.save(patient);
+        log.info("Successfully reassigned doctor for patient {} to Dr. {} ({})", saved.getPatientId(), doctor.getFullName(), doctor.getEmail());
+        return mapToProfileDto(saved);
     }
 
     @Transactional

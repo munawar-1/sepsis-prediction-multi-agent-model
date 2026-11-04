@@ -24,6 +24,7 @@ public class PatientProfileDto {
     private Gender gender;
     private String icuBedNumber;
     private LocalDateTime admissionTime;
+    private LocalDateTime dischargeTime;
     private String primaryDiagnosis;
     private List<String> activeMedications;
     private PatientStatus status;

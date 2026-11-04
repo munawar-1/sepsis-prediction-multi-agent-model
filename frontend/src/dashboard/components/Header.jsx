@@ -20,7 +20,8 @@ import {
   ShieldAlert,
   User,
   Zap,
-  Clock
+  Clock,
+  UserPlus
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -76,9 +77,10 @@ export default function Header({
   onSelectAlert,
   onExitToLanding,
   isSidebarCollapsed,
-  onToggleSidebar
+  onToggleSidebar,
+  onOpenAddPatient
 }) {
-  const { user, isDoctor, logout } = useAuth();
+  const { user, isDoctor, isNurse, logout } = useAuth();
   const { theme, toggleTheme, isDark, setTheme } = useTheme();
 
   // Dropdown States
@@ -578,6 +580,23 @@ export default function Header({
             </div>
           )}
         </div>
+
+        {/* Nurse: Add Patient Header Quick Action */}
+        {isNurse && onOpenAddPatient && (
+          <button
+            type="button"
+            onClick={onOpenAddPatient}
+            className={`hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all duration-200 cursor-pointer shadow-2xs ${
+              isDark
+                ? 'bg-teal-950/60 hover:bg-teal-900/60 border-teal-800 text-teal-300'
+                : 'bg-teal-50 hover:bg-teal-100 border-teal-200 text-teal-800'
+            }`}
+            title="Bedside Nurse: Admit New ICU Patient"
+          >
+            <UserPlus className="w-3.5 h-3.5 text-teal-600" />
+            <span>+ Add Patient</span>
+          </button>
+        )}
 
         {/* ===================================================================
             CLINICIAN PROFILE BUTTON & DROPDOWN MENU

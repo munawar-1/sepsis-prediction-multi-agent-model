@@ -127,6 +127,12 @@ public class AuthController {
         }
     }
 
+    @GetMapping("/doctors")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('DOCTOR', 'NURSE')")
+    public ResponseEntity<List<com.aegis.dto.ClinicianSummaryDto>> getRegisteredDoctors() {
+        return ResponseEntity.ok(authService.getRegisteredDoctors());
+    }
+
     @GetMapping("/roles")
     public ResponseEntity<?> getAvailableRoles() {
         return ResponseEntity.ok(Map.of(

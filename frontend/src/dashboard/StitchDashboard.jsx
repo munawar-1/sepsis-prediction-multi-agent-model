@@ -11,6 +11,9 @@ import SettingsView from './components/SettingsView';
 import OverrideModal from './components/OverrideModal';
 import NurseEntryModal from './components/NurseEntryModal';
 import ExcelUploadModal from './components/ExcelUploadModal';
+import AddPatientModal from './components/AddPatientModal';
+import DischargeConfirmModal from './components/DischargeConfirmModal';
+import ReassignDoctorModal from './components/ReassignDoctorModal';
 import { downloadDemoWorkbookFile } from './data/demoFlowsheetData';
 import Header from './components/Header';
 import { Activity } from 'lucide-react';
@@ -253,6 +256,32 @@ export default function StitchDashboard({ onExitToLanding }) {
   const [isNurseModalOpen, setIsNurseModalOpen] = useState(false);
   const [isExcelModalOpen, setIsExcelModalOpen] = useState(false);
   const [isExcelAutoDemo, setIsExcelAutoDemo] = useState(false);
+  const [isAddPatientModalOpen, setIsAddPatientModalOpen] = useState(false);
+  const [isDischargeModalOpen, setIsDischargeModalOpen] = useState(false);
+  const [isReassignDoctorModalOpen, setIsReassignDoctorModalOpen] = useState(false);
+  const [initialVacantBed, setInitialVacantBed] = useState(null);
+
+  const handleOpenAddPatient = (bedNumber = null) => {
+    setInitialVacantBed(bedNumber);
+    setIsAddPatientModalOpen(true);
+  };
+
+  const handlePatientAdmitted = (newPatient) => {
+    fetchRoster();
+    if (newPatient && newPatient.patientId) {
+      setSelectedAlertId(`ALT-${newPatient.patientId}`);
+      setActiveView('consultation');
+    }
+  };
+
+  const handlePatientDischarged = (dischargeData) => {
+    fetchRoster();
+    setActiveView('inbox');
+  };
+
+  const handleDoctorReassigned = (reassignData) => {
+    fetchRoster();
+  };
 
   const handleOpenDemoFlowsheet = () => {
     setIsExcelAutoDemo(true);
@@ -762,6 +791,7 @@ export default function StitchDashboard({ onExitToLanding }) {
         onExitToLanding={onExitToLanding}
         isSidebarCollapsed={isSidebarCollapsed}
         onToggleSidebar={() => setIsSidebarCollapsed(prev => !prev)}
+        onOpenAddPatient={handleOpenAddPatient}
       />
 
       {/* Primary Workspace Row: Sidebar + Resizable Divider + Active View */}
@@ -830,6 +860,8 @@ export default function StitchDashboard({ onExitToLanding }) {
                 onBackToInbox={() => setActiveView('inbox')}
                 onAcknowledgeAlert={handleAcknowledgeAlert}
                 onOpenOverrideModal={() => setIsOverrideModalOpen(true)}
+                onOpenDischargeModal={() => setIsDischargeModalOpen(true)}
+                onOpenReassignDoctor={() => setIsReassignDoctorModalOpen(true)}
                 onSendMessage={handleSendMessage}
               />
             ) : (
@@ -855,6 +887,7 @@ export default function StitchDashboard({ onExitToLanding }) {
                   onSearchChange={setSearchQuery}
                   onSelectAlert={handleSelectAlert}
                   onSelectPatient={handleSelectPatient}
+                  onOpenAddPatient={handleOpenAddPatient}
                   onOpenNurseRound={() => setIsNurseModalOpen(true)}
                   onOpenExcelUpload={handleOpenExcelUpload}
                   onOpenDemoFlowsheet={handleOpenDemoFlowsheet}
@@ -990,6 +1023,31 @@ export default function StitchDashboard({ onExitToLanding }) {
         onBatchLoaded={handleBatchLoaded}
         onStartSimulation={handleStartSimulation}
         autoLoadDemo={isExcelAutoDemo}
+      />
+
+      {/* Nurse: Add Patient Modal */}
+      <AddPatientModal
+        isOpen={isAddPatientModalOpen}
+        onClose={() => setIsAddPatientModalOpen(false)}
+        beds={beds}
+        initialBedNumber={initialVacantBed}
+        onPatientAdmitted={handlePatientAdmitted}
+      />
+
+      {/* Nurse: Discharge Patient Modal */}
+      <DischargeConfirmModal
+        isOpen={isDischargeModalOpen}
+        onClose={() => setIsDischargeModalOpen(false)}
+        patient={selectedAlert}
+        onDischargeSuccess={handlePatientDischarged}
+      />
+
+      {/* Nurse: Reassign Attending Doctor Modal */}
+      <ReassignDoctorModal
+        isOpen={isReassignDoctorModalOpen}
+        onClose={() => setIsReassignDoctorModalOpen(false)}
+        patient={selectedAlert}
+        onDoctorReassigned={handleDoctorReassigned}
       />
     </div>
   );

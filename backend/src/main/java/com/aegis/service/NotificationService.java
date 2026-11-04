@@ -92,6 +92,24 @@ public class NotificationService {
 
         Patient patient = patientOpt.get();
 
+        // 1b. Validate Patient Admission Status (Discharged Patients Suppressed for Safety)
+        if (patient.getStatus() == com.aegis.model.PatientStatus.DISCHARGED) {
+            log.warn("🚨 [EMAIL SUPPRESSED: PATIENT_DISCHARGED] Patient '{}' has been discharged from ICU. Emergency alert email suppressed.",
+                    patient.getPatientId());
+            return NotificationDispatchResponse.builder()
+                    .delivered(false)
+                    .deliveryStatus("SUPPRESSED_PATIENT_DISCHARGED")
+                    .channel("NONE")
+                    .targetRole(alertDto.getTargetRole())
+                    .patientId(patient.getPatientId())
+                    .icuBedNumber(patient.getIcuBedNumber())
+                    .alertTitle(alertDto.getAlertTitle())
+                    .riskScore(alertDto.getRiskScore())
+                    .timestamp(formattedTimestamp)
+                    .message("Patient is discharged from ICU. Emergency email alert suppressed for safety.")
+                    .build();
+        }
+
         // 2. Resolve Assigned Clinician based on Target Role
         boolean isNurseTarget = "ROLE_NURSE".equalsIgnoreCase(alertDto.getTargetRole()) || "NURSE".equalsIgnoreCase(alertDto.getTargetRole());
         User clinician = isNurseTarget ? patient.getPrimaryNurse() : patient.getAttendingDoctor();

@@ -63,10 +63,22 @@ public class PatientController {
     }
 
     /**
-     * Nurse/Doctor: Admit patient to an ICU bed.
+     * List all registered doctors in the hospital system.
+     * Used by bedside nurses during patient admission and attending physician reassignment.
+     */
+    @GetMapping("/doctors")
+    @PreAuthorize("hasAnyRole('DOCTOR', 'NURSE')")
+    public ResponseEntity<List<ClinicianSummaryDto>> getRegisteredDoctors() {
+        List<ClinicianSummaryDto> doctors = patientService.getRegisteredDoctors();
+        return ResponseEntity.ok(doctors);
+    }
+
+    /**
+     * Nurse: Admit patient to an ICU bed.
+     * Enforces Nurse role via RBAC (@PreAuthorize).
      */
     @PostMapping("/admit")
-    @PreAuthorize("hasAnyRole('DOCTOR', 'NURSE')")
+    @PreAuthorize("hasRole('NURSE')")
     public ResponseEntity<?> admitPatient(
             @Valid @RequestBody PatientAdmitRequest request,
             BindingResult bindingResult,
@@ -98,27 +110,73 @@ public class PatientController {
     }
 
     /**
-     * Nurse/Doctor: Discharge / Transfer patient (soft delete, frees the ICU bed).
+     * Nurse: Discharge / Transfer patient (soft delete, frees the ICU bed).
+     * Enforces Nurse role via RBAC (@PreAuthorize).
      */
     @PatchMapping("/{patientId}/discharge")
-    @PreAuthorize("hasAnyRole('DOCTOR', 'NURSE')")
+    @PreAuthorize("hasRole('NURSE')")
     public ResponseEntity<?> dischargePatient(
             @PathVariable String patientId,
+            @RequestBody(required = false) Map<String, String> body,
             Authentication authentication
     ) {
         try {
             String clinicianUsername = authentication != null ? authentication.getName() : "nurse.priya";
-            Patient discharged = patientService.dischargePatient(patientId, clinicianUsername);
+            String notes = body != null ? body.get("notes") : null;
+            Patient discharged = patientService.dischargePatient(patientId, clinicianUsername, notes);
             return ResponseEntity.ok(Map.of(
                     "status", "DISCHARGED",
                     "patientId", discharged.getPatientId(),
                     "patientName", discharged.getFullName(),
+                    "dischargeTime", discharged.getDischargeTime() != null ? discharged.getDischargeTime().toString() : "",
                     "message", "Patient successfully discharged and ICU bed freed for next admission."
             ));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
                     "status", 404,
                     "error", "NOT_FOUND",
+                    "message", e.getMessage()
+            ));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                    "status", 409,
+                    "error", "CONFLICT",
+                    "message", e.getMessage()
+            ));
+        }
+    }
+
+    /**
+     * Nurse: Reassign attending doctor for an ICU patient.
+     * Enforces Nurse role via RBAC (@PreAuthorize).
+     */
+    @PatchMapping("/{patientId}/assign-doctor")
+    @PreAuthorize("hasRole('NURSE')")
+    public ResponseEntity<?> reassignDoctor(
+            @PathVariable String patientId,
+            @RequestBody DoctorAssignmentRequest request,
+            Authentication authentication
+    ) {
+        try {
+            String clinicianUsername = authentication != null ? authentication.getName() : "nurse.priya";
+            PatientProfileDto updated = patientService.reassignDoctor(patientId, request, clinicianUsername);
+            return ResponseEntity.ok(Map.of(
+                    "status", "DOCTOR_REASSIGNED",
+                    "patientId", updated.getPatientId(),
+                    "patientName", updated.getFullName(),
+                    "attendingDoctor", updated.getAttendingDoctor(),
+                    "message", "Attending doctor successfully updated to Dr. " + updated.getAttendingDoctor().getFullName()
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "status", 400,
+                    "error", "INVALID_DOCTOR",
+                    "message", e.getMessage()
+            ));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                    "status", 409,
+                    "error", "CONFLICT",
                     "message", e.getMessage()
             ));
         }

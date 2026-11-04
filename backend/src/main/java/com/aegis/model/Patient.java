@@ -47,6 +47,9 @@ public class Patient {
     @Column(name = "icu_bed_number", nullable = true, length = 32)
     private String icuBedNumber; // e.g. "ICU-BED-02" (null when discharged)
 
+    @Column(name = "discharge_time")
+    private LocalDateTime dischargeTime;
+
     @Column(name = "admission_time", nullable = false)
     private LocalDateTime admissionTime;
 

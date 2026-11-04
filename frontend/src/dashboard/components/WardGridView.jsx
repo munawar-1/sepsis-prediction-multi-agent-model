@@ -20,7 +20,8 @@ export default function WardGridView({
   selectedPatientId,
   onSelectPatient,
   onOpenConsultation,
-  onOpenNurseEntry
+  onOpenNurseEntry,
+  onOpenAddPatient
 }) {
   // Sort beds: occupied critical (RED) first, then moderate (YELLOW), then stable (GREEN), then unoccupied (GREY)
   const sortedBeds = [...beds].sort((a, b) => {
@@ -56,6 +57,8 @@ export default function WardGridView({
             onClick={() => {
               if (isOccupied && onSelectPatient) {
                 onSelectPatient(bed.patientId);
+              } else if (!isOccupied && onOpenAddPatient) {
+                onOpenAddPatient(bed.bedNumber);
               }
             }}
             className={`group rounded-3xl p-4.5 border-[1.5px] transition-all duration-200 flex flex-col justify-between ${
@@ -182,9 +185,22 @@ export default function WardGridView({
                   )}
                 </div>
               ) : (
-                <div className="py-8 text-center text-[#627D9D] dark:text-[#5A7394]">
-                  <BedDouble className="w-8 h-8 mx-auto mb-1.5 opacity-40 text-[#4E6B8D] dark:text-[#425B7B]" />
-                  <span className="text-xs font-semibold">Bed Ready for Admission</span>
+                <div
+                  onClick={(e) => {
+                    if (onOpenAddPatient) {
+                      e.stopPropagation();
+                      onOpenAddPatient(bed.bedNumber);
+                    }
+                  }}
+                  className="py-7 text-center text-[#627D9D] dark:text-[#5A7394] hover:text-teal-700 transition cursor-pointer group/vacant"
+                >
+                  <BedDouble className="w-8 h-8 mx-auto mb-1.5 opacity-40 group-hover/vacant:text-teal-600 group-hover/vacant:scale-110 transition-transform text-[#4E6B8D] dark:text-[#425B7B]" />
+                  <span className="text-xs font-semibold block">Bed Ready for Admission</span>
+                  {onOpenAddPatient && (
+                    <span className="text-[10px] font-bold text-teal-700 bg-teal-50 border border-teal-200 px-2.5 py-0.5 rounded-full mt-2 inline-block opacity-90 group-hover/vacant:opacity-100 transition shadow-2xs">
+                      + Admit Patient
+                    </span>
+                  )}
                 </div>
               )}
             </div>

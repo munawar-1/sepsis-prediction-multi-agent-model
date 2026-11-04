@@ -148,6 +148,23 @@ public class AuthService {
                 .build();
     }
 
+    @Transactional(readOnly = true)
+    public java.util.List<com.aegis.dto.ClinicianSummaryDto> getRegisteredDoctors() {
+        return userRepository.findByRole(Role.DOCTOR).stream()
+                .map(doc -> com.aegis.dto.ClinicianSummaryDto.builder()
+                        .id(doc.getId())
+                        .username(doc.getUsername())
+                        .fullName(doc.getFullName())
+                        .email(doc.getEmail())
+                        .department(doc.getDepartment())
+                        .specialty(doc.getSpecialty())
+                        .licenseNumber(doc.getLicenseNumber())
+                        .role(doc.getRole())
+                        .shiftStatus(doc.getShiftStatus())
+                        .build())
+                .collect(java.util.stream.Collectors.toList());
+    }
+
     public UserDto getCurrentUser(String username) {
         User user = userRepository.findByUsername(username)
                 .or(() -> userRepository.findByEmail(username))

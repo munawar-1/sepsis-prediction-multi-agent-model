@@ -10,7 +10,10 @@ import {
   ChevronDown,
   ChevronUp,
   User,
-  ShieldCheck
+  ShieldCheck,
+  LogOut,
+  Stethoscope,
+  UserCheck
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -22,6 +25,8 @@ export default function ConversationWorkspace({
   onBackToInbox,
   onAcknowledgeAlert,
   onOpenOverrideModal,
+  onOpenDischargeModal,
+  onOpenReassignDoctor,
   onSendMessage
 }) {
   const { user, isDoctor, isNurse } = useAuth();
@@ -177,6 +182,37 @@ export default function ConversationWorkspace({
             }`}>
               {alert.priority}
             </span>
+
+            {/* Attending Doctor Info & Reassignment (Nurse Action) */}
+            {isNurse ? (
+              <button
+                type="button"
+                onClick={onOpenReassignDoctor}
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold text-teal-800 bg-teal-50 hover:bg-teal-100 border-[1.5px] border-teal-300 shadow-2xs transition-all cursor-pointer"
+                title="Change / Reassign Attending Physician"
+              >
+                <Stethoscope className="w-3.5 h-3.5 text-teal-600" />
+                <span>{alert.attendingDoctorName ? `Dr: ${alert.attendingDoctorName.split(',')[0].replace('Dr. ', '')}` : 'Assign MD'}</span>
+              </button>
+            ) : (
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200">
+                <Stethoscope className="w-3.5 h-3.5 text-slate-500" />
+                <span>{alert.attendingDoctorName ? alert.attendingDoctorName.split(',')[0] : 'Attending MD'}</span>
+              </span>
+            )}
+
+            {/* Discharge Patient Action (Nurse Only) */}
+            {isNurse && (
+              <button
+                type="button"
+                onClick={onOpenDischargeModal}
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border-[1.5px] border-rose-300 shadow-2xs transition-all cursor-pointer active:scale-95"
+                title="Discharge Patient & Free ICU Bed"
+              >
+                <LogOut className="w-3.5 h-3.5 text-rose-600" />
+                <span>Discharge</span>
+              </button>
+            )}
           </div>
         </div>
 

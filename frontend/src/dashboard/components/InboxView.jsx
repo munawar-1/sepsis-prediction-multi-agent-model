@@ -19,7 +19,8 @@ import {
   FileSpreadsheet,
   Download,
   Upload,
-  Sparkles
+  Sparkles,
+  UserPlus
 } from 'lucide-react';
 import WardGridView from './WardGridView';
 import SimulationControls from './SimulationControls';
@@ -39,6 +40,7 @@ export default function InboxView({
   onSearchChange,
   onSelectAlert,
   onSelectPatient,
+  onOpenAddPatient,
   onOpenNurseRound,
   onOpenExcelUpload,
   onOpenDemoFlowsheet,
@@ -219,6 +221,19 @@ export default function InboxView({
             <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-emerald-600' : 'text-[#64748B] dark:text-[#768CA8]'}`} />
             <span className="hidden sm:inline">Refresh</span>
           </button>
+
+          {/* Nurse: Add Patient Modal Button */}
+          {isNurse && (
+            <button
+              type="button"
+              onClick={onOpenAddPatient}
+              className="h-9 px-3.5 rounded-full border-[1.5px] border-teal-300 dark:border-teal-500/40 bg-teal-50 dark:bg-[#0E2A2A] hover:bg-teal-100 dark:hover:bg-[#143636] text-teal-800 dark:text-teal-300 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+              title="Bedside Nurse: Admit New Patient into ICU Bed"
+            >
+              <UserPlus className="w-4 h-4 text-teal-700 dark:text-teal-400" />
+              <span>+ Add Patient</span>
+            </button>
+          )}
 
           {/* Nurse Entry Form Modal Button */}
           {isNurse ? (
@@ -434,6 +449,7 @@ export default function InboxView({
           <WardGridView
             beds={filteredBeds}
             onSelectPatient={onSelectPatient}
+            onOpenAddPatient={onOpenAddPatient}
           />
         </div>
       ) : (
