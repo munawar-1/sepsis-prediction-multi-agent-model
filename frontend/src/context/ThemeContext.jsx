@@ -8,13 +8,17 @@ export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem(THEME_STORAGE_KEY);
-      if (stored === 'light' || stored === 'dark') {
-        return stored;
+      // Migrate previous dark preference to light default for the white healthcare UI
+      if (stored === 'dark') {
+        localStorage.setItem(THEME_STORAGE_KEY, 'light');
+        return 'light';
       }
-      // Default to dark mode for clinical flight deck aesthetic, or check system preference
-      return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      if (stored === 'light') {
+        return 'light';
+      }
+      return 'light';
     }
-    return 'dark';
+    return 'light';
   });
 
   useEffect(() => {
@@ -56,4 +60,3 @@ export function useTheme() {
   }
   return context;
 }
-

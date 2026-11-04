@@ -17,6 +17,7 @@ export const INITIAL_ALERTS_DATA = [
     agentIcon: "Activity",
     agentSpecialty: "Physiological Telemetry & Trend Decomposition",
     priority: "CRITICAL",
+    riskScore: 84,
     timestamp: "6 mins ago",
     rawTime: 6,
     isRead: false,
@@ -108,6 +109,7 @@ export const INITIAL_ALERTS_DATA = [
     agentIcon: "FlaskConical",
     agentSpecialty: "Biochemical Kinetics & Organ Failure Markers",
     priority: "HIGH",
+    riskScore: 68,
     timestamp: "24 mins ago",
     rawTime: 24,
     isRead: false,
@@ -186,6 +188,7 @@ export const INITIAL_ALERTS_DATA = [
     agentIcon: "Pill",
     agentSpecialty: "Pharmacological Confounder & Interaction Modeling",
     priority: "HIGH",
+    riskScore: 72,
     timestamp: "1h 12m ago",
     rawTime: 72,
     isRead: false,
@@ -256,6 +259,7 @@ export const INITIAL_ALERTS_DATA = [
     agentIcon: "Activity",
     agentSpecialty: "Physiological Telemetry & Trend Decomposition",
     priority: "MODERATE",
+    riskScore: 44,
     timestamp: "3h 10m ago",
     rawTime: 190,
     isRead: true,
@@ -327,6 +331,7 @@ export function createSimulatedAlert() {
     agentIcon: "Activity",
     agentSpecialty: "Physiological Telemetry & Trend Decomposition",
     priority: "CRITICAL",
+    riskScore: 91,
     timestamp: "Just now",
     rawTime: 0,
     isRead: false,
@@ -379,4 +384,3 @@ export function createSimulatedAlert() {
     }
   };
 }
-

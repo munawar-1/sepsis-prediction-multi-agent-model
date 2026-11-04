@@ -10,9 +10,6 @@ import MedicationsView from './components/MedicationsView';
 import SettingsView from './components/SettingsView';
 import OverrideModal from './components/OverrideModal';
 import { INITIAL_ALERTS_DATA, createSimulatedAlert } from './data/alertsData';
-import Header from './components/Header';
-import { useTheme } from '../context/ThemeContext';
-import './dashboard-theme.css';
 
 const STORAGE_SIDEBAR_WIDTH_KEY = 'aegis_sidebar_width';
 const MIN_SIDEBAR_WIDTH = 220;
@@ -20,13 +17,12 @@ const MAX_SIDEBAR_WIDTH = 480;
 const DEFAULT_SIDEBAR_WIDTH = 260;
 
 export default function StitchDashboard({ onExitToLanding }) {
-  const { isDark } = useTheme();
   // Alert dataset state - default to first alert (PT-9042)
   const [alerts, setAlerts] = useState(INITIAL_ALERTS_DATA);
   const [selectedAlertId, setSelectedAlertId] = useState(() => INITIAL_ALERTS_DATA[0]?.id || null);
 
-  // Active View: 'consultation', 'inbox', 'monitoring', 'records', 'agents', 'labs', 'medications', 'settings'
-  const [activeView, setActiveView] = useState('consultation');
+  // Active View: 'inbox' (Dashboard default landing page), 'consultation', 'monitoring', 'records', 'agents', 'labs', 'medications', 'settings'
+  const [activeView, setActiveView] = useState('inbox');
 
   // Sidebar Layout State & Width Persistence
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -294,87 +290,74 @@ export default function StitchDashboard({ onExitToLanding }) {
   };
 
   return (
-    <div className={`dashboard-viewport h-screen h-[100dvh] w-screen overflow-hidden flex flex-col font-sans antialiased select-none ${
-      isDark ? 'dashboard-theme-dark dark bg-[#080E18] text-[#F1F5FA]' : 'dashboard-theme-light light bg-[#F9FAFB] text-[#111827]'
-    }`}>
+    <div className="dashboard-viewport h-screen h-[100dvh] w-screen overflow-hidden flex bg-[#F8FAFC] text-[#0F172A] font-sans antialiased select-none">
 
       {/* =========================================================================
-          GLOBAL TOP NAVIGATION BAR (Persistent across all 8 dashboard views)
+          PART A: LEFT SIDEBAR (Hidden on full-screen Dashboard; Visible on all other views)
           ========================================================================= */}
-      <Header
-        activeView={activeView}
-        onSelectView={setActiveView}
-        selectedAlert={selectedAlert}
-        alerts={alerts}
-        onSelectAlert={handleSelectAlert}
-        onExitToLanding={onExitToLanding}
-        isSidebarCollapsed={isSidebarCollapsed}
-        onToggleSidebar={() => setIsSidebarCollapsed(prev => !prev)}
-      />
-
-      {/* Primary Workspace Row: Sidebar + Drag Divider + Main Views */}
-      <div className="flex-1 min-h-0 flex overflow-hidden w-full relative">
-        <Sidebar
-        activeView={activeView}
-        onSelectView={setActiveView}
-        alerts={alerts}
-        selectedAlertId={selectedAlertId}
-        onSelectPatient={handleSelectAlert}
-        onNewConsultation={handleNewConsultation}
-        onExitToLanding={onExitToLanding}
-        isCollapsed={isSidebarCollapsed}
-        onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-        width={sidebarWidth}
-        isDragging={isDragging}
-      />
-
-      {/* =========================================================================
-          DRAGGABLE VERTICAL DIVIDER & RESIZE HANDLE (220px to 480px, Persistent)
-          ========================================================================= */}
-      {!isSidebarCollapsed && (
-        <div
-          onPointerDown={handlePointerDown}
-          onDoubleClick={() => {
-            setSidebarWidth(DEFAULT_SIDEBAR_WIDTH);
-            try {
-              localStorage.setItem(STORAGE_SIDEBAR_WIDTH_KEY, String(DEFAULT_SIDEBAR_WIDTH));
-            } catch (e) {}
-          }}
-          className={`relative group z-30 select-none cursor-col-resize flex items-center justify-center transition-all duration-200 ease-in-out ${
-            isDragging
-              ? 'w-2 bg-[#10B981]/25 -mx-[4px]'
-              : 'w-1.5 hover:w-2 hover:bg-[#10B981]/20 -mx-[3px]'
-          }`}
-          title="Drag to resize sidebar • Double-click to reset (260px) • Press Ctrl+B to collapse"
-        >
-          {/* Visual Divider Line */}
-          <div
-            className={`w-[2px] h-full transition-all duration-200 ease-in-out ${
-              isDragging ? 'bg-[#10B981]' : 'bg-[#E5E7EB] group-hover:bg-[#10B981]'
-            }`}
+      {activeView !== 'inbox' && (
+        <>
+          <Sidebar
+            activeView={activeView}
+            onSelectView={setActiveView}
+            alerts={alerts}
+            selectedAlertId={selectedAlertId}
+            onSelectPatient={handleSelectAlert}
+            onNewConsultation={handleNewConsultation}
+            onExitToLanding={onExitToLanding}
+            isCollapsed={isSidebarCollapsed}
+            onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            width={sidebarWidth}
+            isDragging={isDragging}
           />
 
-          {/* Floating Grip Affordance & Tactile Pill */}
-          <div
-            className={`absolute top-1/2 -translate-y-1/2 flex items-center justify-center transition-all duration-200 ease-in-out pointer-events-none ${
-              isDragging ? 'opacity-100 scale-105' : 'opacity-0 group-hover:opacity-100'
-            }`}
-          >
+          {/* DRAGGABLE VERTICAL DIVIDER & RESIZE HANDLE (220px to 480px, Persistent) */}
+          {!isSidebarCollapsed && (
             <div
-              className="w-4 h-9 rounded-full bg-white border-[1.5px] border-emerald-500 shadow-md flex flex-col items-center justify-center gap-0.5"
+              onPointerDown={handlePointerDown}
+              onDoubleClick={() => {
+                setSidebarWidth(DEFAULT_SIDEBAR_WIDTH);
+                try {
+                  localStorage.setItem(STORAGE_SIDEBAR_WIDTH_KEY, String(DEFAULT_SIDEBAR_WIDTH));
+                } catch (e) {}
+              }}
+              className={`relative group z-30 select-none cursor-col-resize flex items-center justify-center transition-all duration-200 ease-in-out ${
+                isDragging
+                  ? 'w-2 bg-teal-500/25 -mx-[4px]'
+                  : 'w-1.5 hover:w-2 hover:bg-teal-500/20 -mx-[3px]'
+              }`}
+              title="Drag to resize sidebar • Double-click to reset (260px) • Press Ctrl+B to collapse"
             >
-              <div className="w-1.5 h-0.5 rounded-full bg-emerald-500" />
-              <div className="w-1.5 h-0.5 rounded-full bg-emerald-500" />
-              <div className="w-1.5 h-0.5 rounded-full bg-emerald-500" />
+              {/* Visual Divider Line */}
+              <div
+                className={`w-[2px] h-full transition-all duration-200 ease-in-out ${
+                  isDragging ? 'bg-teal-600' : 'bg-slate-200 group-hover:bg-teal-500'
+                }`}
+              />
+
+              {/* Floating Grip Affordance & Tactile Pill */}
+              <div
+                className={`absolute top-1/2 -translate-y-1/2 flex items-center justify-center transition-all duration-200 ease-in-out pointer-events-none ${
+                  isDragging ? 'opacity-100 scale-105' : 'opacity-0 group-hover:opacity-100'
+                }`}
+              >
+                <div
+                  className="w-4 h-9 rounded-full bg-white border border-slate-300 shadow-md flex flex-col items-center justify-center gap-0.5"
+                >
+                  <div className="w-1.5 h-0.5 rounded-full bg-teal-600" />
+                  <div className="w-1.5 h-0.5 rounded-full bg-teal-600" />
+                  <div className="w-1.5 h-0.5 rounded-full bg-teal-600" />
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          )}
+        </>
       )}
 
       {/* =========================================================================
           PART B: MAIN WORKSPACE (Conversational AI Area or Dedicated Views)
           ========================================================================= */}
-      <main className="flex-1 h-full flex overflow-hidden min-w-0">
+      <main className="flex-1 h-full flex overflow-hidden min-w-0 bg-[#F8FAFC]">
 
         {/* VIEW 1: Primary Conversational AI Workspace */}
         {activeView === 'consultation' && selectedAlert && (
@@ -390,22 +373,19 @@ export default function StitchDashboard({ onExitToLanding }) {
           />
         )}
 
-        {/* VIEW 2: Dashboard Triage Inbox */}
+        {/* VIEW 2: Dashboard Triage Inbox (Patient-Centric Surveillance) */}
         {activeView === 'inbox' && (
-          <div className="flex-1 h-full p-4 overflow-hidden flex flex-col">
-            <div
-              className="bg-white rounded-3xl border-[1.5px] border-slate-200 flex flex-col h-full overflow-hidden shadow-xs"
-            >
-              <InboxView
-                alerts={alerts}
-                currentFilter={currentFilter}
-                onSetFilter={setCurrentFilter}
-                searchQuery={searchQuery}
-                onSearchChange={setSearchQuery}
-                onSelectAlert={handleSelectAlert}
-                onSimulateAlert={handleSimulateAlert}
-              />
-            </div>
+          <div className="flex-1 h-full overflow-hidden flex flex-col bg-[#F8FAFC]">
+            <InboxView
+              alerts={alerts}
+              currentFilter={currentFilter}
+              onSetFilter={setCurrentFilter}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              onSelectAlert={handleSelectAlert}
+              onSimulateAlert={handleSimulateAlert}
+              onExitToLanding={onExitToLanding}
+            />
           </div>
         )}
 
@@ -451,7 +431,6 @@ export default function StitchDashboard({ onExitToLanding }) {
           <SettingsView />
         )}
       </main>
-      </div>
 
       {/* Clinical Override / Disagreement Modal */}
       <OverrideModal
@@ -459,11 +438,14 @@ export default function StitchDashboard({ onExitToLanding }) {
         onClose={() => setIsOverrideModalOpen(false)}
         onSubmit={handleRecordOverride}
       />
+
     </div>
   );
 }
 
-// Clinical Response Engine with comprehensive reasoning
+// ---------------------------------------------------------------------------
+// Clinical Intelligence Response Generator (Deterministic Sepsis Logic Engine)
+// ---------------------------------------------------------------------------
 function formulateMockResponse(alert, userQuery) {
   const q = userQuery.toLowerCase();
   const kb = alert.knowledgeBase || {};

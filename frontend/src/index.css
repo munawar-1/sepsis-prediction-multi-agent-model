@@ -1,4 +1,43 @@
-:root, html.dark {
+:root, html.light {
+  --bg-primary: #F8FAFC;
+  --bg-secondary: #FFFFFF;
+  --bg-card: #FFFFFF;
+  --bg-surface: #FFFFFF;
+
+  --border-default: #E2E8F0;
+  --border-subtle: #F1F5F9;
+  --border-focus: #0D9488;
+
+  --accent-primary: #0D9488;
+  --accent-secondary: #0284C7;
+  --accent-warm: #D97706;
+  --accent-critical: #DC2626;
+
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-tertiary: #94A3B8;
+
+  --font-display: 'Inter Tight', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  --nav-height: 64px;
+
+  --daylight-canvas: #F8FAFC;
+  --daylight-surface: #FFFFFF;
+  --daylight-secondary: #F1F5F9;
+  --daylight-border: #E2E8F0;
+  --daylight-mint-surface: #F0FDF4;
+  --daylight-mint-border: #BBF7D0;
+  --daylight-mint-accent: #0D9488;
+  --daylight-text-primary: #0F172A;
+  --daylight-text-secondary: #475569;
+  --daylight-text-muted: #94A3B8;
+
+  color-scheme: light;
+}
+
+html.dark {
   --bg-primary: #080E18;
   --bg-secondary: #0D1624;
   --bg-card: #111C2B;
@@ -17,44 +56,7 @@
   --text-secondary: #9CA3AF;
   --text-tertiary: #6B7280;
 
-  --font-display: 'Inter Tight', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
-
-  --nav-height: 64px;
-}
-
-html.light {
-  --bg-primary: #F9FAFB;
-  --bg-secondary: #FFFFFF;
-  --bg-card: #FFFFFF;
-  --bg-surface: #F9FAFB;
-
-  --border-default: #E5E7EB;
-  --border-subtle: #F3F4F6;
-  --border-focus: #10B981;
-
-  --accent-primary: #10B981;
-  --accent-secondary: #4F46E5;
-  --accent-warm: #D97706;
-  --accent-critical: #DC2626;
-
-  --text-primary: #111827;
-  --text-secondary: #4B5563;
-  --text-tertiary: #9CA3AF;
-
-  --daylight-canvas: #F9FAFB;
-  --daylight-surface: #FFFFFF;
-  --daylight-secondary: #F3F4F6;
-  --daylight-border: #E5E7EB;
-  --daylight-mint-surface: #ECFDF5;
-  --daylight-mint-border: #D1FAE5;
-  --daylight-mint-accent: #10B981;
-  --daylight-text-primary: #111827;
-  --daylight-text-secondary: #4B5563;
-  --daylight-text-muted: #9CA3AF;
-
-  color-scheme: light;
+  color-scheme: dark;
 }
 
 *, *::before, *::after {
@@ -67,7 +69,7 @@ html {
   font-family: var(--font-body);
   background-color: var(--bg-primary);
   color: var(--text-primary);
-  color-scheme: dark;
+  color-scheme: light;
   scroll-behavior: smooth;
   scroll-padding-top: var(--nav-height);
   text-rendering: optimizeLegibility;
@@ -77,8 +79,8 @@ html {
   height: 100%;
 }
 
-html.light {
-  color-scheme: light;
+html.dark {
+  color-scheme: dark;
 }
 
 /* Lenis smooth scrolling standard classes */
@@ -122,7 +124,7 @@ html:has(.dashboard-viewport) {
   max-width: 100vw !important;
 }
 
-/* Global button & interactive element transition curves (transition: all 0.2s ease-in-out) */
+/* Global button & interactive element transition curves */
 button,
 a,
 input,
@@ -134,11 +136,11 @@ select,
 
 /* Selection */
 ::selection {
-  background: #10B981;
+  background: #0D9488;
   color: #FFFFFF;
 }
 
-html.light ::selection {
+html.dark ::selection {
   background: #10B981;
   color: #FFFFFF;
 }
@@ -168,15 +170,15 @@ html.light ::selection {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background-color: rgba(156, 163, 175, 0.35);
+  background-color: rgba(148, 163, 184, 0.4);
   border-radius: 9999px;
   transition: background-color 0.2s ease-in-out;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(107, 114, 128, 0.6);
+  background-color: rgba(100, 116, 139, 0.65);
 }
 ::-webkit-scrollbar-thumb:active {
-  background-color: rgba(16, 185, 129, 0.75);
+  background-color: rgba(13, 148, 136, 0.8);
 }
 
 /* Sleek Translucent Scrollbars for Chat History & Sidebar Navigation */
@@ -184,7 +186,7 @@ html.light ::selection {
 .sidebar-scroll-container,
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: rgba(156, 163, 175, 0.35) transparent;
+  scrollbar-color: rgba(148, 163, 184, 0.4) transparent;
 }
 
 .chat-scroll-container::-webkit-scrollbar,
@@ -203,7 +205,7 @@ html.light ::selection {
 .chat-scroll-container::-webkit-scrollbar-thumb,
 .sidebar-scroll-container::-webkit-scrollbar-thumb,
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: rgba(156, 163, 175, 0.35);
+  background-color: rgba(148, 163, 184, 0.4);
   border-radius: 9999px;
   border: 1px solid transparent;
   background-clip: padding-box;
@@ -213,13 +215,13 @@ html.light ::selection {
 .chat-scroll-container::-webkit-scrollbar-thumb:hover,
 .sidebar-scroll-container::-webkit-scrollbar-thumb:hover,
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(107, 114, 128, 0.6);
+  background-color: rgba(100, 116, 139, 0.65);
 }
 
 .chat-scroll-container::-webkit-scrollbar-thumb:active,
 .sidebar-scroll-container::-webkit-scrollbar-thumb:active,
 .custom-scrollbar::-webkit-scrollbar-thumb:active {
-  background-color: rgba(16, 185, 129, 0.75);
+  background-color: rgba(13, 148, 136, 0.8);
 }
 
 .chat-scroll-container::-webkit-scrollbar-corner,
@@ -231,7 +233,7 @@ html.light ::selection {
 /* High-end Dribbble SaaS Card Surface */
 .saas-card {
   background-color: #FFFFFF;
-  border: 1px solid #E5E7EB;
+  border: 1px solid #E2E8F0;
   border-radius: 16px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
   transition: all 0.2s ease-in-out;
@@ -253,8 +255,8 @@ html.light ::selection {
 }
 
 .pill-normal {
-  background-color: #ECFDF5;
-  border: 1px solid #D1FAE5;
+  background-color: #F0FDF4;
+  border: 1px solid #DCFCE7;
   color: #059669;
   transition: all 0.2s ease-in-out;
 }
@@ -281,7 +283,7 @@ section {
 @tailwind utilities;
 
 .waveform-canvas {
-  filter: drop-shadow(0 0 2px rgba(16, 185, 129, 0.4));
+  filter: drop-shadow(0 0 2px rgba(13, 148, 136, 0.35));
 }
 
 @keyframes slideInUp {
@@ -297,4 +299,54 @@ section {
 
 .animate-message {
   animation: slideInUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ======================================================== */
+/* Severity-Based Patient Card Border Glow Animations       */
+/* Clean white healthcare styling with smooth subtle glow   */
+/* ======================================================== */
+@keyframes criticalPulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.2), 0 1px 3px rgba(0, 0, 0, 0.05);
+    border-color: rgba(239, 68, 68, 0.85);
+  }
+  50% {
+    box-shadow: 0 0 16px 2px rgba(239, 68, 68, 0.35), 0 2px 6px rgba(0, 0, 0, 0.07);
+    border-color: rgba(239, 68, 68, 1);
+  }
+}
+
+@keyframes highPulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.18), 0 1px 3px rgba(0, 0, 0, 0.05);
+    border-color: rgba(245, 158, 11, 0.8);
+  }
+  50% {
+    box-shadow: 0 0 14px 2px rgba(245, 158, 11, 0.32), 0 2px 6px rgba(0, 0, 0, 0.07);
+    border-color: rgba(245, 158, 11, 1);
+  }
+}
+
+.severity-critical-card {
+  border-width: 2.5px !important;
+  border-color: #EF4444 !important;
+  animation: criticalPulseGlow 3s ease-in-out infinite;
+}
+
+.severity-high-card {
+  border-width: 2.5px !important;
+  border-color: #F59E0B !important;
+  animation: highPulseGlow 3.5s ease-in-out infinite;
+}
+
+.severity-moderate-card {
+  border-width: 2.5px !important;
+  border-color: #0284C7 !important;
+  box-shadow: 0 0 10px 0 rgba(2, 132, 199, 0.18), 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.severity-low-card {
+  border-width: 2px !important;
+  border-color: #059669 !important;
+  box-shadow: 0 0 8px 0 rgba(5, 150, 105, 0.15), 0 1px 3px rgba(0, 0, 0, 0.05);
 }
