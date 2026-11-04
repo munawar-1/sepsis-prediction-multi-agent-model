@@ -31,14 +31,11 @@ public class DataInitializer implements CommandLineRunner {
         User doctorSharma = seedDoctorSharma();
         User nursePriya = seedNursePriya();
 
-        // Aegis-ICU starts in clean Excel-driven 0-patient state
-        if (patientRepository.count() > 0) {
-            log.info("Wiping existing persistent patients to ensure clean 0-patient startup...");
-            orderRepository.deleteAll();
-            evaluationRepository.deleteAll();
-            telemetryRepository.deleteAll();
-            patientRepository.deleteAll();
-            log.info("Clean 0-patient state initialized.");
+        // Seed initial ICU beds and baseline patients if unpopulated
+        if (patientRepository.count() == 0) {
+            log.info("Seeding initial ICU beds and baseline patients including Bed 04 PT-9042...");
+            seedIcuPatients(doctorMunawar, nursePriya);
+            log.info("Initial ICU bed roster populated successfully.");
         }
     }
 
