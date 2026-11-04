@@ -1,0 +1,28 @@
+Aegis-ICU anatomical study
+
+BodyParts3D, © The Database Center for Life Science.
+
+Skin, ribs, airways, vessels, heart, stomach, small intestine and colon:
+BodyParts3D 4.0, 99% polygon reduction, IS-A archive.
+Source and license: https://dbarchive.biosciencedbc.jp/data/bodyparts3d/LATEST/README_e.html
+Original data licensed under CC Attribution 4.0 International.
+https://creativecommons.org/licenses/by/4.0/
+
+Lungs: five lobes from BodyParts3D 3.0, converted to STL by Kevin Mattheus Moerman.
+Source: https://github.com/Kevin-Mattheus-Moerman/BodyParts3D
+IDs: FMA7333, FMA7337, FMA7383, FMA7370, FMA7371.
+BodyParts3D, © The Database Center for Life Science, licensed under
+CC Attribution-Share Alike 2.1 Japan.
+https://creativecommons.org/licenses/by-sa/2.1/jp/
+
+The combined mesh asset anatomy-surfaces.bin.gz is distributed under
+CC Attribution-Share Alike 2.1 Japan. Selected surfaces were simplified,
+normalized to a common coordinate frame, quantized and packed for WebGL.
+Tissue colors and illumination are illustrative.
+
+Mitsuhashi et al., BodyParts3D: 3D structure database for anatomical concepts.
+https://doi.org/10.1093/nar/gkn613
+Dataset: https://doi.org/10.18908/lsdba.nbdc00837-000
+
+The static poster is a WebP conversion of the project owner's supplied reference
+image. It is separate from the licensed anatomical mesh.

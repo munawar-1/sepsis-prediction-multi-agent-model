@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { useTheme } from '../../context/ThemeContext';
 import {
   Activity,
   Heart,
@@ -10,6 +11,7 @@ import {
 } from 'lucide-react';
 
 export default function MonitoringView({ alert }) {
+  const { isDark } = useTheme();
   const canvasRef = useRef(null);
 
   // High-fidelity Multi-lead Waveform Canvas
@@ -36,7 +38,7 @@ export default function MonitoringView({ alert }) {
       const mid = h / 2;
 
       // Soft Daylight Grid (#E5E7EB)
-      ctx.strokeStyle = '#E2E8F0';
+      ctx.strokeStyle = isDark ? '#1E2D44' : '#E2E8F0';
       ctx.lineWidth = 1;
       for (let x = 0; x < w; x += 24) {
         ctx.beginPath();
@@ -79,7 +81,7 @@ export default function MonitoringView({ alert }) {
       cancelAnimationFrame(animId);
       window.removeEventListener('resize', resize);
     };
-  }, []);
+  }, [isDark]);
 
   const vitalsGrid = [
     { label: 'Heart Rate', value: alert.vitals?.hr || '118 bpm', status: 'critical', desc: 'Sinus Tachycardia (+11 bpm/h)', icon: Heart },

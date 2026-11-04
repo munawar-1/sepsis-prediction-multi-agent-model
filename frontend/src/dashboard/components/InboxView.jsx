@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { useTheme } from '../../context/ThemeContext';
 import {
   Inbox,
   AlertTriangle,
@@ -28,6 +29,7 @@ export default function InboxView({
   onSelectAlert,
   onSimulateAlert
 }) {
+  const { isDark } = useTheme();
   const canvasRef = useRef(null);
 
   // Multi-Agent Signal Flow Animation Engine (Emerald on Daylight Canvas)
@@ -85,7 +87,7 @@ export default function InboxView({
           targetX,
           targetY
         );
-        ctx.strokeStyle = '#E5E7EB';
+        ctx.strokeStyle = isDark ? '#1E2D44' : '#E5E7EB';
         ctx.lineWidth = 1.2;
         ctx.stroke();
       });
@@ -145,7 +147,7 @@ export default function InboxView({
       cancelAnimationFrame(animId);
       window.removeEventListener('resize', resize);
     };
-  }, []);
+  }, [isDark]);
 
   // Filtered Alerts
   const filteredAlerts = alerts.filter(item => {

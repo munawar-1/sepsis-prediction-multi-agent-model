@@ -1,9 +1,11 @@
 /**
  * Authentication & Clinical API Service
- * Connects frontend to Spring Boot backend at http://localhost:8080
+ * Connects frontend to Spring Boot backend at /api/v1 (proxied to http://localhost:8080)
  */
 
-const API_BASE_URL = 'http://localhost:8080/api/v1';
+const API_BASE_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL)
+  ? import.meta.env.VITE_API_BASE_URL
+  : '/api/v1';
 
 export const authService = {
   /**
@@ -105,4 +107,3 @@ export const authService = {
     }
   }
 };
-

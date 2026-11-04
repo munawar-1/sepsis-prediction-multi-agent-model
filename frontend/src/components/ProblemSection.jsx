@@ -11,55 +11,21 @@ export default function ProblemSection() {
   const { isDark } = useTheme();
   const sectionRef = useRef(null);
   const pinContainerRef = useRef(null);
-  const [scrollProgress, setScrollProgress] = useState(0);
+
   const [activeStage, setActiveStage] = useState(0);
 
   useGSAP(() => {
     const pin = pinContainerRef.current;
 
-    ScrollTrigger.create({
-      trigger: sectionRef.current,
-      start: 'top 64px',
-      end: '+=120%',
-      pin: pin,
-      pinSpacing: true,
-      scrub: 0.5,
-      onUpdate: (self) => {
-        const p = self.progress;
-        setScrollProgress(p);
-        if (p < 0.33) {
-          setActiveStage(0);
-        } else if (p < 0.68) {
-          setActiveStage(1);
-        } else {
-          setActiveStage(2);
-        }
-      }
+    const media = gsap.matchMedia();
+    media.add('(min-width: 901px) and (min-height: 700px) and (prefers-reduced-motion: no-preference)', () => {
+      const story = gsap.timeline({ scrollTrigger: { trigger: sectionRef.current, pin,
+        start: 'top 64px', end: '+=145%', scrub: .5,
+        onUpdate: self => setActiveStage(Math.min(2, Math.floor(self.progress * 3))) } });
+      story.fromTo('.problem-photo img', { scale: 1.03 }, { scale: 1.19, xPercent: -3, ease: 'none' }, 0)
+        .fromTo('.problem-hr-path, .problem-bp-path', { strokeDashoffset: 500 }, { strokeDashoffset: 0, ease: 'none' }, 0);
     });
-
-    // Scrubbed SVG Graph Draw
-    gsap.to('.problem-hr-path', {
-      strokeDashoffset: 0,
-      ease: 'none',
-      scrollTrigger: {
-        trigger: sectionRef.current,
-        start: 'top 64px',
-        end: '+=120%',
-        scrub: true
-      }
-    });
-
-    gsap.to('.problem-bp-path', {
-      strokeDashoffset: 0,
-      ease: 'none',
-      scrollTrigger: {
-        trigger: sectionRef.current,
-        start: 'top 64px',
-        end: '+=120%',
-        scrub: true
-      }
-    });
-
+    return () => media.revert();
   }, { scope: sectionRef });
 
   const stageData = [
@@ -168,6 +134,9 @@ export default function ProblemSection() {
               Concerning physiological changes develop gradually. Relying only on isolated threshold alarms misses early combinations of signals—while driving severe alarm fatigue.
             </p>
 
+            <div className="problem-photo"><img loading="lazy" src="/assets/hero-icu-ambient.jpg" alt="Bedside monitoring equipment in the ICU"/><span>OBSERVATION / {current.hour}</span></div>
+            <div className="cine-phases" aria-label="Illustrative case phases">{stageData.map((phase, i) =>
+              <button key={phase.hour} aria-pressed={activeStage === i} onClick={() => setActiveStage(i)}>{phase.hour}</button>)}</div>
             {/* Stage Indicator Card */}
             <div
               className="ui-panel"
@@ -274,7 +243,7 @@ export default function ProblemSection() {
                   stroke="#FF5268"
                   strokeWidth="2.2"
                   strokeDasharray="500"
-                  strokeDashoffset="500"
+                  strokeDashoffset="0"
                   className="problem-hr-path"
                 />
 
@@ -285,7 +254,7 @@ export default function ProblemSection() {
                   stroke={isDark ? "#35D6C5" : "#0D9488"}
                   strokeWidth="2.2"
                   strokeDasharray="500"
-                  strokeDashoffset="500"
+                  strokeDashoffset="0"
                   className="problem-bp-path"
                 />
               </svg>

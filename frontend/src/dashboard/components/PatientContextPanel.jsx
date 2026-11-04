@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTheme } from '../../context/ThemeContext';
 import {
   X,
   Activity,
@@ -15,11 +16,13 @@ import {
 
 export default function PatientContextPanel({
   alert,
+  alert,
   isOpen,
   onClose,
   activeTab = 'overview',
   onTabChange
 }) {
+  const { isDark } = useTheme();
   const [currentTab, setCurrentTab] = useState(activeTab);
   const waveformRef = useRef(null);
 
@@ -53,7 +56,7 @@ export default function PatientContextPanel({
       const mid = h / 2;
 
       // Soft Grid (#E5E7EB)
-      ctx.strokeStyle = '#E5E7EB';
+      ctx.strokeStyle = isDark ? '#1E2D44' : '#E5E7EB';
       ctx.lineWidth = 1;
       for (let x = 0; x < w; x += 20) {
         ctx.beginPath();
@@ -96,7 +99,7 @@ export default function PatientContextPanel({
       cancelAnimationFrame(animId);
       window.removeEventListener('resize', resize);
     };
-  }, [isOpen, currentTab]);
+  }, [isOpen, currentTab, isDark]);
 
   if (!isOpen) return null;
 

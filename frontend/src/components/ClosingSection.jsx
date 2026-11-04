@@ -1,108 +1,25 @@
-import React from 'react';
-import { useTheme } from '../context/ThemeContext';
-import { Shield, ArrowRight, LayoutDashboard, ArrowUpRight } from 'lucide-react';
-import { scrollTo } from '../utils/lenis';
+import React,{useRef} from 'react';
+import {ArrowUpRight} from 'lucide-react';
+import {useTheme} from '../context/ThemeContext';
+import {scrollTo} from '../utils/lenis';
+import {useLandingReveals} from './cineMotion';
+import AsciiSignal from './AsciiSignal';
 
-export default function ClosingSection({ onOpenFlightDeck }) {
-  const { isDark } = useTheme();
-  return (
-    <section
-      style={{
-        position: 'relative',
-        padding: '80px 24px 60px 24px',
-        background: isDark ? '#080E18' : '#F8FAFC',
-        borderBottom: isDark ? '1px solid #1A2738' : '1px solid #E2E8F0',
-        textAlign: 'center'
-      }}
-    >
-      <div style={{ maxWidth: '840px', margin: '0 auto' }}>
-        
-        {/* Shield Icon Emblem (Clean, zero glow) */}
-        <div style={{
-          width: '48px',
-          height: '48px',
-          borderRadius: '10px',
-          background: isDark ? '#111C2B' : '#F1F5F9',
-          border: isDark ? '1px solid #243247' : '1px solid #E2E8F0',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          margin: '0 auto 20px auto'
-        }}>
-          <Shield size={24} color="#35D6C5" />
-        </div>
-
-        {/* Kinetic Headline with Inline CTA (Impilo Motion Language Adaptation) */}
-        <h2 className="font-display" style={{
-          fontSize: 'clamp(2rem, 3.8vw, 3.2rem)',
-          fontWeight: 650,
-          lineHeight: 1.25,
-          color: isDark ? '#F1F5FA' : '#0F172A',
-          marginBottom: '20px'
-        }}>
-          Explore how Aegis{' '}
-          <button
-            onClick={() => scrollTo('#clinical-review', { offset: -64 })}
-            className="btn-primary"
-            style={{
-              display: 'inline-flex',
-              verticalAlign: 'middle',
-              margin: '0 8px',
-              fontSize: '15px',
-              padding: '6px 16px',
-              borderRadius: '6px'
-            }}
-          >
-            <span>Explore System</span>
-            <ArrowRight size={14} />
-          </button>
-          supports every critical decision.
-        </h2>
-
-        {/* Supporting Message */}
-        <p className="font-body" style={{
-          fontSize: '16px',
-          lineHeight: 1.6,
-          color: isDark ? '#9AA9BA' : '#475569',
-          maxWidth: '620px',
-          margin: '0 auto 32px auto'
-        }}>
-          Bringing physiological trends, laboratory evidence, and medication context together to support earlier recognition of potential sepsis risk.
-        </p>
-
-        {/* Action Buttons */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap', marginBottom: '32px' }}>
-          <button
-            onClick={onOpenFlightDeck}
-            className="btn-secondary"
-            style={{ fontSize: '13.5px', padding: '10px 20px' }}
-          >
-            <LayoutDashboard size={15} />
-            <span>Launch Clinical Flight Deck</span>
-          </button>
-        </div>
-
-        {/* Trust Badges */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '16px',
-          flexWrap: 'wrap',
-          color: isDark ? '#617285' : '#64748B',
-          fontSize: '11px',
-          fontFamily: 'var(--font-mono)'
-        }}>
-          <span>HL7® FHIR® R4 Ingestion</span>
-          <span>•</span>
-          <span>Sepsis-3 Framework</span>
-          <span>•</span>
-          <span>Transparent Attribution</span>
-          <span>•</span>
-          <span>Human Prescriptive Control</span>
-        </div>
-
-      </div>
-    </section>
-  );
+export default function ClosingSection({onOpenFlightDeck}){
+  const root=useRef(null), {isDark}=useTheme();
+  useLandingReveals(root);
+  function magnet(e){
+    if(!matchMedia('(hover:hover) and (prefers-reduced-motion:no-preference)').matches)return;
+    const rect=e.currentTarget.getBoundingClientRect();
+    e.currentTarget.style.setProperty('--mx',((e.clientX-rect.left)/rect.width-.5)*10+'px');
+    e.currentTarget.style.setProperty('--my',((e.clientY-rect.top)/rect.height-.5)*8+'px');
+  }
+  return <section className="signal-end" ref={root}>
+    <div className="signal-end-copy"><small className="plate-id">07 / Clinical handoff</small>
+      <h2>The next decision<br/>belongs to the clinician.</h2>
+      <div className="end-actions"><button className="end-primary" onClick={onOpenFlightDeck} onPointerMove={magnet}
+        onPointerLeave={e=>{e.currentTarget.style.removeProperty('--mx');e.currentTarget.style.removeProperty('--my')}}>Launch Clinical Flight Deck <ArrowUpRight size={16}/></button>
+        <button className="end-link" onClick={()=>scrollTo('#clinical-review')}>Explore the review</button></div></div>
+    <figure className="ascii-instrument"><figcaption>OUTPUT / SIGNAL TRACE</figcaption><AsciiSignal light={!isDark}/><small>AEGIS–ICU · RESEARCH PLATFORM</small></figure>
+  </section>;
 }

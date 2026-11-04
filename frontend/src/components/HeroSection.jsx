@@ -2,226 +2,52 @@ import React, { useRef } from 'react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { ArrowUpRight, ArrowDown, Activity, ShieldCheck, Check } from 'lucide-react';
+import { ArrowDown, ArrowUpRight } from 'lucide-react';
 import { scrollTo } from '../utils/lenis';
 import { useTheme } from '../context/ThemeContext';
+import './cinematic.css';
+import './landingScenes.css';
 
 gsap.registerPlugin(ScrollTrigger);
 
-export default function HeroSection({ onOpenFlightDeck }) {
+export default function HeroSection() {
   const { isDark } = useTheme();
-  const containerRef = useRef(null);
-  const textColRef = useRef(null);
-  const visualCardRef = useRef(null);
-  const showcaseContainerRef = useRef(null);
-
+  const root = useRef(null);
   useGSAP(() => {
-    // 1. Initial Entrance
-    const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
-
-    tl.fromTo('.hero-tag',
-      { opacity: 0, y: 12 },
-      { opacity: 1, y: 0, duration: 0.6 }
-    )
-    .fromTo('.hero-title-line',
-      { y: 24, opacity: 0 },
-      { y: 0, opacity: 1, duration: 0.7, stagger: 0.1 },
-      '-=0.3'
-    )
-    .fromTo('.hero-desc',
-      { opacity: 0, y: 16 },
-      { opacity: 1, y: 0, duration: 0.6 },
-      '-=0.4'
-    )
-    .fromTo('.hero-actions',
-      { opacity: 0, y: 12 },
-      { opacity: 1, y: 0, duration: 0.5 },
-      '-=0.3'
-    )
-    .fromTo(visualCardRef.current,
-      { opacity: 0, y: 20 },
-      { opacity: 1, y: 0, duration: 0.8 },
-      '-=0.5'
-    );
-
-    // 2. Motion Transformation on Scroll
-    const scrollTl = gsap.timeline({
-      scrollTrigger: {
-        trigger: containerRef.current,
-        start: 'top top',
-        end: 'bottom top',
-        scrub: 0.8
-      }
+    const media = gsap.matchMedia();
+    media.add('(prefers-reduced-motion: no-preference)', () => {
+      gsap.timeline({ defaults: { ease: 'power3.out' } })
+        .from('.cine-label', { opacity: 0, y: 10, duration: .45 })
+        .from('.cine-title b', { yPercent: 105, duration: .9, stagger: .11 }, '-=.18')
+        .from('.cine-intro, .cine-actions, .cine-foot', { y: 15, opacity: 0, duration: .65, stagger: .1 }, '-=.44');
+      gsap.timeline({ scrollTrigger: { trigger: root.current, start: 'top top', end: 'bottom top', scrub: .65 } })
+        .to('.cine-photo', { yPercent: 10, ease: 'none' }, 0)
+        .to('.cine-grid', { yPercent: 5, ease: 'none' }, 0)
+        .to('.cine-copy', { y: -28, ease: 'none' }, 0)
+        .fromTo('.cine-read-progress', {scaleX: .04}, {scaleX: 1, ease: 'none'}, 0);
     });
-
-    scrollTl.to(textColRef.current, {
-      y: -60,
-      opacity: 0.2,
-      ease: 'none'
-    }, 0);
-
-    scrollTl.to(visualCardRef.current, {
-      scale: 1.08,
-      y: 40,
-      ease: 'none'
-    }, 0);
-
-  }, { scope: containerRef });
-
-  return (
-    <section
-      ref={containerRef}
-      style={{
-        position: 'relative',
-        minHeight: '88vh',
-        paddingTop: '96px',
-        paddingBottom: '48px',
-        background: isDark ? '#080E18' : '#F4F6F9',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        borderBottom: isDark ? '1px solid #1A2738' : '1px solid #E2E8F0',
-        overflow: 'hidden',
-        transition: 'background-color 0.2s ease, border-color 0.2s ease'
-      }}
-    >
-      {/* Cinematic ICU Background Image with Atmospheric Overlays */}
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          overflow: 'hidden',
-          pointerEvents: 'none',
-          zIndex: 0
-        }}
-      >
-        <img
-          src="/assets/hero-icu-cinematic.jpg"
-          alt="Aegis-ICU Cinematic Environment"
-          aria-hidden="true"
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            objectPosition: 'center 40%',
-            opacity: isDark ? 0.65 : 0.25,
-            transform: 'scale(1.02)'
-          }}
-        />
-        {/* Dark Navy / Daylight Slate Atmospheric Overlays with subtle teal tones */}
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            background: isDark
-              ? 'linear-gradient(90deg, rgba(8, 14, 24, 0.88) 0%, rgba(8, 14, 24, 0.65) 48%, rgba(8, 14, 24, 0.35) 100%), linear-gradient(180deg, rgba(8, 14, 24, 0.45) 0%, transparent 25%, transparent 70%, #080E18 100%), radial-gradient(circle at 80% 30%, rgba(20, 184, 166, 0.12) 0%, transparent 60%)'
-              : 'linear-gradient(90deg, rgba(244, 246, 249, 0.92) 0%, rgba(244, 246, 249, 0.75) 48%, rgba(244, 246, 249, 0.45) 100%), linear-gradient(180deg, rgba(244, 246, 249, 0.4) 0%, transparent 25%, transparent 70%, #F4F6F9 100%)'
-          }}
-        />
-      </div>
-
-      <div style={{
-        maxWidth: '1320px',
-        margin: '0 auto',
-        width: '100%',
-        padding: '0 24px',
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: '48px',
-        alignItems: 'center',
-        position: 'relative',
-        zIndex: 1
-      }} className="hero-grid">
-        
-        {/* Left Column: Refined Editorial Typography */}
-        <div ref={textColRef}>
-          {/* Eyebrow Label */}
-          <div className="hero-tag" style={{ marginBottom: '20px' }}>
-            <span className="eyebrow-tag">
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: isDark ? '#35D6C5' : '#0D9488' }} />
-              CLINICAL DECISION SUPPORT CONCEPT • Sepsis-3
-            </span>
-          </div>
-
-          {/* Headline */}
-          <h1
-            className="font-display"
-            style={{
-              fontSize: 'clamp(2.4rem, 4.4vw, 3.6rem)',
-              fontWeight: 650,
-              lineHeight: 1.15,
-              color: isDark ? '#F1F5FA' : '#0F172A',
-              marginBottom: '20px'
-            }}
-          >
-            <span className="hero-title-line" style={{ display: 'block' }}>
-              See the signals before
-            </span>
-            <span className="hero-title-line" style={{ display: 'block' }}>
-              they become a crisis.
-            </span>
-          </h1>
-
-          {/* Concise Supporting Description */}
-          <p
-            className="hero-desc font-body"
-            style={{
-              fontSize: '16px',
-              lineHeight: 1.6,
-              color: isDark ? '#9AA9BA' : '#475569',
-              maxWidth: '520px',
-              marginBottom: '32px'
-            }}
-          >
-            Aegis-ICU brings vital trends, laboratory evidence, and medication context together through specialized AI agents to support earlier recognition of potential sepsis risk.
-          </p>
-
-          {/* Actions & Inline Transition */}
-          <div className="hero-actions" style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap', marginBottom: '32px' }}>
-            <button
-              onClick={() => scrollTo('#problem', { offset: -64 })}
-              className="btn-primary"
-            >
-              <span>Explore Aegis</span>
-              <ArrowDown size={14} />
-            </button>
-
-            <button
-              onClick={() => scrollTo('#how-it-works', { offset: -64 })}
-              className="btn-secondary"
-            >
-              <span>Discover how it works</span>
-            </button>
-          </div>
-
-          {/* Clinical Assurance Pillars */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '20px',
-            paddingTop: '20px',
-            borderTop: isDark ? '1px solid #1A2738' : '1px solid #E2E8F0',
-            fontSize: '12px',
-            fontFamily: 'var(--font-mono)',
-            color: isDark ? '#9AA9BA' : '#64748B'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Check size={14} color={isDark ? "#35D6C5" : "#0D9488"} />
-              <span>Human-in-the-Loop</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Check size={14} color={isDark ? "#35D6C5" : "#0D9488"} />
-              <span>Transparent Evidence</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Check size={14} color={isDark ? "#35D6C5" : "#0D9488"} />
-              <span>Zero Black-Box Alerts</span>
-            </div>
-          </div>
+    return () => media.revert();
+  }, { scope: root });
+  return <>
+    <section className="cine-hero" ref={root}>
+      <img className="cine-photo" src="/assets/hero-icu-cinematic.jpg" alt="" fetchPriority="high"/>
+      <div className="cine-grid" aria-hidden="true"/>
+      <div className="cine-copy">
+        <div className="cine-label"><i/> AEGIS–ICU <span>/</span> CLINICAL INTELLIGENCE</div>
+        <h1 className="cine-title"><span><b>See the signals</b></span><span><b>before they become</b></span><span><b>a crisis.</b></span></h1>
+        <p className="cine-intro">Aegis-ICU brings vital trends, laboratory evidence, and medication context together through specialized AI agents to support earlier recognition of potential sepsis risk.</p>
+        <div className="cine-actions">
+          <button onClick={() => scrollTo('#problem')}>Explore Aegis <ArrowDown size={16}/></button>
+          <button onClick={() => scrollTo('#how-it-works')}>Discover how it works <ArrowUpRight size={16}/></button>
         </div>
-
-        {/* Right Column: Clean Telemetry Visual */}
-        <div ref={visualCardRef} style={{ transformOrigin: 'center center' }}>
+      </div>
+      <svg className="hero-trace" viewBox="0 0 300 52" aria-hidden="true">
+        <path d="M0 32h61l9-5 10 5h19l7-9 7 21 8-40 8 33 9-10 9 5h31q8-12 18 0h94" fill="none" stroke="currentColor"/>
+        <path className="signal-runner" pathLength="100" strokeDasharray="8 92" d="M0 32h61l9-5 10 5h19l7-9 7 21 8-40 8 33 9-10 9 5h31q8-12 18 0h94" fill="none" stroke="currentColor" strokeWidth="3"/>
+      </svg><div className="cine-foot"><i className="cine-read-progress" aria-hidden="true"/><span>01 / BEDSIDE OBSERVATION</span><span>SEPSIS-3 · HUMAN-IN-THE-LOOP</span></div>
+    </section>
+    <details className="cine-feed" onToggle={() => ScrollTrigger.refresh()}>
+      <summary>Bedside telemetry <span>Illustrative feed · ICU Bed 04</span></summary>
           <div
             className="ui-panel"
             style={{
@@ -364,18 +190,7 @@ export default function HeroSection({ onOpenFlightDeck }) {
               </div>
             </div>
           </div>
-        </div>
 
-      </div>
-
-      <style>{`
-        @media (max-width: 900px) {
-          .hero-grid {
-            grid-template-columns: 1fr !important;
-            gap: 32px !important;
-          }
-        }
-      `}</style>
-    </section>
-  );
+    </details>
+  </>;
 }

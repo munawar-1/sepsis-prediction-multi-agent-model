@@ -1,0 +1,337 @@
+/* =========================================================================
+   AEGIS-ICU CLINICAL INTELLIGENCE DASHBOARD — SCOPED THEME SYSTEM
+   Strictly scoped to .dashboard-viewport to prevent landing page contamination.
+   ========================================================================= */
+
+/* --- CSS Variables for Dashboard Theming --- */
+.dashboard-viewport.dashboard-theme-light {
+  --dash-bg-canvas: #F9FAFB;
+  --dash-bg-surface: #FFFFFF;
+  --dash-bg-card: #FFFFFF;
+  --dash-bg-subtle: #F3F4F6;
+  --dash-bg-muted: #E5E7EB;
+  --dash-border: #E5E7EB;
+  --dash-border-subtle: #F3F4F6;
+  --dash-border-strong: #D1D5DB;
+  --dash-text-primary: #111827;
+  --dash-text-secondary: #4B5563;
+  --dash-text-muted: #9CA3AF;
+  --dash-accent: #10B981;
+  --dash-header-bg: #FFFFFF;
+  --dash-sidebar-bg: #F9FAFB;
+  color-scheme: light;
+}
+
+.dashboard-viewport.dashboard-theme-dark {
+  --dash-bg-canvas: #080E18;
+  --dash-bg-surface: #0D1524;
+  --dash-bg-card: #111C2E;
+  --dash-bg-subtle: #142036;
+  --dash-bg-muted: #1B2B48;
+  --dash-border: #1E2D44;
+  --dash-border-subtle: #182438;
+  --dash-border-strong: #273A58;
+  --dash-text-primary: #F1F5FA;
+  --dash-text-secondary: #CBD5E1;
+  --dash-text-muted: #8899B0;
+  --dash-accent: #10B981;
+  --dash-header-bg: #0D1524;
+  --dash-sidebar-bg: #0A111E;
+  color-scheme: dark;
+}
+
+/* --- Base Container Scoping --- */
+.dashboard-viewport {
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+.dashboard-viewport.dashboard-theme-dark {
+  background-color: var(--dash-bg-canvas) !important;
+  color: var(--dash-text-primary) !important;
+}
+
+/* --- Dark Mode Surface & Card Mappings --- */
+.dashboard-viewport.dashboard-theme-dark aside {
+  background-color: var(--dash-sidebar-bg) !important;
+  border-color: var(--dash-border) !important;
+}
+
+.dashboard-viewport.dashboard-theme-dark header {
+  background-color: var(--dash-header-bg) !important;
+  border-color: var(--dash-border) !important;
+}
+
+.dashboard-viewport.dashboard-theme-dark main {
+  background-color: var(--dash-bg-canvas) !important;
+}
+
+.dashboard-viewport.dashboard-theme-dark section {
+  background-color: #0D1524 !important;
+  border-color: var(--dash-border) !important;
+}
+
+.dashboard-viewport.dashboard-theme-dark footer {
+  background-color: #0D1524 !important;
+  border-color: var(--dash-border) !important;
+}
+
+/* Surface backgrounds */
+.dashboard-viewport.dashboard-theme-dark .bg-white {
+  background-color: #0D1524 !important;
+}
+
+.dashboard-viewport.dashboard-theme-dark .bg-\[\#F9FAFB\] {
+  background-color: #080E18 !important;
+}
+
+.dashboard-viewport.dashboard-theme-dark .bg-slate-50,
+.dashboard-viewport.dashboard-theme-dark .bg-slate-50\/50,
+.dashboard-viewport.dashboard-theme-dark .bg-slate-50\/40 {
+  background-color: #0F1728 !important;
+}
+
+.dashboard-viewport.dashboard-theme-dark .bg-slate-100 {
+  background-color: #131F33 !important;
+}
+
+.dashboard-viewport.dashboard-theme-dark .bg-slate-200 {
+  background-color: #1A2840 !important;
+}
+
+/* Rounded-full chat input pill container */
+.dashboard-viewport.dashboard-theme-dark .rounded-full.bg-white,
+.dashboard-viewport.dashboard-theme-dark div[style*="9999px"].bg-white {
+  background-color: #0A111E !important;
+  border-color: #1E2D44 !important;
+}
+
+/* Borders */
+.dashboard-viewport.dashboard-theme-dark .border-slate-100,
+.dashboard-viewport.dashboard-theme-dark .border-slate-200,
+.dashboard-viewport.dashboard-theme-dark .border-slate-300,
+.dashboard-viewport.dashboard-theme-dark .border-\[\#E5E7EB\],
+.dashboard-viewport.dashboard-theme-dark .border-t-\[\#E5E7EB\],
+.dashboard-viewport.dashboard-theme-dark .border-b-\[\#E5E7EB\],
+.dashboard-viewport.dashboard-theme-dark .border-r-\[\#E5E7EB\] {
+  border-color: #1E2D44 !important;
+}
+
+/* Text Hierarchy */
+.dashboard-viewport.dashboard-theme-dark .text-slate-900,
+.dashboard-viewport.dashboard-theme-dark .text-\[\#111827\],
+.dashboard-viewport.dashboard-theme-dark .text-slate-800 {
+  color: #F1F5FA !important;
+}
+
+.dashboard-viewport.dashboard-theme-dark .text-slate-700,
+.dashboard-viewport.dashboard-theme-dark .text-slate-600 {
+  color: #CBD5E1 !important;
+}
+
+.dashboard-viewport.dashboard-theme-dark .text-slate-500 {
+  color: #94A3B8 !important;
+}
+
+.dashboard-viewport.dashboard-theme-dark .text-slate-400 {
+  color: #64748B !important;
+}
+
+/* Ring & Shadow resets */
+.dashboard-viewport.dashboard-theme-dark .ring-white {
+  --tw-ring-color: #0D1524 !important;
+}
+
+.dashboard-viewport.dashboard-theme-dark .shadow-xs,
+.dashboard-viewport.dashboard-theme-dark .shadow-sm,
+.dashboard-viewport.dashboard-theme-dark .shadow-2xs,
+.dashboard-viewport.dashboard-theme-dark .shadow-md,
+.dashboard-viewport.dashboard-theme-dark .shadow-lg,
+.dashboard-viewport.dashboard-theme-dark .shadow-xl,
+.dashboard-viewport.dashboard-theme-dark .shadow-2xl {
+  box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.5), 0 2px 6px -1px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* --- Interactive States & Hovers --- */
+.dashboard-viewport.dashboard-theme-dark .hover\:bg-slate-50:hover,
+.dashboard-viewport.dashboard-theme-dark .hover\:bg-slate-100:hover {
+  background-color: #142036 !important;
+}
+
+.dashboard-viewport.dashboard-theme-dark .hover\:bg-slate-200:hover {
+  background-color: #1B2B48 !important;
+}
+
+.dashboard-viewport.dashboard-theme-dark .hover\:border-slate-300:hover,
+.dashboard-viewport.dashboard-theme-dark .hover\:border-slate-400:hover {
+  border-color: #2D4263 !important;
+}
+
+.dashboard-viewport.dashboard-theme-dark .hover\:text-slate-900:hover,
+.dashboard-viewport.dashboard-theme-dark .hover\:text-slate-800:hover {
+  color: #FFFFFF !important;
+}
+
+/* --- Clinical Status Badges & Pills (High-contrast Clinical Colors) --- */
+/* Critical (Red / Rose) */
+.dashboard-viewport.dashboard-theme-dark .bg-rose-50,
+.dashboard-viewport.dashboard-theme-dark .bg-rose-50\/30,
+.dashboard-viewport.dashboard-theme-dark .bg-rose-50\/60,
+.dashboard-viewport.dashboard-theme-dark .bg-red-50 {
+  background-color: rgba(225, 29, 72, 0.16) !important;
+}
+
+.dashboard-viewport.dashboard-theme-dark .border-rose-200,
+.dashboard-viewport.dashboard-theme-dark .border-rose-300,
+.dashboard-viewport.dashboard-theme-dark .border-red-200,
+.dashboard-viewport.dashboard-theme-dark .border-red-300 {
+  border-color: rgba(244, 63, 94, 0.42) !important;
+}
+
+.dashboard-viewport.dashboard-theme-dark .text-rose-700,
+.dashboard-viewport.dashboard-theme-dark .text-rose-600,
+.dashboard-viewport.dashboard-theme-dark .text-rose-900,
+.dashboard-viewport.dashboard-theme-dark .text-red-700,
+.dashboard-viewport.dashboard-theme-dark .text-red-600 {
+  color: #FDA4AF !important;
+}
+
+/* Warning (Amber / Yellow) */
+.dashboard-viewport.dashboard-theme-dark .bg-amber-50,
+.dashboard-viewport.dashboard-theme-dark .bg-yellow-50 {
+  background-color: rgba(217, 119, 6, 0.16) !important;
+}
+
+.dashboard-viewport.dashboard-theme-dark .border-amber-200,
+.dashboard-viewport.dashboard-theme-dark .border-amber-300,
+.dashboard-viewport.dashboard-theme-dark .border-yellow-200,
+.dashboard-viewport.dashboard-theme-dark .border-yellow-300 {
+  border-color: rgba(245, 158, 11, 0.42) !important;
+}
+
+.dashboard-viewport.dashboard-theme-dark .text-amber-800,
+.dashboard-viewport.dashboard-theme-dark .text-amber-700,
+.dashboard-viewport.dashboard-theme-dark .text-amber-900,
+.dashboard-viewport.dashboard-theme-dark .text-yellow-800 {
+  color: #FCD34D !important;
+}
+
+/* Success / Normal (Emerald / Teal) */
+.dashboard-viewport.dashboard-theme-dark .bg-emerald-50,
+.dashboard-viewport.dashboard-theme-dark .bg-emerald-50\/40,
+.dashboard-viewport.dashboard-theme-dark .bg-emerald-100,
+.dashboard-viewport.dashboard-theme-dark .bg-teal-50 {
+  background-color: rgba(16, 185, 129, 0.14) !important;
+}
+
+.dashboard-viewport.dashboard-theme-dark .border-emerald-200,
+.dashboard-viewport.dashboard-theme-dark .border-emerald-300,
+.dashboard-viewport.dashboard-theme-dark .border-teal-200 {
+  border-color: rgba(16, 185, 129, 0.4) !important;
+}
+
+.dashboard-viewport.dashboard-theme-dark .text-emerald-800,
+.dashboard-viewport.dashboard-theme-dark .text-emerald-700,
+.dashboard-viewport.dashboard-theme-dark .text-emerald-900 {
+  color: #6EE7B7 !important;
+}
+
+/* Informational (Blue / Sky) */
+.dashboard-viewport.dashboard-theme-dark .bg-blue-50,
+.dashboard-viewport.dashboard-theme-dark .bg-blue-100,
+.dashboard-viewport.dashboard-theme-dark .bg-sky-50 {
+  background-color: rgba(37, 99, 235, 0.15) !important;
+}
+
+.dashboard-viewport.dashboard-theme-dark .border-blue-200,
+.dashboard-viewport.dashboard-theme-dark .border-blue-300,
+.dashboard-viewport.dashboard-theme-dark .border-sky-200 {
+  border-color: rgba(59, 130, 246, 0.4) !important;
+}
+
+.dashboard-viewport.dashboard-theme-dark .text-blue-700,
+.dashboard-viewport.dashboard-theme-dark .text-blue-800,
+.dashboard-viewport.dashboard-theme-dark .text-blue-900,
+.dashboard-viewport.dashboard-theme-dark .text-sky-700 {
+  color: #93C5FD !important;
+}
+
+/* Purple (Medications / AI Agent 3) */
+.dashboard-viewport.dashboard-theme-dark .bg-purple-50,
+.dashboard-viewport.dashboard-theme-dark .bg-indigo-50 {
+  background-color: rgba(124, 58, 237, 0.15) !important;
+}
+
+.dashboard-viewport.dashboard-theme-dark .border-purple-200,
+.dashboard-viewport.dashboard-theme-dark .border-purple-300,
+.dashboard-viewport.dashboard-theme-dark .border-indigo-200 {
+  border-color: rgba(147, 51, 234, 0.4) !important;
+}
+
+.dashboard-viewport.dashboard-theme-dark .text-purple-700,
+.dashboard-viewport.dashboard-theme-dark .text-purple-800,
+.dashboard-viewport.dashboard-theme-dark .text-purple-900,
+.dashboard-viewport.dashboard-theme-dark .text-indigo-700 {
+  color: #D8B4FE !important;
+}
+
+/* --- Form Controls: Inputs, Textareas, Selects --- */
+.dashboard-viewport.dashboard-theme-dark input:not([type="checkbox"]):not([type="radio"]),
+.dashboard-viewport.dashboard-theme-dark textarea,
+.dashboard-viewport.dashboard-theme-dark select {
+  background-color: #0A111E !important;
+  border-color: #1E2D44 !important;
+  color: #F1F5FA !important;
+}
+
+.dashboard-viewport.dashboard-theme-dark input:focus,
+.dashboard-viewport.dashboard-theme-dark textarea:focus,
+.dashboard-viewport.dashboard-theme-dark select:focus {
+  border-color: #10B981 !important;
+  background-color: #0E1626 !important;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2) !important;
+}
+
+.dashboard-viewport.dashboard-theme-dark input::placeholder,
+.dashboard-viewport.dashboard-theme-dark textarea::placeholder {
+  color: #64748B !important;
+}
+
+/* --- Tables & Data Grids --- */
+.dashboard-viewport.dashboard-theme-dark table th {
+  background-color: #0F1728 !important;
+  color: #94A3B8 !important;
+  border-color: #1E2D44 !important;
+}
+
+.dashboard-viewport.dashboard-theme-dark table td {
+  border-color: #162338 !important;
+  color: #E2E8F0 !important;
+}
+
+.dashboard-viewport.dashboard-theme-dark table tbody tr:hover {
+  background-color: #131F33 !important;
+}
+
+/* --- Modals & Drawers --- */
+.dashboard-viewport.dashboard-theme-dark .fixed.inset-0.bg-slate-900\/40,
+.dashboard-viewport.dashboard-theme-dark .bg-slate-900\/40 {
+  background-color: rgba(2, 6, 14, 0.82) !important;
+}
+
+/* --- Draggable Sidebar Resizer Handle --- */
+.dashboard-viewport.dashboard-theme-dark .bg-\[\#E5E7EB\] {
+  background-color: #1E2D44 !important;
+}
+
+/* --- Scrollbars --- */
+.dashboard-viewport.dashboard-theme-dark .sidebar-scroll-container::-webkit-scrollbar-thumb,
+.dashboard-viewport.dashboard-theme-dark .chat-scroll-container::-webkit-scrollbar-thumb,
+.dashboard-viewport.dashboard-theme-dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(100, 116, 139, 0.4) !important;
+}
+
+.dashboard-viewport.dashboard-theme-dark .sidebar-scroll-container::-webkit-scrollbar-thumb:hover,
+.dashboard-viewport.dashboard-theme-dark .chat-scroll-container::-webkit-scrollbar-thumb:hover,
+.dashboard-viewport.dashboard-theme-dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(148, 163, 184, 0.6) !important;
+}

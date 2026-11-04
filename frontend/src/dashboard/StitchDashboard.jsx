@@ -10,6 +10,9 @@ import MedicationsView from './components/MedicationsView';
 import SettingsView from './components/SettingsView';
 import OverrideModal from './components/OverrideModal';
 import { INITIAL_ALERTS_DATA, createSimulatedAlert } from './data/alertsData';
+import Header from './components/Header';
+import { useTheme } from '../context/ThemeContext';
+import './dashboard-theme.css';
 
 const STORAGE_SIDEBAR_WIDTH_KEY = 'aegis_sidebar_width';
 const MIN_SIDEBAR_WIDTH = 220;
@@ -17,6 +20,7 @@ const MAX_SIDEBAR_WIDTH = 480;
 const DEFAULT_SIDEBAR_WIDTH = 260;
 
 export default function StitchDashboard({ onExitToLanding }) {
+  const { isDark } = useTheme();
   // Alert dataset state - default to first alert (PT-9042)
   const [alerts, setAlerts] = useState(INITIAL_ALERTS_DATA);
   const [selectedAlertId, setSelectedAlertId] = useState(() => INITIAL_ALERTS_DATA[0]?.id || null);
@@ -290,12 +294,27 @@ export default function StitchDashboard({ onExitToLanding }) {
   };
 
   return (
-    <div className="dashboard-viewport h-screen h-[100dvh] w-screen overflow-hidden flex bg-[#F9FAFB] text-[#111827] font-sans antialiased select-none">
+    <div className={`dashboard-viewport h-screen h-[100dvh] w-screen overflow-hidden flex flex-col font-sans antialiased select-none ${
+      isDark ? 'dashboard-theme-dark dark bg-[#080E18] text-[#F1F5FA]' : 'dashboard-theme-light light bg-[#F9FAFB] text-[#111827]'
+    }`}>
 
       {/* =========================================================================
-          PART A: LEFT SIDEBAR (ChatGPT Style Collapsible & Resizable Sidebar)
+          GLOBAL TOP NAVIGATION BAR (Persistent across all 8 dashboard views)
           ========================================================================= */}
-      <Sidebar
+      <Header
+        activeView={activeView}
+        onSelectView={setActiveView}
+        selectedAlert={selectedAlert}
+        alerts={alerts}
+        onSelectAlert={handleSelectAlert}
+        onExitToLanding={onExitToLanding}
+        isSidebarCollapsed={isSidebarCollapsed}
+        onToggleSidebar={() => setIsSidebarCollapsed(prev => !prev)}
+      />
+
+      {/* Primary Workspace Row: Sidebar + Drag Divider + Main Views */}
+      <div className="flex-1 min-h-0 flex overflow-hidden w-full relative">
+        <Sidebar
         activeView={activeView}
         onSelectView={setActiveView}
         alerts={alerts}
@@ -432,6 +451,7 @@ export default function StitchDashboard({ onExitToLanding }) {
           <SettingsView />
         )}
       </main>
+      </div>
 
       {/* Clinical Override / Disagreement Modal */}
       <OverrideModal
