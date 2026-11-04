@@ -5,20 +5,20 @@
 
 /* --- CSS Variables for Dashboard Theming --- */
 .dashboard-viewport.dashboard-theme-light {
-  --dash-bg-canvas: #F9FAFB;
+  --dash-bg-canvas: #F8FAFD;
   --dash-bg-surface: #FFFFFF;
   --dash-bg-card: #FFFFFF;
-  --dash-bg-subtle: #F3F4F6;
-  --dash-bg-muted: #E5E7EB;
-  --dash-border: #E5E7EB;
-  --dash-border-subtle: #F3F4F6;
-  --dash-border-strong: #D1D5DB;
-  --dash-text-primary: #111827;
-  --dash-text-secondary: #4B5563;
-  --dash-text-muted: #9CA3AF;
+  --dash-bg-subtle: #F0F4FA;
+  --dash-bg-muted: #E2ECF7;
+  --dash-border: #D5E2F0;
+  --dash-border-subtle: #E2ECF7;
+  --dash-border-strong: #BDD1E6;
+  --dash-text-primary: #0F172A;
+  --dash-text-secondary: #475569;
+  --dash-text-muted: #64748B;
   --dash-accent: #10B981;
   --dash-header-bg: #FFFFFF;
-  --dash-sidebar-bg: #F9FAFB;
+  --dash-sidebar-bg: #F8FAFD;
   color-scheme: light;
 }
 
@@ -33,7 +33,7 @@
   --dash-border-strong: #273A58;
   --dash-text-primary: #F1F5FA;
   --dash-text-secondary: #CBD5E1;
-  --dash-text-muted: #8899B0;
+  --dash-text-muted: #768CA8;
   --dash-accent: #10B981;
   --dash-header-bg: #0D1524;
   --dash-sidebar-bg: #0A111E;
@@ -43,6 +43,11 @@
 /* --- Base Container Scoping --- */
 .dashboard-viewport {
   transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* Ensure buttons in dashboard never default to grey browser buttonface */
+.dashboard-viewport button {
+  background-color: transparent;
 }
 
 .dashboard-viewport.dashboard-theme-dark {
@@ -80,13 +85,17 @@
   background-color: #0D1524 !important;
 }
 
-.dashboard-viewport.dashboard-theme-dark .bg-\[\#F9FAFB\] {
+.dashboard-viewport.dashboard-theme-dark .bg-\[\#F9FAFB\],
+.dashboard-viewport.dashboard-theme-dark .bg-\[\#F8FAFD\] {
   background-color: #080E18 !important;
 }
 
 .dashboard-viewport.dashboard-theme-dark .bg-slate-50,
+.dashboard-viewport.dashboard-theme-dark .bg-slate-50\/40,
 .dashboard-viewport.dashboard-theme-dark .bg-slate-50\/50,
-.dashboard-viewport.dashboard-theme-dark .bg-slate-50\/40 {
+.dashboard-viewport.dashboard-theme-dark .bg-slate-50\/60,
+.dashboard-viewport.dashboard-theme-dark .bg-slate-50\/70,
+.dashboard-viewport.dashboard-theme-dark .bg-slate-50\/80 {
   background-color: #0F1728 !important;
 }
 
@@ -94,7 +103,10 @@
   background-color: #131F33 !important;
 }
 
-.dashboard-viewport.dashboard-theme-dark .bg-slate-200 {
+.dashboard-viewport.dashboard-theme-dark .bg-slate-200,
+.dashboard-viewport.dashboard-theme-dark .bg-slate-200\/50,
+.dashboard-viewport.dashboard-theme-dark .bg-slate-200\/60,
+.dashboard-viewport.dashboard-theme-dark .bg-slate-200\/80 {
   background-color: #1A2840 !important;
 }
 
@@ -109,10 +121,12 @@
 .dashboard-viewport.dashboard-theme-dark .border-slate-100,
 .dashboard-viewport.dashboard-theme-dark .border-slate-200,
 .dashboard-viewport.dashboard-theme-dark .border-slate-300,
+.dashboard-viewport.dashboard-theme-dark .border-slate-400,
 .dashboard-viewport.dashboard-theme-dark .border-\[\#E5E7EB\],
 .dashboard-viewport.dashboard-theme-dark .border-t-\[\#E5E7EB\],
 .dashboard-viewport.dashboard-theme-dark .border-b-\[\#E5E7EB\],
-.dashboard-viewport.dashboard-theme-dark .border-r-\[\#E5E7EB\] {
+.dashboard-viewport.dashboard-theme-dark .border-r-\[\#E5E7EB\],
+.dashboard-viewport.dashboard-theme-dark .border-l-\[\#E5E7EB\] {
   border-color: #1E2D44 !important;
 }
 
@@ -133,7 +147,7 @@
 }
 
 .dashboard-viewport.dashboard-theme-dark .text-slate-400 {
-  color: #64748B !important;
+  color: #768CA8 !important;
 }
 
 /* Ring & Shadow resets */
@@ -176,6 +190,8 @@
 .dashboard-viewport.dashboard-theme-dark .bg-rose-50,
 .dashboard-viewport.dashboard-theme-dark .bg-rose-50\/30,
 .dashboard-viewport.dashboard-theme-dark .bg-rose-50\/60,
+.dashboard-viewport.dashboard-theme-dark .bg-rose-50\/70,
+.dashboard-viewport.dashboard-theme-dark .bg-rose-50\/80,
 .dashboard-viewport.dashboard-theme-dark .bg-red-50 {
   background-color: rgba(225, 29, 72, 0.16) !important;
 }
@@ -197,6 +213,9 @@
 
 /* Warning (Amber / Yellow) */
 .dashboard-viewport.dashboard-theme-dark .bg-amber-50,
+.dashboard-viewport.dashboard-theme-dark .bg-amber-50\/60,
+.dashboard-viewport.dashboard-theme-dark .bg-amber-50\/70,
+.dashboard-viewport.dashboard-theme-dark .bg-amber-50\/80,
 .dashboard-viewport.dashboard-theme-dark .bg-yellow-50 {
   background-color: rgba(217, 119, 6, 0.16) !important;
 }
@@ -218,6 +237,8 @@
 /* Success / Normal (Emerald / Teal) */
 .dashboard-viewport.dashboard-theme-dark .bg-emerald-50,
 .dashboard-viewport.dashboard-theme-dark .bg-emerald-50\/40,
+.dashboard-viewport.dashboard-theme-dark .bg-emerald-50\/60,
+.dashboard-viewport.dashboard-theme-dark .bg-emerald-50\/70,
 .dashboard-viewport.dashboard-theme-dark .bg-emerald-100,
 .dashboard-viewport.dashboard-theme-dark .bg-teal-50 {
   background-color: rgba(16, 185, 129, 0.14) !important;
@@ -293,7 +314,7 @@
 
 .dashboard-viewport.dashboard-theme-dark input::placeholder,
 .dashboard-viewport.dashboard-theme-dark textarea::placeholder {
-  color: #64748B !important;
+  color: #768CA8 !important;
 }
 
 /* --- Tables & Data Grids --- */
@@ -314,8 +335,10 @@
 
 /* --- Modals & Drawers --- */
 .dashboard-viewport.dashboard-theme-dark .fixed.inset-0.bg-slate-900\/40,
-.dashboard-viewport.dashboard-theme-dark .bg-slate-900\/40 {
-  background-color: rgba(2, 6, 14, 0.82) !important;
+.dashboard-viewport.dashboard-theme-dark .fixed.inset-0.bg-slate-900\/50,
+.dashboard-viewport.dashboard-theme-dark .bg-slate-900\/40,
+.dashboard-viewport.dashboard-theme-dark .bg-slate-900\/50 {
+  background-color: rgba(2, 6, 14, 0.85) !important;
 }
 
 /* --- Draggable Sidebar Resizer Handle --- */

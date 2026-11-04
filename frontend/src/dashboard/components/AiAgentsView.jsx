@@ -11,7 +11,7 @@ import {
   MessageSquare
 } from 'lucide-react';
 
-export default function AiAgentsView({ alert, onOpenConsultation }) {
+export default function AiAgentsView({ alert = {}, onOpenConsultation }) {
   const [expandedAgent, setExpandedAgent] = useState('vitals');
 
   const agents = [
@@ -31,11 +31,11 @@ export default function AiAgentsView({ alert, onOpenConsultation }) {
       weight: '40%',
       summary: 'Detected sustained tachycardia (+34 bpm over 3h) with dropping MAP (65 mmHg) driving Shock Index to 1.34.',
       details: [
-        { label: 'Observed Heart Rate', value: alert.vitals?.hr || '118 bpm', status: 'critical' },
-        { label: 'Mean Arterial Pressure', value: alert.vitals?.map || 'MAP 65 mmHg', status: 'warning' },
-        { label: 'Respiratory Rate', value: alert.vitals?.rr || '26 /min', status: 'warning' },
-        { label: 'Temperature Spike', value: alert.vitals?.temp || '38.9 °C', status: 'critical' },
-        { label: 'Calculated Shock Index', value: alert.vitals?.shockIndex || '1.34 (Elevated > 1.0)', status: 'critical' }
+        { label: 'Observed Heart Rate', value: alert?.vitals?.hr || '118 bpm', status: 'critical' },
+        { label: 'Mean Arterial Pressure', value: alert?.vitals?.map || 'MAP 65 mmHg', status: 'warning' },
+        { label: 'Respiratory Rate', value: alert?.vitals?.rr || '26 /min', status: 'warning' },
+        { label: 'Temperature Spike', value: alert?.vitals?.temp || '38.9 °C', status: 'critical' },
+        { label: 'Calculated Shock Index', value: alert?.vitals?.shockIndex || '1.34 (Elevated > 1.0)', status: 'critical' }
       ],
       findings: [
         'Rapid first-derivative acceleration in heart rate rules out benign diurnal variation.',
@@ -59,10 +59,10 @@ export default function AiAgentsView({ alert, onOpenConsultation }) {
       weight: '35%',
       summary: 'Serial venous lactate elevation (3.8 mmol/L) accompanied by leukocytosis (16.4k) and acute kidney injury.',
       details: [
-        { label: 'Serum Lactate', value: alert.labs?.lactate || '3.8 mmol/L', status: 'critical' },
-        { label: 'Leukocytes (WBC)', value: alert.labs?.wbc || '16.4 × 10⁹/L', status: 'warning' },
-        { label: 'Serum Creatinine', value: alert.labs?.creatinine || '1.8 mg/dL', status: 'warning' },
-        { label: 'Platelet Count', value: alert.labs?.platelets || '138 × 10⁹/L', status: 'normal' }
+        { label: 'Serum Lactate', value: alert?.labs?.lactate || '3.8 mmol/L', status: 'critical' },
+        { label: 'Leukocytes (WBC)', value: alert?.labs?.wbc || '16.4 × 10⁹/L', status: 'warning' },
+        { label: 'Serum Creatinine', value: alert?.labs?.creatinine || '1.8 mg/dL', status: 'warning' },
+        { label: 'Platelet Count', value: alert?.labs?.platelets || '138 × 10⁹/L', status: 'normal' }
       ],
       findings: [
         'Lactate clearance failure (+0.42 mmol/L/hr accumulation) confirms ongoing anaerobic cellular metabolism.',
@@ -139,10 +139,10 @@ export default function AiAgentsView({ alert, onOpenConsultation }) {
               <div className="flex items-center gap-2 mt-0.5 text-xs font-medium text-slate-500">
                 <span>Real-time autonomous clinical agents analyzing</span>
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-slate-100 border-[1.5px] border-slate-200 font-mono font-bold text-slate-800">
-                  {alert.patientId}
+                  {alert?.patientId || "PT-1004"}
                 </span>
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-50 border-[1.5px] border-emerald-200 font-mono font-bold text-emerald-800">
-                  {alert.bed}
+                  {alert?.bed || "ICU-BED-04"}
                 </span>
               </div>
             </div>

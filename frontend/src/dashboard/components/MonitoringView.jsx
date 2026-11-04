@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import {
   Activity,
@@ -7,14 +7,41 @@ import {
   Wind,
   Thermometer,
   Zap,
-  Radio
+  Radio,
+  Clock,
+  TrendingUp,
+  RefreshCw
 } from 'lucide-react';
+import { clinicalApi } from '../../services/api';
 
-export default function MonitoringView({ alert }) {
+export default function MonitoringView({ alert = {}, patientHistory = null }) {
   const { isDark } = useTheme();
   const canvasRef = useRef(null);
+  const [history, setHistory] = useState(patientHistory);
+  const [loading, setLoading] = useState(false);
 
-  // High-fidelity Multi-lead Waveform Canvas
+  // Fetch real patient longitudinal history if not passed
+  useEffect(() => {
+    if (!alert?.patientId) return;
+    let isMounted = true;
+    async function loadHistory() {
+      setLoading(true);
+      try {
+        const res = await clinicalApi.fetchPatientHistory(alert.patientId);
+        if (res.data && isMounted) {
+          setHistory(res.data);
+        }
+      } catch (e) {
+        console.warn('Failed to load patient history:', e);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
+    loadHistory();
+    return () => { isMounted = false; };
+  }, [alert?.patientId]);
+
+  // Real-Time Waveform Canvas
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -37,7 +64,7 @@ export default function MonitoringView({ alert }) {
       const h = canvas.height;
       const mid = h / 2;
 
-      // Soft Daylight Grid (#E5E7EB)
+      // Soft Grid
       ctx.strokeStyle = isDark ? '#1E2D44' : '#E2E8F0';
       ctx.lineWidth = 1;
       for (let x = 0; x < w; x += 24) {
@@ -83,13 +110,25 @@ export default function MonitoringView({ alert }) {
     };
   }, [isDark]);
 
+  const latestTimelinePoint = history?.timeline && history.timeline.length > 0
+    ? history.timeline[history.timeline.length - 1]
+    : null;
+
+  const hrVal = latestTimelinePoint?.heartRate ? `${Math.round(latestTimelinePoint.heartRate)} bpm` : (alert?.vitals?.hr || '118 bpm');
+  const bpVal = latestTimelinePoint?.systolicBp ? `${Math.round(latestTimelinePoint.systolicBp)}/${Math.round(latestTimelinePoint.diastolicBp || 70)} mmHg` : (alert?.vitals?.bp || '88/54 mmHg');
+  const mapVal = latestTimelinePoint?.meanArterialPressure ? `MAP ${Math.round(latestTimelinePoint.meanArterialPressure)} mmHg` : (alert?.vitals?.map || 'MAP 65 mmHg');
+  const rrVal = latestTimelinePoint?.respiratoryRate ? `${Math.round(latestTimelinePoint.respiratoryRate)} /min` : (alert?.vitals?.rr || '26 /min');
+  const tempVal = latestTimelinePoint?.temperature ? `${latestTimelinePoint.temperature.toFixed(1)} °C` : (alert?.vitals?.temp || '38.9 °C');
+  const spo2Val = latestTimelinePoint?.o2Saturation ? `${Math.round(latestTimelinePoint.o2Saturation)}%` : (alert?.vitals?.spo2 || '92%');
+  const shockIndexVal = latestTimelinePoint?.shockIndex ? `${latestTimelinePoint.shockIndex.toFixed(2)}` : (alert?.vitals?.shockIndex || '1.34');
+
   const vitalsGrid = [
-    { label: 'Heart Rate', value: alert.vitals?.hr || '118 bpm', status: 'critical', desc: 'Sinus Tachycardia (+11 bpm/h)', icon: Heart },
-    { label: 'Blood Pressure / MAP', value: `${alert.vitals?.bp || '88/54'} (${alert.vitals?.map || 'MAP 65'})`, status: 'warning', desc: 'Hypotensive target window', icon: Gauge },
-    { label: 'Respiratory Rate', value: alert.vitals?.rr || '26 /min', status: 'warning', desc: 'Tachypnea / accessory muscle use', icon: Wind },
-    { label: 'Core Temperature', value: alert.vitals?.temp || '38.9 °C', status: 'critical', desc: 'Acute febrile spike', icon: Thermometer },
-    { label: 'Pulse Oximetry', value: alert.vitals?.spo2 || '92% on 4L NC', status: 'warning', desc: 'Hypoxemic target window', icon: Activity },
-    { label: 'Shock Index (HR/SBP)', value: alert.vitals?.shockIndex || '1.34', status: 'critical', desc: 'Severe systemic hypoperfusion', icon: Zap }
+    { label: 'Heart Rate', value: hrVal, status: parseFloat(hrVal) > 100 ? 'critical' : 'normal', desc: 'Bedside telemetry sensor', icon: Heart },
+    { label: 'Blood Pressure / MAP', value: `${bpVal} (${mapVal})`, status: (latestTimelinePoint?.meanArterialPressure && latestTimelinePoint.meanArterialPressure < 65) ? 'critical' : 'normal', desc: 'Arterial line / NIBP monitor', icon: Gauge },
+    { label: 'Respiratory Rate', value: rrVal, status: parseFloat(rrVal) > 22 ? 'warning' : 'normal', desc: 'Ventilator / Impedance pneumography', icon: Wind },
+    { label: 'Core Temperature', value: tempVal, status: parseFloat(tempVal) >= 38.3 ? 'critical' : 'normal', desc: 'Core body thermistor', icon: Thermometer },
+    { label: 'Pulse Oximetry', value: spo2Val, status: parseFloat(spo2Val) < 94 ? 'warning' : 'normal', desc: 'Plethysmograph O2 sensor', icon: Activity },
+    { label: 'Shock Index (HR/SBP)', value: shockIndexVal, status: parseFloat(shockIndexVal) >= 1.0 ? 'critical' : 'normal', desc: 'Hemodynamic decoupling index', icon: Zap }
   ];
 
   return (
@@ -105,13 +144,22 @@ export default function MonitoringView({ alert }) {
             <div>
               <h1 className="text-xl font-bold text-slate-900 tracking-tight">Patient Monitoring &amp; Telemetry</h1>
               <div className="flex items-center gap-2 mt-0.5 text-xs font-medium text-slate-500">
-                <span>Continuous bedside physiological streams for</span>
+                <span>Real longitudinal telemetry progression for</span>
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-slate-100 border-[1.5px] border-slate-200 font-mono font-bold text-slate-800">
-                  {alert.patientId}
+                  {alert?.patientId || "PT-1004"}
                 </span>
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-50 border-[1.5px] border-emerald-200 font-mono font-bold text-emerald-800">
-                  {alert.bed}
+                  {alert?.bed || "ICU-BED-04"}
                 </span>
+                {history?.latestTriageColor && (
+                  <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
+                    history.latestTriageColor === 'RED' ? 'bg-rose-50 text-rose-700 border-rose-300' :
+                    history.latestTriageColor === 'YELLOW' ? 'bg-amber-50 text-amber-800 border-amber-300' :
+                    'bg-emerald-50 text-emerald-800 border-emerald-300'
+                  }`}>
+                    {history.latestUrgencyLevel} ({Math.round(history.latestCompositeRisk * 100)}% Risk)
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -123,9 +171,7 @@ export default function MonitoringView({ alert }) {
         </div>
 
         {/* Live Telemetry Waveform Display Card */}
-        <div
-          className="bg-white rounded-3xl border-[1.5px] border-slate-200 p-5 space-y-3.5 shadow-xs"
-        >
+        <div className="bg-white rounded-3xl border-[1.5px] border-slate-200 p-5 space-y-3.5 shadow-xs">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Radio className="w-4 h-4 text-emerald-600 animate-pulse" />
@@ -136,11 +182,11 @@ export default function MonitoringView({ alert }) {
             </span>
           </div>
 
-          <div className="h-48 w-full rounded-2xl bg-slate-50 border-[1.5px] border-slate-200 relative overflow-hidden">
+          <div className="h-44 w-full rounded-2xl bg-slate-50 border-[1.5px] border-slate-200 relative overflow-hidden">
             <canvas ref={canvasRef} className="w-full h-full block" />
             <div className="absolute top-3 left-3 text-[11px] font-mono text-emerald-800 font-bold bg-white/95 px-3 py-1 rounded-full border-[1.5px] border-emerald-300 shadow-2xs flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>ART_PULSE • HR 118</span>
+              <span>ART_PULSE • HR {hrVal}</span>
             </div>
           </div>
         </div>
@@ -152,7 +198,7 @@ export default function MonitoringView({ alert }) {
             return (
               <div
                 key={idx}
-                className="bg-white rounded-3xl border-[1.5px] border-slate-200 hover:border-slate-300 p-5 space-y-2.5 shadow-xs hover:shadow-sm transition-all duration-200"
+                className="bg-white rounded-3xl border-[1.5px] border-slate-200 p-5 space-y-2.5 shadow-xs"
               >
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-slate-600 flex items-center gap-2">
@@ -173,6 +219,70 @@ export default function MonitoringView({ alert }) {
             );
           })}
         </div>
+
+        {/* Longitudinal History Trajectory Table (From real backend evaluations) */}
+        {history?.timeline && history.timeline.length > 0 && (
+          <div className="bg-white rounded-3xl border-[1.5px] border-slate-200 p-5 space-y-3.5 shadow-xs">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-emerald-600" />
+                <span className="text-sm font-bold text-slate-900">
+                  Longitudinal Telemetry Progression (Hours 0 to {history.timeline.length - 1})
+                </span>
+              </div>
+              <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                {history.timeline.length} Hourly Samples Persisted
+              </span>
+            </div>
+
+            <div className="overflow-x-auto rounded-2xl border-[1.5px] border-slate-200">
+              <table className="w-full text-left font-mono text-xs">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold">
+                    <th className="py-2.5 px-3">Hour</th>
+                    <th className="py-2.5 px-3">HR (bpm)</th>
+                    <th className="py-2.5 px-3">BP (mmHg)</th>
+                    <th className="py-2.5 px-3">MAP</th>
+                    <th className="py-2.5 px-3">RR</th>
+                    <th className="py-2.5 px-3">Temp</th>
+                    <th className="py-2.5 px-3">SpO2</th>
+                    <th className="py-2.5 px-3">Lactate</th>
+                    <th className="py-2.5 px-3">Shock Index</th>
+                    <th className="py-2.5 px-3 text-right">Risk Score</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-slate-700">
+                  {history.timeline.map((pt) => {
+                    const isPtCrit = pt.compositeSepsisRisk >= 0.70;
+                    const isPtMod = pt.compositeSepsisRisk >= 0.35 && pt.compositeSepsisRisk < 0.70;
+                    return (
+                      <tr key={pt.hourIndex} className={isPtCrit ? 'bg-rose-50/40' : isPtMod ? 'bg-amber-50/20' : ''}>
+                        <td className="py-2.5 px-3 font-bold text-slate-900">T+{pt.hourIndex}h</td>
+                        <td className="py-2.5 px-3 font-semibold">{pt.heartRate ? Math.round(pt.heartRate) : '—'}</td>
+                        <td className="py-2.5 px-3">{pt.systolicBp ? `${Math.round(pt.systolicBp)}/${Math.round(pt.diastolicBp || 70)}` : '—'}</td>
+                        <td className="py-2.5 px-3">{pt.meanArterialPressure ? Math.round(pt.meanArterialPressure) : '—'}</td>
+                        <td className="py-2.5 px-3">{pt.respiratoryRate ? Math.round(pt.respiratoryRate) : '—'}</td>
+                        <td className="py-2.5 px-3">{pt.temperature ? pt.temperature.toFixed(1) : '—'}</td>
+                        <td className="py-2.5 px-3">{pt.o2Saturation ? `${Math.round(pt.o2Saturation)}%` : '—'}</td>
+                        <td className="py-2.5 px-3">{pt.lactate != null ? `${pt.lactate.toFixed(1)} mM` : '—'}</td>
+                        <td className="py-2.5 px-3 font-bold">{pt.shockIndex ? pt.shockIndex.toFixed(2) : '—'}</td>
+                        <td className="py-2.5 px-3 text-right">
+                          <span className={`inline-block px-2 py-0.5 rounded-full font-bold text-[10px] border ${
+                            isPtCrit ? 'bg-rose-50 text-rose-700 border-rose-300' :
+                            isPtMod ? 'bg-amber-50 text-amber-800 border-amber-300' :
+                            'bg-emerald-50 text-emerald-800 border-emerald-300'
+                          }`}>
+                            {Math.round(pt.compositeSepsisRisk * 100)}% ({pt.statusColor})
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
       </div>
     </div>

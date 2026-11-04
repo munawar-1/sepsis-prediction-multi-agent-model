@@ -49,4 +49,6 @@ public class BedRosterItemDto {
     private List<String> activeMedications;
     private int pendingOrdersCount;
     private LocalDateTime lastEvaluatedAt;
+    private Boolean aiEvaluated;
+    private String evaluationSource;
 }

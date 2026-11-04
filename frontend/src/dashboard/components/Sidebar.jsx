@@ -92,7 +92,7 @@ export default function Sidebar({
 
           <button
             onClick={onToggleCollapse}
-            className="p-1.5 rounded-lg border-[1.5px] border-slate-200 bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 hover:border-slate-300 transition-all duration-200 ease-in-out cursor-pointer shadow-2xs"
+            className="p-1.5 rounded-lg border-[1.5px] border-[#D0DFEF] dark:border-[#1E2D44] bg-white dark:bg-[#101C30] text-[#556D8A] dark:text-[#8BA1BD] hover:text-[#0F172A] dark:hover:text-white hover:bg-[#F0F5FA] dark:hover:bg-[#172A47] hover:border-[#B8D1EA] dark:hover:border-[#28446E] transition-all duration-200 ease-in-out cursor-pointer shadow-2xs"
             title={isCollapsed ? "Expand sidebar (Ctrl+B)" : "Collapse sidebar (Ctrl+B)"}
           >
             {isCollapsed ? <PanelLeftOpen className="w-4 h-4 text-emerald-600" /> : <PanelLeftClose className="w-4 h-4" />}
@@ -102,17 +102,17 @@ export default function Sidebar({
         {/* New Consultation Action Button (Cylindrical / Pill-shaped) */}
         <button
           onClick={onNewConsultation}
-          className={`group flex items-center gap-2 rounded-full text-xs font-semibold transition-all duration-200 ease-in-out cursor-pointer bg-white border-[1.5px] border-slate-300 hover:border-emerald-500 hover:bg-emerald-50/40 shadow-2xs active:scale-95 ${
+          className={`group flex items-center gap-2 rounded-full text-xs font-semibold transition-all duration-200 ease-in-out cursor-pointer bg-white dark:bg-[#0E182A] border-[1.5px] border-[#D0DFEF] dark:border-[#1E3456] hover:border-emerald-500 dark:hover:border-emerald-500/60 hover:bg-emerald-50/40 dark:hover:bg-[#13243C] shadow-2xs active:scale-95 ${
             isCollapsed
               ? 'w-10 h-10 justify-center p-0 text-emerald-600 mx-auto'
-              : 'w-full px-3.5 py-2 text-slate-900'
+              : 'w-full px-3.5 py-2 text-[#0F172A] dark:text-[#F1F5FA]'
           }`}
           title="Start New Patient Consultation"
         >
           <div className="w-5 h-5 rounded-full bg-emerald-50 border-[1.5px] border-emerald-300 flex items-center justify-center text-emerald-700 shrink-0 font-bold text-xs group-hover:scale-105 transition-all duration-200 ease-in-out">
             <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
           </div>
-          {!isCollapsed && <span className="text-slate-900 font-semibold truncate">New Consultation</span>}
+          {!isCollapsed && <span className="text-[#0F172A] dark:text-[#F1F5FA] font-semibold truncate">New Consultation</span>}
         </button>
 
         {/* Primary Navigation List */}
@@ -136,8 +136,8 @@ export default function Sidebar({
                   isCollapsed ? 'w-10 h-10 mx-auto justify-center p-0' : 'px-3 py-2'
                 } ${
                   isActive
-                    ? 'bg-emerald-50 text-emerald-800 font-bold border-[1.5px] border-emerald-300 shadow-2xs'
-                    : 'bg-transparent text-slate-700 hover:bg-slate-100 hover:text-slate-900 border-[1.5px] border-transparent font-semibold'
+                    ? 'bg-emerald-50 dark:bg-[#0E2A2A] text-emerald-800 dark:text-emerald-300 font-bold border-[1.5px] border-emerald-300 dark:border-emerald-500/40 shadow-2xs'
+                    : 'bg-transparent text-[#334155] dark:text-[#94A3B8] hover:bg-[#EBF2FA] dark:hover:bg-[#142036] hover:text-[#0F172A] dark:hover:text-[#F1F5FA] border-[1.5px] border-transparent font-semibold'
                 }`}
                 title={item.label}
               >
@@ -316,7 +316,7 @@ export default function Sidebar({
                 <button
                   onClick={onExitToLanding}
                   title="Homepage"
-                  className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 border border-transparent hover:border-emerald-200 transition-all duration-200 ease-in-out cursor-pointer"
+                  className="w-7 h-7 rounded-full flex items-center justify-center bg-[#EDF3FA] dark:bg-[#101C30] border border-[#D5E3F2] dark:border-[#1C2F4D] text-[#556D8A] dark:text-[#8BA1BD] hover:text-[#0F172A] dark:hover:text-white hover:bg-[#DFEAF5] dark:hover:bg-[#172A47] hover:border-[#B8D1EA] dark:hover:border-[#28446E] transition-all duration-200 ease-in-out cursor-pointer shadow-2xs"
                 >
                   <Home className="w-3.5 h-3.5" />
                 </button>
@@ -327,7 +327,7 @@ export default function Sidebar({
                   if (onExitToLanding) onExitToLanding();
                 }}
                 title="Sign Out"
-                className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-rose-700 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-all duration-200 ease-in-out cursor-pointer"
+                className="w-7 h-7 rounded-full flex items-center justify-center bg-[#EDF3FA] dark:bg-[#101C30] border border-[#D5E3F2] dark:border-[#1C2F4D] text-[#556D8A] dark:text-[#8BA1BD] hover:text-rose-600 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:border-rose-200 dark:hover:border-rose-800/50 transition-all duration-200 ease-in-out cursor-pointer shadow-2xs"
               >
                 <LogOut className="w-3.5 h-3.5" />
               </button>
@@ -343,7 +343,7 @@ export default function Sidebar({
               if (onExitToLanding) onExitToLanding();
             }}
             title="Sign Out"
-            className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-rose-700 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 transition-all duration-200 ease-in-out cursor-pointer shadow-2xs"
+            className="w-8 h-8 rounded-full flex items-center justify-center bg-[#EDF3FA] dark:bg-[#101C30] border border-[#D5E3F2] dark:border-[#1C2F4D] text-[#556D8A] dark:text-[#8BA1BD] hover:text-rose-600 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:border-rose-200 dark:hover:border-rose-800/50 transition-all duration-200 ease-in-out cursor-pointer shadow-2xs"
           >
             <LogOut className="w-4 h-4" />
           </button>

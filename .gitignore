@@ -96,3 +96,9 @@ Thumbs.db
 *.tmp
 logs/
 tmp/
+node_modules/
+dist/
+backend/data/*.mv.db
+backend/data/*.trace.db
+frontend/node_modules/
+frontend/dist/

@@ -34,7 +34,7 @@ public class PatientController {
      * ICU Bed Heatmap Grid Roster:
      * Returns all beds (Beds 01 to 08) with color-coded triage indicators (RED, YELLOW, GREEN, GREY).
      */
-    @GetMapping("/roster")
+    @GetMapping({"/roster", "/bed-roster"})
     @PreAuthorize("hasAnyRole('DOCTOR', 'NURSE')")
     public ResponseEntity<List<BedRosterItemDto>> getIcuBedRoster() {
         List<BedRosterItemDto> roster = patientService.getIcuBedRoster();
@@ -128,6 +128,16 @@ public class PatientController {
      * Nurse Bedside Logging / Frontend Ticker:
      * Logs hourly vitals and labs, runs multi-agent AI evaluation, and auto-generates sepsis orders.
      */
+    @PostMapping("/reset-demo")
+    @PreAuthorize("hasAnyRole('DOCTOR', 'NURSE')")
+    public ResponseEntity<?> resetDemoWard() {
+        patientService.resetWardData();
+        return ResponseEntity.ok(Map.of(
+                "status", "RESET_SUCCESSFUL",
+                "message", "ICU ward simulation reset completed."
+        ));
+    }
+
     @PostMapping("/{patientId}/telemetry")
     @PreAuthorize("hasAnyRole('DOCTOR', 'NURSE')")
     public ResponseEntity<?> logTelemetry(
@@ -158,6 +168,43 @@ public class PatientController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
                     "status", 500,
                     "error", "TELEMETRY_LOGGING_FAILED",
+                    "message", e.getMessage()
+            ));
+        }
+    }
+
+    /**
+     * Standalone Medication, Fluid Bolus, or Point-of-Care Glucose Entry:
+     * Allows clinicians to chart medications/fluids at any time (asynchronous to hourly vitals rounds).
+     * These entries persist on the patient record and are automatically factored into subsequent AI multi-agent evaluations.
+     */
+    @PostMapping("/{patientId}/medications")
+    @PreAuthorize("hasAnyRole('DOCTOR', 'NURSE')")
+    public ResponseEntity<?> logStandaloneMedication(
+            @PathVariable String patientId,
+            @RequestBody StandaloneMedicationRequest request,
+            Authentication authentication
+    ) {
+        try {
+            String clinicianUsername = authentication != null ? authentication.getName() : "nurse.priya";
+            List<String> updatedMeds = patientService.logStandaloneMedication(patientId, request, clinicianUsername);
+            return ResponseEntity.ok(Map.of(
+                    "status", "MEDICATION_LOGGED",
+                    "patientId", patientId,
+                    "activeMedications", updatedMeds,
+                    "message", "Medication/fluid entry successfully recorded and clinical profile updated."
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "status", 400,
+                    "error", "INVALID_MEDICATION_DATA",
+                    "message", e.getMessage()
+            ));
+        } catch (Exception e) {
+            log.error("Failed to log standalone medication for patient {}: {}", patientId, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "status", 500,
+                    "error", "MEDICATION_LOGGING_FAILED",
                     "message", e.getMessage()
             ));
         }

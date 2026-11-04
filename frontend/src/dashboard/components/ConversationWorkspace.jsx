@@ -30,7 +30,7 @@ export default function ConversationWorkspace({
   onOpenOverrideModal,
   onSendMessage
 }) {
-  const { user } = useAuth();
+  const { user, isDoctor, isNurse } = useAuth();
   const [inputText, setInputText] = useState('');
   const [openEvidence, setOpenEvidence] = useState({ '0-0': true });
   const [attachmentNotice, setAttachmentNotice] = useState(null);
@@ -236,15 +236,26 @@ export default function ConversationWorkspace({
             <span className="hidden sm:inline">STAT Labs</span>
           </button>
 
-          {/* Override AI Button */}
-          <button
-            onClick={onOpenOverrideModal}
-            className="bg-white hover:bg-slate-50 text-slate-700 border-[1.5px] border-slate-300 text-xs font-semibold px-4 py-1.5 rounded-full transition-all duration-200 ease-in-out cursor-pointer flex items-center gap-1.5 shadow-2xs active:scale-95"
-            title="Record clinical override or disagreement"
-          >
-            <ShieldAlert className="w-3.5 h-3.5 text-slate-600" />
-            <span className="hidden sm:inline">Override</span>
-          </button>
+          {/* Override AI Button (Doctor authority only) */}
+          {isDoctor ? (
+            <button
+              onClick={onOpenOverrideModal}
+              className="bg-white hover:bg-slate-50 text-slate-700 border-[1.5px] border-slate-300 text-xs font-semibold px-4 py-1.5 rounded-full transition-all duration-200 ease-in-out cursor-pointer flex items-center gap-1.5 shadow-2xs active:scale-95"
+              title="Record clinical override or disagreement (Physician Authority)"
+            >
+              <ShieldAlert className="w-3.5 h-3.5 text-slate-600" />
+              <span className="hidden sm:inline">Override</span>
+            </button>
+          ) : (
+            <button
+              disabled
+              className="bg-slate-100 text-slate-400 border-[1.5px] border-slate-200 text-xs font-semibold px-3 py-1.5 rounded-full cursor-not-allowed flex items-center gap-1.5 opacity-60"
+              title="Clinical AI Override is legally restricted to Attending Physicians (ROLE_DOCTOR)"
+            >
+              <ShieldAlert className="w-3.5 h-3.5 text-slate-400" />
+              <span className="hidden sm:inline">Override (MD Only)</span>
+            </button>
+          )}
 
         </div>
       </header>
@@ -732,7 +743,7 @@ export default function ConversationWorkspace({
               className={`w-9 h-9 rounded-full transition-all duration-200 ease-in-out cursor-pointer shrink-0 flex items-center justify-center shadow-xs ${
                 inputText.trim()
                   ? 'bg-[#10B981] text-white hover:bg-[#059669] hover:shadow-md hover:scale-105 active:scale-95'
-                  : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                  : 'bg-[#EDF3FA] dark:bg-[#101C30] text-[#768CA8] dark:text-[#5A7394] cursor-not-allowed'
               }`}
               title="Send clinical prompt (Enter)"
             >

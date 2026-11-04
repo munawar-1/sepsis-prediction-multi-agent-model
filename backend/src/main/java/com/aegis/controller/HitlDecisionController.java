@@ -120,6 +120,16 @@ public class HitlDecisionController {
         ));
     }
 
+    @GetMapping("/audit-trail")
+    @PreAuthorize("hasAnyRole('DOCTOR', 'NURSE')")
+    public ResponseEntity<?> getGlobalAuditTrail() {
+        List<HitlAuditLog> history = auditLogRepository.findAllByOrderByRecordedAtDesc();
+        return ResponseEntity.ok(Map.of(
+                "totalRecords", history.size(),
+                "auditTrail", history
+        ));
+    }
+
     private String computeSha256(String input) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");

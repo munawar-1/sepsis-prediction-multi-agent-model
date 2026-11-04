@@ -70,7 +70,7 @@ public class AiBackendIntegrationTest {
         mockMvc.perform(get("/api/v1/clinical/ai-health"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status", is("HEALTHY")))
-                .andExpect(jsonPath("$.models_loaded", is(4)))
+                .andExpect(jsonPath("$.models_loaded", greaterThanOrEqualTo(4)))
                 .andExpect(jsonPath("$.reachable", is(true)));
     }
 

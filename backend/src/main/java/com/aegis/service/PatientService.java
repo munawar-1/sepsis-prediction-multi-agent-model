@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -52,6 +53,8 @@ public class PatientService {
                         .urgencyLevel("UNOCCUPIED")
                         .triageColor("GREY")
                         .summaryHeadline("Bed available for clinical admission")
+                        .aiEvaluated(false)
+                        .evaluationSource("EMPTY_BED")
                         .build());
             } else {
                 // Occupied bed
@@ -108,6 +111,8 @@ public class PatientService {
                         .activeMedications(p.getActiveMedications() != null ? new ArrayList<>(p.getActiveMedications()) : List.of())
                         .pendingOrdersCount(pendingOrders.size())
                         .lastEvaluatedAt(latestEval.map(TriageEvaluation::getEvaluatedAt).orElse(p.getAdmissionTime()))
+                        .aiEvaluated(latestEval.isPresent())
+                        .evaluationSource(latestEval.isPresent() ? "MULTI_AGENT_AI" : "BASELINE_SEED")
                         .build());
             }
         }
@@ -357,7 +362,65 @@ public class PatientService {
 
     @Transactional
     public PatientEvaluationResponse logTelemetryAndEvaluate(String patientId, TelemetryTickRequest request, String clinicianUsername) {
-        Patient patient = getPatientProfile(patientId);
+        Optional<Patient> patientOpt = patientRepository.findByPatientId(patientId);
+        Patient patient;
+        if (patientOpt.isEmpty()) {
+            log.info("Patient ID '{}' not found in database. Auto-admitting to available ICU bed...", patientId);
+            List<Patient> activeInpatients = patientRepository.findAllActiveInpatients();
+            Set<String> occupiedBeds = new HashSet<>();
+            for (Patient actP : activeInpatients) {
+                if (actP.getIcuBedNumber() != null) occupiedBeds.add(actP.getIcuBedNumber());
+            }
+            String assignedBed = ALL_ICU_BEDS.stream()
+                    .filter(b -> !occupiedBeds.contains(b))
+                    .findFirst()
+                    .orElse("ICU-OVERFLOW");
+
+            User doctor = userRepository.findByUsername("dr.sharma")
+                    .or(() -> userRepository.findByUsername("dr.munawar"))
+                    .orElse(null);
+            User nurse = userRepository.findByUsername("nurse.priya")
+                    .orElse(null);
+
+            String firstName = "Patient";
+            String lastName = patientId;
+            if (request.getPatientName() != null && !request.getPatientName().trim().isEmpty()) {
+                String[] parts = request.getPatientName().trim().split("\\s+", 2);
+                firstName = parts[0];
+                lastName = parts.length > 1 ? parts[1] : "";
+            }
+            int ageVal = (request.getAge() != null && request.getAge() > 0) ? request.getAge() : 55;
+            Gender genderVal = Gender.OTHER;
+            if (request.getGender() != null) {
+                String g = request.getGender().trim().toUpperCase();
+                if (g.startsWith("M")) genderVal = Gender.MALE;
+                else if (g.startsWith("F")) genderVal = Gender.FEMALE;
+            }
+            String diagVal = (request.getDiagnosis() != null && !request.getDiagnosis().trim().isEmpty())
+                    ? request.getDiagnosis().trim()
+                    : "Continuous ICU Surveillance";
+
+            patient = Patient.builder()
+                    .patientId(patientId)
+                    .mrn("MRN-" + patientId)
+                    .firstName(firstName)
+                    .lastName(lastName)
+                    .age(ageVal)
+                    .gender(genderVal)
+                    .icuBedNumber(assignedBed)
+                    .primaryDiagnosis(diagVal)
+                    .activeMedications(new ArrayList<>())
+                    .attendingDoctor(doctor)
+                    .primaryNurse(nurse)
+                    .status(PatientStatus.ADMITTED)
+                    .admissionTime(LocalDateTime.now())
+                    .clinicalNotes("Auto-admitted via telemetry feed to " + assignedBed + " at " + LocalDateTime.now())
+                    .build();
+            patient = patientRepository.save(patient);
+            log.info("Successfully auto-admitted unknown patient '{}' into bed '{}'", patientId, assignedBed);
+        } else {
+            patient = patientOpt.get();
+        }
 
         if (patient.getStatus() == PatientStatus.DISCHARGED) {
             throw new IllegalStateException("Clinical Safety Violation: Cannot ingest telemetry for discharged patient: " + patientId);
@@ -365,6 +428,37 @@ public class PatientService {
 
         // URL patientId is the single source of truth
         request.setPatientId(patientId);
+
+        // Merge incoming medications into patient activeMedications & forward all to AI engine
+        List<String> patientMeds = patient.getActiveMedications();
+        if (patientMeds == null) {
+            patientMeds = new ArrayList<>();
+        }
+        List<String> incomingMeds = request.getActiveMedications();
+        boolean updatedMeds = false;
+        if (incomingMeds != null && !incomingMeds.isEmpty()) {
+            for (String med : incomingMeds) {
+                if (med != null && !med.trim().isEmpty() && !med.equalsIgnoreCase("None")) {
+                    String trimmed = med.trim();
+                    boolean exists = false;
+                    for (String em : patientMeds) {
+                        if (em.equalsIgnoreCase(trimmed)) {
+                            exists = true;
+                            break;
+                        }
+                    }
+                    if (!exists) {
+                        patientMeds.add(trimmed);
+                        updatedMeds = true;
+                    }
+                }
+            }
+        }
+        request.setActiveMedications(new ArrayList<>(patientMeds));
+        if (updatedMeds) {
+            patient.setActiveMedications(patientMeds);
+            patient = patientRepository.save(patient);
+        }
 
         // 1. Calculate MAP & Shock Index if missing, normalize onto request
         double sbp = request.getSystolicBp();
@@ -375,7 +469,23 @@ public class PatientService {
         request.setMap(map); // Normalization so AI engine receives consistent MAP!
         double shockIdx = (sbp > 0 && request.getHeartRate() > 0) ? (request.getHeartRate() / sbp) : 0.8;
 
-        // 2. Persist hourly telemetry into MySQL
+        // Forward-fill previous lab values if omitted or zero in current hourly tick
+        Double lactate = request.getLactate();
+        Double wbc = request.getWhiteBloodCellCount();
+        Double creat = request.getCreatinine();
+        Double plat = request.getPlatelets();
+        if (lactate == null || lactate <= 0.0 || wbc == null || wbc <= 0.0 || creat == null || creat <= 0.0 || plat == null || plat <= 0.0) {
+            java.util.Optional<PatientTelemetry> prevTelem = telemetryRepository.findTopByPatientPatientIdOrderByHourIndexDesc(patientId);
+            if (prevTelem.isPresent()) {
+                PatientTelemetry prev = prevTelem.get();
+                if ((lactate == null || lactate <= 0.0) && prev.getLactate() != null) { lactate = prev.getLactate(); request.setLactate(lactate); }
+                if ((wbc == null || wbc <= 0.0) && prev.getWhiteBloodCellCount() != null) { wbc = prev.getWhiteBloodCellCount(); request.setWbc(wbc); }
+                if ((creat == null || creat <= 0.0) && prev.getCreatinine() != null) { creat = prev.getCreatinine(); request.setCreatinine(creat); }
+                if ((plat == null || plat <= 0.0) && prev.getPlatelets() != null) { plat = prev.getPlatelets(); request.setPlatelets(plat); }
+            }
+        }
+
+        // 2. Persist hourly telemetry into database
         PatientTelemetry telemetry = PatientTelemetry.builder()
                 .patient(patient)
                 .hourIndex(request.getHourIndex())
@@ -551,5 +661,61 @@ public class PatientService {
         } catch (Exception e) {
             return "{}";
         }
+    }
+
+    @Transactional
+    public List<String> logStandaloneMedication(String patientId, StandaloneMedicationRequest request, String clinicianUsername) {
+        Optional<Patient> patientOpt = patientRepository.findByPatientId(patientId);
+        Patient patient;
+        if (patientOpt.isEmpty()) {
+            // Auto-admit patient first
+            logTelemetryAndEvaluate(patientId, TelemetryTickRequest.builder().hourIndex(0).hr(80.0).sbp(120.0).dbp(80.0).resp(16.0).temp(37.0).o2Sat(98.0).build(), clinicianUsername);
+            patient = getPatientProfile(patientId);
+        } else {
+            patient = patientOpt.get();
+        }
+
+        String medName = request.getMedicationName() != null ? request.getMedicationName().trim() : "";
+        StringBuilder sb = new StringBuilder(medName);
+        if (request.getDosage() != null && !request.getDosage().trim().isEmpty()) {
+            sb.append(" ").append(request.getDosage().trim());
+        }
+        if (request.getRoute() != null && !request.getRoute().trim().isEmpty()) {
+            sb.append(" (").append(request.getRoute().trim()).append(")");
+        }
+        if (request.getGlucoseValue() != null) {
+            sb.append(" [Glucose: ").append(request.getGlucoseValue()).append(" mg/dL]");
+        }
+        if (request.getFluidVolumeMl() != null) {
+            sb.append(" [Fluid: ").append(request.getFluidVolumeMl()).append(" mL]");
+        }
+
+        String fullEntry = sb.toString().trim();
+        if (fullEntry.isEmpty()) {
+            throw new IllegalArgumentException("Medication name, fluid, or glucose value must be provided.");
+        }
+
+        List<String> meds = patient.getActiveMedications();
+        if (meds == null) {
+            meds = new ArrayList<>();
+        }
+        boolean exists = meds.stream().anyMatch(m -> m.equalsIgnoreCase(fullEntry));
+        if (!exists) {
+            meds.add(fullEntry);
+            patient.setActiveMedications(meds);
+            patientRepository.save(patient);
+            log.info("Clinician {} logged standalone medication entry '{}' for patient {}", clinicianUsername, fullEntry, patientId);
+        }
+        return meds;
+    }
+
+    @Transactional
+    public void resetWardData() {
+        log.info("Resetting ICU ward simulation data - wiping all patient records to clean 0-patient ward...");
+        orderRepository.deleteAll();
+        evaluationRepository.deleteAll();
+        telemetryRepository.deleteAll();
+        patientRepository.deleteAll();
+        log.info("ICU ward reset complete: 0 patients, 8 available beds.");
     }
 }
