@@ -51,4 +51,5 @@ public class BedRosterItemDto {
     private LocalDateTime lastEvaluatedAt;
     private Boolean aiEvaluated;
     private String evaluationSource;
+    private String evidenceChainNarrative;
 }

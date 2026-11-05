@@ -16,7 +16,6 @@ import {
 
 export default function PatientContextPanel({
   alert,
-  alert,
   isOpen,
   onClose,
   activeTab = 'overview',

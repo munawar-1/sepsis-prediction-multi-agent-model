@@ -1,6 +1,8 @@
 package com.aegis.service;
 
 import com.aegis.dto.AiHealthResponse;
+import com.aegis.dto.DoctorChatRequest;
+import com.aegis.dto.DoctorChatResponse;
 import com.aegis.dto.PatientEvaluationResponse;
 import com.aegis.dto.TelemetryTickRequest;
 import com.aegis.exception.AiServiceException;
@@ -53,7 +55,7 @@ public class AiServiceClient {
                                             "AI Engine internal error during multi-agent inference: " + body, HttpStatus.BAD_GATEWAY)))
                     )
                     .bodyToMono(PatientEvaluationResponse.class)
-                    .timeout(Duration.ofSeconds(15))
+                    .timeout(Duration.ofSeconds(60))
                     .block();
 
         } catch (WebClientRequestException e) {
@@ -71,6 +73,37 @@ public class AiServiceClient {
         } catch (Exception e) {
             log.error("Unexpected error during AI evaluation: {}", e.getMessage(), e);
             throw new AiServiceException("Unexpected error during multi-agent clinical evaluation: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Dispatches doctor inquiry to FastAPI's grounded LLM/Copilot endpoint.
+     */
+    public DoctorChatResponse answerDoctorInquiry(DoctorChatRequest request) {
+        log.info("Dispatching doctor chat inquiry to FastAPI AI Engine: patientId={}, question='{}'",
+                request.getPatientId(), request.getDoctorQuestion());
+
+        try {
+            return aiServiceWebClient.post()
+                    .uri("/triage/chat")
+                    .bodyValue(request)
+                    .retrieve()
+                    .onStatus(HttpStatusCode::is4xxClientError, response ->
+                            response.bodyToMono(String.class)
+                                    .flatMap(body -> Mono.error(new AiServiceException(
+                                            "AI Engine rejected chat payload: " + body, HttpStatus.BAD_REQUEST)))
+                    )
+                    .onStatus(HttpStatusCode::is5xxServerError, response ->
+                            response.bodyToMono(String.class)
+                                    .flatMap(body -> Mono.error(new AiServiceException(
+                                            "AI Engine internal error during doctor chat: " + body, HttpStatus.BAD_GATEWAY)))
+                    )
+                    .bodyToMono(DoctorChatResponse.class)
+                    .timeout(Duration.ofSeconds(35))
+                    .block();
+        } catch (Exception e) {
+            log.warn("FastAPI chat copilot unreachable or failed: {}", e.getMessage());
+            throw new AiServiceException("Failed to get response from AI Chat Copilot: " + e.getMessage(), HttpStatus.SERVICE_UNAVAILABLE);
         }
     }
 

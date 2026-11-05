@@ -149,6 +149,103 @@ export const clinicalApi = {
   },
 
   /**
+   * Primary Evaluation Endpoint: POST /api/v1/evaluate-patient-state
+   * Called when clinician clicks a patient card to run full multi-agent consensus.
+   */
+  async evaluatePatientState(telemetryData) {
+    try {
+      const res = await fetch('http://localhost:8000/api/v1/evaluate-patient-state', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(telemetryData)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return { data, error: null, status: res.status };
+      }
+    } catch (e) {
+      console.warn('Direct port 8000 evaluate call failed, trying /ai-api proxy:', e.message);
+    }
+
+    try {
+      const res = await fetch('/ai-api/evaluate-patient-state', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(telemetryData)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return { data, error: null, status: res.status };
+      }
+    } catch (e) {
+      console.warn('Proxy evaluate call failed, trying Spring Boot:', e.message);
+    }
+
+    return apiRequest('/clinical/evaluate', {
+      method: 'POST',
+      body: JSON.stringify(telemetryData)
+    });
+  },
+
+  /**
+   * Subsequent Conversational Inquiries: POST /api/v1/triage/chat
+   * Called for doctor chat inquiries grounded in patient evaluation context.
+   */
+  async chatWithTriageOrchestrator(patientId, doctorQuestion, clinicalContext = {}) {
+    const payload = {
+      patient_id: patientId,
+      doctor_question: doctorQuestion,
+      clinical_context: clinicalContext
+    };
+
+    try {
+      const res = await fetch('http://localhost:8000/api/v1/triage/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return {
+          data: {
+            answer: data.llm_response,
+            clinicalGrounding: data.clinical_grounding,
+            agentContributions: data.clinical_grounding?.top_shap_features || {}
+          },
+          error: null,
+          status: res.status
+        };
+      }
+    } catch (e) {
+      console.warn('Direct port 8000 triage chat call failed, trying /ai-api proxy:', e.message);
+    }
+
+    try {
+      const res = await fetch('/ai-api/triage/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return {
+          data: {
+            answer: data.llm_response,
+            clinicalGrounding: data.clinical_grounding,
+            agentContributions: data.clinical_grounding?.top_shap_features || {}
+          },
+          error: null,
+          status: res.status
+        };
+      }
+    } catch (e) {
+      console.warn('Proxy triage chat call failed, trying Spring Boot explain:', e.message);
+    }
+
+    return this.explainAlert(patientId, doctorQuestion);
+  },
+
+  /**
    * Stateless multi-agent evaluation
    * POST /api/v1/clinical/evaluate
    */

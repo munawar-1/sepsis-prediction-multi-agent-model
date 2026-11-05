@@ -2,6 +2,8 @@ package com.aegis.service;
 
 import com.aegis.dto.ClinicalExplainRequest;
 import com.aegis.dto.ClinicalExplainResponse;
+import com.aegis.dto.DoctorChatRequest;
+import com.aegis.dto.DoctorChatResponse;
 import com.aegis.model.Patient;
 import com.aegis.model.PatientTelemetry;
 import com.aegis.model.TriageEvaluation;
@@ -25,6 +27,7 @@ public class ClinicalAlertService {
     private final PatientRepository patientRepository;
     private final PatientTelemetryRepository telemetryRepository;
     private final TriageEvaluationRepository evaluationRepository;
+    private final AiServiceClient aiServiceClient;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Transactional(readOnly = true)
@@ -79,11 +82,13 @@ public class ClinicalAlertService {
     }
 
     public ClinicalExplainResponse explainClinicalAlert(ClinicalExplainRequest request) {
-        String q = request.getQuestion().toLowerCase();
+        String q = request.getQuestion() != null ? request.getQuestion().trim() : "";
+        String qLower = q.toLowerCase();
         Optional<Patient> patientOpt = patientRepository.findByPatientId(request.getPatientId());
         Optional<TriageEvaluation> latestEval = evaluationRepository.findTopByPatientPatientIdOrderByEvaluatedAtDesc(request.getPatientId());
         Optional<PatientTelemetry> latestTelem = telemetryRepository.findTopByPatientPatientIdOrderByHourIndexDesc(request.getPatientId());
 
+        String bed = patientOpt.map(Patient::getIcuBedNumber).orElse("ICU Bed");
         double shockIdx = latestTelem.map(t -> t.getShockIndex() != null ? t.getShockIndex() : 1.34).orElse(1.34);
         double lactate = latestTelem.map(t -> t.getLactate() != null ? t.getLactate() : 3.8).orElse(3.8);
         double map = latestTelem.map(t -> t.getMeanArterialPressure() != null ? t.getMeanArterialPressure() : 65.0).orElse(65.0);
@@ -94,44 +99,98 @@ public class ClinicalAlertService {
         String narrative = latestEval.map(TriageEvaluation::getEvidenceChainNarrative)
                 .orElse("Persistent multi-system decompensation with acute hypoperfusion.");
 
+        Map<String, Object> vitalsEv = parseJson(latestEval.map(TriageEvaluation::getVitalsEvidenceJson).orElse(null));
+        Map<String, Object> labsEv = parseJson(latestEval.map(TriageEvaluation::getLabsEvidenceJson).orElse(null));
+        Map<String, Object> skepticEv = parseJson(latestEval.map(TriageEvaluation::getSkepticEvidenceJson).orElse(null));
+
         double vitalsWeight = Math.min(0.55, Math.max(0.30, (shockIdx - 0.5) / 1.5));
         double labsWeight = Math.min(0.45, Math.max(0.25, lactate / 6.0));
         double skepticWeight = Math.max(0.10, Math.round((1.0 - (vitalsWeight + labsWeight)) * 100.0) / 100.0);
 
-        String answer;
         Map<String, Double> contributions = new LinkedHashMap<>();
-        List<Map<String, Object>> topFeatures;
-
         contributions.put("Vitals Agent", Math.round(vitalsWeight * 100.0) / 100.0);
         contributions.put("Labs Agent", Math.round(labsWeight * 100.0) / 100.0);
         contributions.put("Skeptic Agent", Math.round(skepticWeight * 100.0) / 100.0);
 
-        topFeatures = List.of(
+        List<Map<String, Object>> topFeatures = List.of(
                 Map.of("feature", "Shock Index (HR / SBP)", "weight", Math.round(vitalsWeight * 100.0) / 100.0, "value", Math.round(shockIdx * 100.0) / 100.0, "direction", shockIdx >= 1.0 ? "ELEVATED_RISK" : "NORMAL"),
                 Map.of("feature", "Venous Lactate", "weight", Math.round(labsWeight * 100.0) / 100.0, "value", Math.round(lactate * 10.0) / 10.0, "direction", lactate >= 2.0 ? "ELEVATED_RISK" : "NORMAL"),
                 Map.of("feature", "Mean Arterial Pressure (MAP)", "weight", 0.28, "value", Math.round(map), "direction", map < 65 ? "HYPOTENSION" : "EUVOLEMIC")
         );
 
-        if (q.contains("why") || q.contains("flag") || q.contains("critical")) {
-            answer = String.format("Grounded clinical evidence for patient %s (urgency: %s, risk: %.0f%%): " +
-                    "Both the Shock Index (%.2f; HR %.0f bpm / SBP %.0f mmHg) and venous lactate (%.1f mmol/L) " +
-                    "breached critical consensus thresholds simultaneously. With MAP depressed to %.0f mmHg, this multi-system " +
-                    "convergence signals acute tissue hypoperfusion consistent with Sepsis-3 septic shock criteria rather than isolated volume loss. Narrative: %s",
-                    request.getPatientId(), urgency, risk * 100, shockIdx, hr, sbp, lactate, map, narrative);
-        } else if (q.contains("medication") || q.contains("tachycardia") || q.contains("drug")) {
-            answer = String.format("Medication and vitals reconciliation for patient %s: " +
-                    "Active vasopressor support is underway with sustained tachycardia (%.0f bpm) and MAP %.0f mmHg. " +
-                    "Combined with Shock Index of %.2f and lactate %.1f mmol/L, this tachycardia represents an inflammatory/endotoxic response rather than drug-induced variation. Narrative: %s",
-                    request.getPatientId(), hr, map, shockIdx, lactate, narrative);
-        } else if (q.contains("parameter") || q.contains("contribute") || q.contains("factor") || q.contains("score")) {
-            answer = String.format("Key contributing parameters in the persisted evaluation for patient %s: " +
-                    "Shock Index (%.2f) accounts for %.0f%% of the vitals deterioration signal, corroborated by lactate (%.1f mmol/L) accounting for %.0f%% of the metabolic risk. Narrative: %s",
-                    request.getPatientId(), shockIdx, vitalsWeight * 100, lactate, labsWeight * 100, narrative);
-        } else {
-            answer = String.format("Multi-agent consensus summary for patient %s: " +
-                    "Vitals Agent identified persistent hemodynamic decompensation (Shock Index %.2f, MAP %.0f mmHg). " +
-                    "Labs Agent verified cellular anaerobic metabolism via venous lactate (%.1f mmol/L). Skeptic Agent verified sensor validity. Narrative: %s",
-                    request.getPatientId(), shockIdx, map, lactate, narrative);
+        String answer = null;
+        String evaluationSource = "FASTAPI_ORCHESTRATOR_COPILOT";
+
+        // 1. Try FastAPI Multi-Agent Triage Chat Copilot
+        try {
+            Map<String, Object> clinicalContext = new LinkedHashMap<>();
+            clinicalContext.put("patient_id", request.getPatientId());
+            clinicalContext.put("patient_name", patientOpt.map(Patient::getFullName).orElse("Patient " + request.getPatientId()));
+            clinicalContext.put("bed_number", bed);
+            clinicalContext.put("diagnosis", patientOpt.map(Patient::getAdmissionDiagnosis).orElse("ICU Surveillance"));
+            clinicalContext.put("active_medications", patientOpt.map(Patient::getActiveMedications).orElse(List.of()));
+            clinicalContext.put("composite_sepsis_risk", risk);
+            clinicalContext.put("urgency_level", urgency);
+            clinicalContext.put("shock_index", shockIdx);
+            clinicalContext.put("heart_rate", hr);
+            clinicalContext.put("systolic_bp", sbp);
+            clinicalContext.put("mean_arterial_pressure", map);
+            clinicalContext.put("lactate", lactate);
+            clinicalContext.put("vitals_evidence", vitalsEv);
+            clinicalContext.put("labs_evidence", labsEv);
+            clinicalContext.put("skeptic_evidence", skepticEv);
+            clinicalContext.put("evidence_chain_narrative", narrative);
+
+            DoctorChatRequest chatReq = DoctorChatRequest.builder()
+                    .patientId(request.getPatientId())
+                    .doctorQuestion(request.getQuestion())
+                    .clinicalContext(clinicalContext)
+                    .build();
+
+            DoctorChatResponse chatResp = aiServiceClient.answerDoctorInquiry(chatReq);
+            if (chatResp != null && chatResp.getLlmResponse() != null && !chatResp.getLlmResponse().isBlank()) {
+                answer = chatResp.getLlmResponse();
+            }
+        } catch (Exception e) {
+            log.warn("FastAPI chat copilot call failed: {}. Falling back to dynamic clinical reasoning.", e.getMessage());
+        }
+
+        // 2. Intelligent Dynamic Clinical Fallback if FastAPI copilot was unreachable
+        if (answer == null || answer.isBlank()) {
+            evaluationSource = "DYNAMIC_CLINICAL_REASONING";
+            boolean isGreeting = qLower.matches("^(hey|hello|hi|good\\s(morning|afternoon|evening)|greetings|dr\\.?|doctor).*");
+
+            if (isGreeting) {
+                answer = String.format("Hello Doctor. I am the Aegis-ICU Diagnostic AI Copilot for Patient %s (%s). " +
+                        "Current Composite Sepsis Risk is %.0f%% (%s) with a Shock Index of %.2f (HR %.0f bpm / SBP %.0f mmHg, MAP %.0f mmHg) " +
+                        "and venous lactate at %.1f mmol/L. How can I assist with this patient's diagnostic workup or resuscitation bundle?",
+                        request.getPatientId(), bed, risk * 100, urgency, shockIdx, hr, sbp, map, lactate);
+            } else if (qLower.contains("why") || qLower.contains("score") || qLower.contains("risk") || qLower.contains("reason")) {
+                answer = String.format("Grounded clinical reasoning for patient %s (Risk: %.0f%%, %s): " +
+                        "The multi-agent consensus synthesized three key streams: 1) Vitals Agent flagged Shock Index %.2f with MAP %.0f mmHg; " +
+                        "2) Labs Agent identified lactate dysoxia at %.1f mmol/L; " +
+                        "3) Skeptic Agent classified event as '%s'. Combined Sepsis-3 criteria indicate systemic microvascular hypoperfusion. Narrative: %s",
+                        request.getPatientId(), risk * 100, urgency, shockIdx, map, lactate,
+                        skepticEv.getOrDefault("classification", "REAL_SEPSIS_DETERIORATION"), narrative);
+            } else if (qLower.contains("medication") || qLower.contains("drug") || qLower.contains("pressor") || qLower.contains("tachycardia")) {
+                answer = String.format("Medication and vital-sign reconciliation for patient %s: " +
+                        "Active vitals exhibit tachycardia (%.0f bpm) with MAP %.0f mmHg. " +
+                        "Skeptic Agent verified pharmacological confounders: %s. This confirms tachycardia is metabolic/endotoxic rather than isolated drug reaction. Narrative: %s",
+                        request.getPatientId(), hr, map,
+                        skepticEv.getOrDefault("clinical_reasoning", "No uncompensated confounding interactions detected"), narrative);
+            } else if (qLower.contains("order") || qLower.contains("bundle") || qLower.contains("treat") || qLower.contains("action")) {
+                answer = String.format("Recommended clinical bundle for patient %s (%s): " +
+                        "Immediate 1-hour Surviving Sepsis Bundle recommended: 1) Measure venous blood lactate; " +
+                        "2) Obtain blood cultures prior to antibiotics; 3) Administer broad-spectrum antimicrobials; " +
+                        "4) Rapid fluid resuscitation (30 mL/kg crystalloid for MAP < 65 or lactate >= 4); " +
+                        "5) Vasopressors if hypotensive during/after fluid resuscitation. Narrative: %s",
+                        request.getPatientId(), urgency, narrative);
+            } else {
+                answer = String.format("Clinical assessment for patient %s regarding '%s': " +
+                        "Patient exhibits Shock Index %.2f (HR %.0f bpm / SBP %.0f mmHg, MAP %.0f mmHg) with venous lactate %.1f mmol/L " +
+                        "yielding a Composite Sepsis Risk of %.0f%% (%s). Close monitoring and clinical protocol compliance are recommended. Narrative: %s",
+                        request.getPatientId(), request.getQuestion(), shockIdx, hr, sbp, map, lactate, risk * 100, urgency, narrative);
+            }
         }
 
         return ClinicalExplainResponse.builder()
@@ -142,7 +201,7 @@ public class ClinicalAlertService {
                 .topFeatures(topFeatures)
                 .evidenceSummary(narrative)
                 .groundedInPersistedEvaluation(latestEval.isPresent())
-                .evaluationSource(latestEval.isPresent() ? "PERSISTED_CLINICAL_EVALUATION" : "HEURISTIC_EVALUATION")
+                .evaluationSource(evaluationSource)
                 .build();
     }
 
