@@ -467,19 +467,30 @@ export default function StitchDashboard({ onExitToLanding }) {
         setTypingText(`Aegis Orchestrator is running live multi-agent consensus graph (POST /api/v1/evaluate-patient-state) for ${targetAlert.patientId}...`);
 
         const bed = beds.find(b => b.patientId === targetAlert.patientId) || {};
-        const bpParts = String(targetAlert.vitals?.bloodPressure || `${bed.systolicBp || 120}/${bed.diastolicBp || 80}`).split('/');
-        const sbp = parseInt(bpParts[0]) || 120;
-        const dbp = parseInt(bpParts[1]) || 80;
-        const hr = parseInt(targetAlert.vitals?.heartRate || bed.heartRate || 75);
-        const mapVal = parseFloat(String(targetAlert.vitals?.map || bed.meanArterialPressure || 90).replace(/[^\d.]/g, '')) || 90;
-        const resp = parseFloat(targetAlert.vitals?.respiratoryRate || bed.respiratoryRate || 16);
-        const o2sat = parseFloat(targetAlert.vitals?.oxygenSaturation || bed.oxygenSaturation || 98);
-        const temp = parseFloat(targetAlert.vitals?.temperature || bed.temperature || 37.0);
-        const lactate = parseFloat(String(targetAlert.labs?.lactate || bed.lactate || 1.0).replace(/[^\d.]/g, '')) || 1.0;
-        const wbc = parseFloat(String(targetAlert.labs?.wbc || bed.whiteBloodCellCount || 7.5).replace(/[^\d.]/g, '')) || 7.5;
-        const creatinine = parseFloat(String(targetAlert.labs?.creatinine || bed.creatinine || 0.9).replace(/[^\d.]/g, '')) || 0.9;
-        const platelets = parseFloat(String(targetAlert.labs?.platelets || bed.platelets || 250).replace(/[^\d.]/g, '')) || 250;
-        const meds = bed.activeMedications || targetAlert.activeMedications || [];
+
+        // Retrieve patient's latest flowsheet tick (from DEMO_FLOWSHEET_ROWS or simulation)
+        const patientRows = (simulationDataset && Array.isArray(simulationDataset.rows)
+          ? simulationDataset.rows.filter(r => (r.patientId === targetAlert.patientId || r.patient_id === targetAlert.patientId))
+          : []
+        );
+        const demoRows = patientRows.length > 0 ? patientRows : DEMO_FLOWSHEET_ROWS.filter(r => r.patient_id === targetAlert.patientId);
+        const latestRow = demoRows.length > 0 ? demoRows[demoRows.length - 1] : null;
+
+        const bpParts = String(targetAlert.vitals?.bp || targetAlert.vitals?.bloodPressure || `${bed.systolicBp || 120}/${bed.diastolicBp || 80}`).split('/');
+        const sbp = latestRow ? (latestRow.sbp ?? latestRow.systolicBp ?? 120) : parseInt(bpParts[0]) || 120;
+        const dbp = latestRow ? (latestRow.dbp ?? latestRow.diastolicBp ?? 80) : parseInt(bpParts[1]) || 80;
+        const hr = latestRow ? (latestRow.hr ?? latestRow.heartRate ?? 75) : parseInt(targetAlert.vitals?.hr || targetAlert.vitals?.heartRate || bed.heartRate || 75);
+        const mapVal = latestRow ? (latestRow.map ?? Math.round((sbp + 2 * dbp) / 3)) : parseFloat(String(targetAlert.vitals?.map || bed.meanArterialPressure || 90).replace(/[^\d.]/g, '')) || 90;
+        const resp = latestRow ? (latestRow.rr ?? latestRow.respiratoryRate ?? 16) : parseFloat(targetAlert.vitals?.rr || targetAlert.vitals?.respiratoryRate || bed.respiratoryRate || 16);
+        const o2sat = latestRow ? (latestRow.spo2 ?? latestRow.o2Saturation ?? 98) : parseFloat(targetAlert.vitals?.spo2 || targetAlert.vitals?.oxygenSaturation || bed.oxygenSaturation || 98);
+        const temp = latestRow ? (latestRow.temp ?? latestRow.temperature ?? 37.0) : parseFloat(targetAlert.vitals?.temp || targetAlert.vitals?.temperature || bed.temperature || 37.0);
+        const lactate = latestRow ? parseFloat(latestRow.lactate ?? 1.0) : parseFloat(String(targetAlert.labs?.lactate || bed.lactate || 1.0).replace(/[^\d.]/g, '')) || 1.0;
+        const wbc = latestRow ? parseFloat(latestRow.wbc ?? 7.5) : parseFloat(String(targetAlert.labs?.wbc || bed.whiteBloodCellCount || 7.5).replace(/[^\d.]/g, '')) || 7.5;
+        const creatinine = latestRow ? parseFloat(latestRow.creatinine ?? 0.9) : parseFloat(String(targetAlert.labs?.creatinine || bed.creatinine || 0.9).replace(/[^\d.]/g, '')) || 0.9;
+        const platelets = latestRow ? parseFloat(latestRow.platelets ?? 250) : parseFloat(String(targetAlert.labs?.platelets || bed.platelets || 250).replace(/[^\d.]/g, '')) || 250;
+        const meds = latestRow && latestRow.medications
+          ? (Array.isArray(latestRow.medications) ? latestRow.medications : String(latestRow.medications).split(',').map(m => m.trim()))
+          : (bed.activeMedications || targetAlert.activeMedications || []);
 
         const telemetryPayload = {
           patient_id: targetAlert.patientId,
