@@ -506,7 +506,7 @@ export default function StitchDashboard({ onExitToLanding }) {
           WBC: wbc,
           Creatinine: creatinine,
           Platelets: platelets,
-          Glucose: 110.0,
+          Glucose: latestRow && latestRow.glucose != null ? parseFloat(latestRow.glucose) : (parseFloat(String(targetAlert.labs?.glucose || bed.glucose || 110.0).replace(/[^\d.]/g, '')) || 110.0),
           active_medications: meds
         };
 

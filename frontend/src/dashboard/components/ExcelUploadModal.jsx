@@ -92,6 +92,7 @@ export default function ExcelUploadModal({
         wbc: row.wbc !== undefined && row.wbc !== null && !isNaN(parseFloat(row.wbc)) ? parseFloat(row.wbc) : null,
         creatinine: row.creatinine !== undefined && row.creatinine !== null && !isNaN(parseFloat(row.creatinine)) ? parseFloat(row.creatinine) : null,
         platelets: row.platelets !== undefined && row.platelets !== null && !isNaN(parseFloat(row.platelets)) ? parseFloat(row.platelets) : null,
+        glucose: row.glucose !== undefined && row.glucose !== null && !isNaN(parseFloat(row.glucose)) ? parseFloat(row.glucose) : (row.Glucose && !isNaN(parseFloat(row.Glucose)) ? parseFloat(row.Glucose) : 110.0),
         activeMedications: medsArray,
         isValid,
         errors
@@ -317,22 +318,47 @@ export default function ExcelUploadModal({
 
           {/* Table Preview */}
           {parsedRows.length > 0 && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
+            <div className="space-y-2.5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-xs font-bold text-slate-800">Preview Parsed Telemetry Rows</span>
                 <span className="text-[10px] font-mono text-slate-500">Showing first 8 of {parsedRows.length} rows</span>
+              </div>
+
+              {/* Complete Model Feature Coverage Indicator */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-[10px] font-sans">
+                <div className="flex items-start gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-sky-500 mt-1 shrink-0"></span>
+                  <div>
+                    <span className="font-bold text-slate-800">Model 1 (Vitals RF/XGB):</span>
+                    <p className="text-slate-500 text-[9px]">HR, SBP, DBP, MAP, RR, SpO₂, Temp, Shock Index</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-purple-500 mt-1 shrink-0"></span>
+                  <div>
+                    <span className="font-bold text-slate-800">Model 2 (Labs LightGBM):</span>
+                    <p className="text-slate-500 text-[9px]">Lactate, WBC, Creatinine, Platelets, Glucose</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-amber-500 mt-1 shrink-0"></span>
+                  <div>
+                    <span className="font-bold text-slate-800">Model 3 (Skeptic Filter):</span>
+                    <p className="text-slate-500 text-[9px]">Active Meds, ΔVitals, Hour Offset Trajectory</p>
+                  </div>
+                </div>
               </div>
 
               <div className="overflow-x-auto rounded-2xl border-[1.5px] border-slate-200 bg-white">
                 <table className="w-full text-left font-mono text-[11px]">
                   <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold">
+                    <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold">
                       <th className="py-2.5 px-3">Row</th>
-                      <th className="py-2.5 px-3">Patient &amp; Name</th>
+                      <th className="py-2.5 px-3">Patient</th>
                       <th className="py-2.5 px-3">Hour</th>
-                      <th className="py-2.5 px-3">HR / BP</th>
-                      <th className="py-2.5 px-3">Lactate</th>
-                      <th className="py-2.5 px-3">Medications</th>
+                      <th className="py-2.5 px-3">Vitals (Agent 1)</th>
+                      <th className="py-2.5 px-3">Labs (Agent 2)</th>
+                      <th className="py-2.5 px-3">Medications (Agent 3)</th>
                       <th className="py-2.5 px-3 text-right">Status</th>
                     </tr>
                   </thead>
@@ -342,12 +368,28 @@ export default function ExcelUploadModal({
                         <td className="py-2 px-3 text-slate-400">#{r.rowNumber}</td>
                         <td className="py-2 px-3">
                           <span className="font-bold text-slate-900">{r.patientId}</span>
-                          {r.patientName && <span className="text-slate-500 ml-1.5 font-sans font-medium text-[10px]">({r.patientName})</span>}
+                          {r.patientName && <span className="text-slate-500 ml-1 font-sans text-[10px] block font-medium">{r.patientName}</span>}
                         </td>
                         <td className="py-2 px-3">T+{r.hourIndex}h</td>
-                        <td className="py-2 px-3">{r.hr} / {r.sbp}/{r.dbp}</td>
-                        <td className="py-2 px-3">{r.lactate != null ? `${r.lactate} mmol/L` : '—'}</td>
-                        <td className="py-2 px-3 truncate max-w-[160px] text-slate-600">{r.activeMedications.join(', ') || '—'}</td>
+                        <td className="py-2 px-3 font-sans">
+                          <div className="font-bold text-slate-800 text-[11px] font-mono">
+                            {r.hr} bpm · {r.sbp}/{r.dbp}
+                          </div>
+                          <div className="text-[10px] text-slate-500 font-sans">
+                            RR {r.resp} · SpO₂ {r.o2sat}% · {r.temp}°C
+                          </div>
+                        </td>
+                        <td className="py-2 px-3 font-sans">
+                          <div className="font-bold text-slate-800 text-[11px] font-mono">
+                            Lac {r.lactate != null ? r.lactate : '—'} <span className="text-[9px] text-slate-400 font-normal">mmol/L</span>
+                          </div>
+                          <div className="text-[10px] text-slate-500 font-sans truncate max-w-[170px]" title={`WBC: ${r.wbc || '—'}, Cr: ${r.creatinine || '—'}, Plt: ${r.platelets || '—'}, Gluc: ${r.glucose || '—'}`}>
+                            WBC {r.wbc || '—'} · Cr {r.creatinine || '—'} · Plt {r.platelets || '—'} · Gluc {r.glucose || '110'}
+                          </div>
+                        </td>
+                        <td className="py-2 px-3 truncate max-w-[150px] text-slate-600 text-[10px] font-sans" title={r.activeMedications.join(', ') || 'None'}>
+                          {r.activeMedications.join(', ') || '—'}
+                        </td>
                         <td className="py-2 px-3 text-right">
                           {r.isValid ? (
                             <span className="inline-flex items-center gap-1 text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 font-bold">
