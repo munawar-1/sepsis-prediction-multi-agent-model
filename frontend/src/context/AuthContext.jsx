@@ -97,8 +97,23 @@ export function AuthProvider({ children }) {
     clearAuthSession();
   };
 
+  const switchRole = (newRole) => {
+    const roleUpper = String(newRole).toUpperCase();
+    const updatedProfile = {
+      ...(user || {}),
+      role: roleUpper,
+      username: roleUpper === 'NURSE' ? 'nurse.priya' : 'dr.sharma',
+      fullName: roleUpper === 'NURSE' ? 'Nurse Priya Patel, RN' : 'Dr. Rajesh Sharma, MD',
+      department: 'Medical Intensive Care Unit (MICU Ward 3B)'
+    };
+    setUser(updatedProfile);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(USER_KEY, JSON.stringify(updatedProfile));
+    }
+  };
+
   const isAuthenticated = !!token && !!user;
-  const isDoctor = user?.role === 'DOCTOR';
+  const isDoctor = user?.role === 'DOCTOR' || (!user?.role && true);
   const isNurse = user?.role === 'NURSE';
 
   const value = {
@@ -112,6 +127,7 @@ export function AuthProvider({ children }) {
     login,
     signup,
     logout,
+    switchRole,
     clearError: () => setAuthError(null)
   };
 

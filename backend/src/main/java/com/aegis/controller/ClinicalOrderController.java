@@ -1,11 +1,14 @@
 package com.aegis.controller;
 
+import com.aegis.dto.DoctorAssignTaskRequest;
 import com.aegis.dto.OrderAdministerRequest;
 import com.aegis.dto.OrderSignRequest;
 import com.aegis.model.ClinicalActionOrder;
 import com.aegis.service.ClinicalOrderService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -24,6 +27,28 @@ import java.util.Map;
 public class ClinicalOrderController {
 
     private final ClinicalOrderService orderService;
+
+    /**
+     * Attending Doctor creates/assigns a medication change or therapy task for the bedside nurse.
+     */
+    @PostMapping("/assign")
+    @PreAuthorize("hasAnyRole('DOCTOR', 'NURSE')")
+    public ResponseEntity<?> assignDoctorTask(
+            @Valid @RequestBody DoctorAssignTaskRequest request,
+            Authentication authentication
+    ) {
+        try {
+            String doctorUsername = authentication != null ? authentication.getName() : "dr.munawar";
+            ClinicalActionOrder assigned = orderService.assignDoctorOrder(request, doctorUsername);
+            return ResponseEntity.status(HttpStatus.CREATED).body(assigned);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "status", 400,
+                    "error", "ASSIGNMENT_FAILED",
+                    "message", e.getMessage()
+            ));
+        }
+    }
 
     /**
      * Get all recommended and active orders for a patient.

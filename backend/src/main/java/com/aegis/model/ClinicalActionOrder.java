@@ -39,6 +39,24 @@ public class ClinicalActionOrder {
         return evaluation != null ? evaluation.getId() : null;
     }
 
+    @Transient
+    @JsonProperty("patientId")
+    public String getPatientId() {
+        return evaluation != null && evaluation.getPatient() != null ? evaluation.getPatient().getPatientId() : null;
+    }
+
+    @Transient
+    @JsonProperty("patientName")
+    public String getPatientName() {
+        return evaluation != null && evaluation.getPatient() != null ? evaluation.getPatient().getFullName() : null;
+    }
+
+    @Transient
+    @JsonProperty("icuBedNumber")
+    public String getIcuBedNumber() {
+        return evaluation != null && evaluation.getPatient() != null ? evaluation.getPatient().getIcuBedNumber() : null;
+    }
+
     @Column(name = "order_code", nullable = false, length = 64)
     private String orderCode; // e.g. "ACT_LACTATE", "ACT_BLOOD_CULTURES", "ACT_ANTIBIOTICS"
 

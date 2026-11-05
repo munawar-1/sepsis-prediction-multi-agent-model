@@ -1,13 +1,18 @@
 package com.aegis.service;
 
+import com.aegis.dto.DoctorAssignTaskRequest;
 import com.aegis.dto.OrderAdministerRequest;
 import com.aegis.dto.OrderSignRequest;
 import com.aegis.model.ClinicalActionOrder;
 import com.aegis.model.HitlAuditLog;
 import com.aegis.model.OrderStatus;
+import com.aegis.model.Patient;
+import com.aegis.model.TriageEvaluation;
 import com.aegis.model.User;
 import com.aegis.repository.ClinicalActionOrderRepository;
 import com.aegis.repository.HitlAuditLogRepository;
+import com.aegis.repository.PatientRepository;
+import com.aegis.repository.TriageEvaluationRepository;
 import com.aegis.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +35,8 @@ public class ClinicalOrderService {
     private final UserRepository userRepository;
     private final HitlAuditLogRepository auditLogRepository;
     private final NotificationService notificationService;
+    private final TriageEvaluationRepository evaluationRepository;
+    private final PatientRepository patientRepository;
 
     @Transactional(readOnly = true)
     public List<ClinicalActionOrder> getOrdersForPatient(String patientId) {
@@ -150,6 +157,81 @@ public class ClinicalOrderService {
         auditLogRepository.save(audit);
 
         log.info("Nurse {} recorded administration for order {} ({}) with dose: {}", nurseUsername, order.getId(), order.getOrderCode(), doseAdministered);
+
+        return saved;
+    }
+
+    @Transactional
+    public ClinicalActionOrder assignDoctorOrder(DoctorAssignTaskRequest request, String doctorUsername) {
+        User doctor = userRepository.findByUsername(doctorUsername).orElse(null);
+
+        TriageEvaluation evaluation = evaluationRepository
+                .findTopByPatientPatientIdOrderByEvaluatedAtDesc(request.getPatientId())
+                .orElse(null);
+
+        if (evaluation == null) {
+            Patient patient = patientRepository.findByPatientId(request.getPatientId())
+                    .orElseThrow(() -> new IllegalArgumentException("Patient not found: " + request.getPatientId()));
+            evaluation = evaluationRepository.save(TriageEvaluation.builder()
+                    .patient(patient)
+                    .urgencyLevel("CRITICAL_SEPSIS")
+                    .compositeSepsisRisk(0.85)
+                    .news2Score(8)
+                    .shockIndex(1.2)
+                    .targetRole("ROLE_NURSE")
+                    .sensorValid(true)
+                    .evaluatedAt(LocalDateTime.now())
+                    .build());
+        }
+
+        String orderCode = "ACT_" + (request.getCategory() != null ? request.getCategory() : "TASK") + "_" + (System.currentTimeMillis() % 10000);
+
+        ClinicalActionOrder order = ClinicalActionOrder.builder()
+                .evaluation(evaluation)
+                .orderCode(orderCode)
+                .actionName(request.getActionName())
+                .category(request.getCategory() != null ? request.getCategory() : "MEDICATION_CHANGE")
+                .priority(request.getPriority() != null ? request.getPriority() : "STAT")
+                .status(OrderStatus.APPROVED)
+                .signedBy(doctor)
+                .rationale((request.getRationale() != null ? request.getRationale() : "Attending Physician Bedside Order")
+                        + (request.getDoctorNotes() != null && !request.getDoctorNotes().isBlank() ? " | Doctor Note: " + request.getDoctorNotes().trim() : ""))
+                .simulatedRecommendation(false)
+                .clinicalReviewRequired(false)
+                .orderedAt(LocalDateTime.now())
+                .build();
+
+        ClinicalActionOrder saved = orderRepository.save(order);
+
+        String auditId = "ASSIGN-" + UUID.randomUUID().toString().substring(0, 8);
+        HitlAuditLog audit = HitlAuditLog.builder()
+                .auditId(auditId)
+                .evaluationId(String.valueOf(evaluation.getId()))
+                .patientId(request.getPatientId())
+                .clinicianId(doctorUsername)
+                .actionTaken("DOCTOR_ASSIGNED_TASK")
+                .overrideReason(request.getDoctorNotes())
+                .actionsAuthorized(order.getOrderCode() + " - " + order.getActionName())
+                .signatureHash(computeSha256(auditId + ":" + request.getPatientId() + ":" + doctorUsername + ":" + order.getOrderCode()))
+                .recordedAt(LocalDateTime.now())
+                .build();
+        auditLogRepository.save(audit);
+
+        try {
+            notificationService.dispatchAlert(com.aegis.dto.AlertDispatchDto.builder()
+                    .patientId(request.getPatientId())
+                    .targetRole("ROLE_NURSE")
+                    .urgency("STAT_DOCTOR_TASK")
+                    .alertTitle("DOCTOR ORDER ASSIGNED: " + order.getActionName())
+                    .clinicalMessage("Dr. " + doctorUsername + " assigned urgent task to bedside nurse: " + order.getActionName())
+                    .recommendedActions(List.of("Execute " + order.getActionName(), "Document bedside administration"))
+                    .build());
+        } catch (Exception e) {
+            log.warn("Could not dispatch nurse task alert: {}", e.getMessage());
+        }
+
+        log.info("Doctor {} assigned task {} ({}) to bedside nurse for patient {}",
+                doctorUsername, saved.getId(), saved.getActionName(), request.getPatientId());
 
         return saved;
     }

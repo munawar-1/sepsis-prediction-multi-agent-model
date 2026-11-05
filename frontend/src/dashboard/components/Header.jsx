@@ -61,6 +61,11 @@ const VIEW_METADATA = {
     subtitle: "Active Infusions & Administration Flowsheet",
     patientContext: true
   },
+  therapy: {
+    title: "Bedside Therapy & Doctor Orders",
+    subtitle: "Nurse Medication Administration & Resuscitation Worklist",
+    patientContext: false
+  },
   settings: {
     title: "System Settings & Audit",
     subtitle: "Model Parameters & Clinical Governance",
@@ -78,7 +83,7 @@ export default function Header({
   isSidebarCollapsed,
   onToggleSidebar
 }) {
-  const { user, isDoctor, logout } = useAuth();
+  const { user, isDoctor, isNurse, logout, switchRole } = useAuth();
   const { theme, toggleTheme, isDark, setTheme } = useTheme();
 
   // Dropdown States
@@ -619,6 +624,43 @@ export default function Header({
                   <span className={`font-semibold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
                     MICU • Ward 3B
                   </span>
+                </div>
+
+                {/* Quick Clinician Role Switcher (Live Role Demo) */}
+                <div className="mt-3 pt-2.5 border-t border-slate-200 dark:border-[#1E2D44]">
+                  <span className="text-[9px] font-mono font-bold uppercase text-slate-400 block mb-1.5">
+                    Active Clinician Role (Live Demo)
+                  </span>
+                  <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 dark:bg-[#142036] rounded-xl border border-slate-200 dark:border-[#1E2D44]">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (switchRole) switchRole('DOCTOR');
+                        setIsProfileOpen(false);
+                      }}
+                      className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                        isDoctor
+                          ? 'bg-emerald-600 text-white shadow-xs'
+                          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-[#1B2B48]'
+                      }`}
+                    >
+                      <span>👨‍⚕️ Doctor</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (switchRole) switchRole('NURSE');
+                        setIsProfileOpen(false);
+                      }}
+                      className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                        isNurse
+                          ? 'bg-emerald-600 text-white shadow-xs'
+                          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-[#1B2B48]'
+                      }`}
+                    >
+                      <span>👩‍⚕️ Nurse</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 

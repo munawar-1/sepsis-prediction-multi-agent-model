@@ -127,7 +127,7 @@ public class ClinicalAlertService {
             clinicalContext.put("patient_id", request.getPatientId());
             clinicalContext.put("patient_name", patientOpt.map(Patient::getFullName).orElse("Patient " + request.getPatientId()));
             clinicalContext.put("bed_number", bed);
-            clinicalContext.put("diagnosis", patientOpt.map(Patient::getAdmissionDiagnosis).orElse("ICU Surveillance"));
+            clinicalContext.put("diagnosis", patientOpt.map(Patient::getPrimaryDiagnosis).orElse("ICU Surveillance"));
             clinicalContext.put("active_medications", patientOpt.map(Patient::getActiveMedications).orElse(List.of()));
             clinicalContext.put("composite_sepsis_risk", risk);
             clinicalContext.put("urgency_level", urgency);

@@ -8,6 +8,8 @@ import RecordsView from './components/RecordsView';
 import LabsView from './components/LabsView';
 import MedicationsView from './components/MedicationsView';
 import SettingsView from './components/SettingsView';
+import TherapyTasksView from './components/TherapyTasksView';
+import AdmitPatientModal from './components/AdmitPatientModal';
 import OverrideModal from './components/OverrideModal';
 import NurseEntryModal from './components/NurseEntryModal';
 import ExcelUploadModal from './components/ExcelUploadModal';
@@ -265,6 +267,7 @@ export default function StitchDashboard({ onExitToLanding }) {
   const [isNurseModalOpen, setIsNurseModalOpen] = useState(false);
   const [isExcelModalOpen, setIsExcelModalOpen] = useState(false);
   const [isExcelAutoDemo, setIsExcelAutoDemo] = useState(false);
+  const [isAdmitModalOpen, setIsAdmitModalOpen] = useState(false);
 
   const handleOpenDemoFlowsheet = () => {
     setIsExcelAutoDemo(true);
@@ -1074,11 +1077,27 @@ export default function StitchDashboard({ onExitToLanding }) {
             )
           )}
 
+          {/* VIEW: Bedside Therapy & Tasks (Doctor Orders Worklist) */}
+          {activeView === 'therapy' && (
+            <TherapyTasksView
+              alerts={alerts}
+              selectedAlert={selectedAlert}
+              onSelectPatient={handleSelectPatient}
+              onOpenConsultation={() => setActiveView('consultation')}
+            />
+          )}
+
           {/* VIEW 5: Dedicated Patient Records View */}
           {activeView === 'records' && (
             selectedAlert ? (
               <RecordsView
                 alert={selectedAlert}
+                onOpenAdmitModal={() => setIsAdmitModalOpen(true)}
+                onOpenUploadFlowsheet={() => setIsExcelModalOpen(true)}
+                onPatientDischarged={(dischargedId) => {
+                  fetchRoster();
+                  setAlerts(prev => prev.filter(a => a.patientId !== dischargedId));
+                }}
               />
             ) : (
               <EmptyPatientState
@@ -1134,6 +1153,16 @@ export default function StitchDashboard({ onExitToLanding }) {
         isOpen={isOverrideModalOpen}
         onClose={() => setIsOverrideModalOpen(false)}
         onSubmit={handleRecordOverride}
+      />
+
+      {/* Admit Patient Modal */}
+      <AdmitPatientModal
+        isOpen={isAdmitModalOpen}
+        onClose={() => setIsAdmitModalOpen(false)}
+        beds={beds}
+        onPatientAdmitted={(newPt) => {
+          fetchRoster();
+        }}
       />
 
       {/* Nurse Hourly Round Entry Modal */}

@@ -615,6 +615,7 @@ public class PatientService {
     private PatientEvaluationResponse fallbackClinicalEvaluation(Patient patient, TelemetryTickRequest request, double shockIndex, double map) {
         Double lactate = request.getLactate();
         double hr = request.getHeartRate();
+        Double sbp = request.getSystolicBp();
         boolean critical = shockIndex >= 1.0 || (lactate != null && lactate >= 3.0) || hr >= 110;
         double risk = critical ? 0.84 : (shockIndex >= 0.8 || (lactate != null && lactate >= 2.0) ? 0.45 : 0.14);
         String urgency = critical ? "CRITICAL_SEPSIS" : (risk >= 0.35 ? "MODERATE" : "STABLE");

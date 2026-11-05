@@ -299,6 +299,27 @@ export const clinicalApi = {
   },
 
   /**
+   * Bedside Nurse Actionable Task List:
+   * Returns all orders that have been signed & APPROVED by Attending Doctors across the ICU
+   * awaiting bedside administration.
+   * GET /api/v1/orders/nurse/tasks
+   */
+  async fetchNurseTasks() {
+    return apiRequest('/orders/nurse/tasks', { method: 'GET' });
+  },
+
+  /**
+   * Attending Doctor creates/assigns a medication change or therapy task to bedside nurse
+   * POST /api/v1/orders/assign
+   */
+  async assignDoctorOrder(orderPayload) {
+    return apiRequest('/orders/assign', {
+      method: 'POST',
+      body: JSON.stringify(orderPayload)
+    });
+  },
+
+  /**
    * Bedside Nurse administers signed order (Role: NURSE required)
    * POST /api/v1/orders/{orderId}/administer
    */

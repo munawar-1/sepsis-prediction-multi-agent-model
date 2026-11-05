@@ -12,7 +12,8 @@ import {
   PanelLeftOpen,
   Home,
   LogOut,
-  Plus
+  Plus,
+  ClipboardList
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -29,12 +30,23 @@ export default function Sidebar({
   width = 260,
   isDragging = false
 }) {
-  const { user, isDoctor, logout } = useAuth();
+  const { user, isDoctor, isNurse, logout } = useAuth();
 
-  // Navigation Items Specification
-  const navItems = [
+  // Navigation Items Specification (Role-Specific)
+  // Bedside Nurses do NOT have complex AI Agent or raw Lab Reports views
+  // Instead, Nurses have Bedside Therapy & Tasks (Doctor Orders Worklist)
+  const navItems = isNurse ? [
+    { id: 'therapy', label: 'Bedside Tasks & Orders', icon: ClipboardList, badge: '3' },
+    { id: 'inbox', label: 'Dashboard', icon: LayoutGrid, badge: alerts.filter(a => !a.isReviewed).length },
+    { id: 'monitoring', label: 'Patient Monitoring', icon: Activity, badge: null },
+    { id: 'records', label: 'Patient Records', icon: FileText, badge: null },
+    { id: 'consultation', label: 'Consultation', icon: MessageSquarePlus, badge: null },
+    { id: 'medications', label: 'Medications', icon: Pill, badge: null },
+    { id: 'settings', label: 'Settings', icon: Settings, badge: null }
+  ] : [
     { id: 'consultation', label: 'Consultation', icon: MessageSquarePlus, badge: null },
     { id: 'inbox', label: 'Dashboard', icon: LayoutGrid, badge: alerts.filter(a => !a.isReviewed).length },
+    { id: 'therapy', label: 'Therapy & Orders', icon: ClipboardList, badge: null },
     { id: 'monitoring', label: 'Patient Monitoring', icon: Activity, badge: null },
     { id: 'records', label: 'Patient Records', icon: FileText, badge: null },
     { id: 'agents', label: 'AI Agents', icon: Bot, badge: '5' },
@@ -56,8 +68,8 @@ export default function Sidebar({
     return 'RS';
   }, [user?.fullName]);
 
-  const displayName = user?.fullName || 'Dr. Rajesh Sharma, MD';
-  const displayTitle = isDoctor ? 'Attending Physician' : 'ICU Clinical Specialist';
+  const displayName = user?.fullName || (isNurse ? 'Nurse Priya Patel, RN' : 'Dr. Rajesh Sharma, MD');
+  const displayTitle = isNurse ? 'Bedside ICU Registered Nurse' : 'Attending Physician';
 
   return (
     <aside
