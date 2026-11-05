@@ -1,0 +1,587 @@
+/* =========================================================================
+   HOURZERO CLINICAL FLIGHT DECK — POLISHED LIGHT MODE THEME (V2 PRO)
+   Strictly scoped to .dashboard-viewport.dashboard-theme-light.
+   Never affects landing page or dark mode.
+   
+   Palette:
+     - Deep Teal:      #0B4A57 (Headings, primary text, icons)
+     - Clinical Teal:  #076358 (Primary actions, active states, focus rings - contrast > 6.3:1)
+     - Aqua Mist:      #B6E4F2 (Borders, chips, selected rows, hover fills)
+     - Butter Cream:   #F8EDB0 (Permitted ONLY for Demo button, baseline seed / awaiting feed, empty states)
+     - Secondary Teal: #235D69 (Solid accessible secondary text, contrast > 6.5:1 against backdrop)
+     - Muted Teal:     #1A4F59 (Solid accessible metadata text, contrast > 7.0:1 against backdrop)
+   ========================================================================= */
+
+/* --- 1. Full-Viewport Fixed Gradient Canvas --- */
+.dashboard-viewport.dashboard-theme-light {
+  background: linear-gradient(115deg, #B6E4F2 0%, #B3EEDC 30%, #D5FCBD 55%, #F5FCC0 78%, #F8EDB0 100%) fixed no-repeat !important;
+  background-size: cover !important;
+  color: #0B4A57 !important;
+  color-scheme: light;
+}
+
+/* Ensure background layer sits seamlessly behind viewports */
+.dashboard-viewport.dashboard-theme-light > div {
+  background: transparent !important;
+}
+
+/* --- 2. Frosted Glass Structural Panels --- */
+/* Global Top Header */
+.dashboard-viewport.dashboard-theme-light header {
+  background: rgba(255, 255, 255, 0.82) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border-bottom: 1.5px solid rgba(11, 74, 87, 0.16) !important;
+  color: #0B4A57 !important;
+  box-shadow: 0 1px 10px rgba(11, 74, 87, 0.05) !important;
+}
+
+/* Resizable Left Navigation Sidebar */
+.dashboard-viewport.dashboard-theme-light aside {
+  background: rgba(255, 255, 255, 0.82) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border-right: 1.5px solid rgba(11, 74, 87, 0.16) !important;
+  color: #0B4A57 !important;
+  box-shadow: 1px 0 10px rgba(11, 74, 87, 0.05) !important;
+}
+
+/* Main Viewport Workspace */
+.dashboard-viewport.dashboard-theme-light main {
+  background: rgba(255, 255, 255, 0.52) !important;
+}
+
+/* General Frosted Cards and Sections (High surface opacity 0.90 for pristine contrast) */
+.dashboard-viewport.dashboard-theme-light section,
+.dashboard-viewport.dashboard-theme-light .bg-white,
+.dashboard-viewport.dashboard-theme-light .bg-\[\#F8FAFD\],
+.dashboard-viewport.dashboard-theme-light .bg-\[\#F9FAFB\] {
+  background-color: rgba(255, 255, 255, 0.90) !important;
+  border-color: rgba(11, 74, 87, 0.16) !important;
+  color: #0B4A57;
+}
+
+/* Subtle Nested Panels (vitals strip, filters row, summary banners) */
+.dashboard-viewport.dashboard-theme-light .bg-slate-50,
+.dashboard-viewport.dashboard-theme-light .bg-slate-100,
+.dashboard-viewport.dashboard-theme-light .bg-\[\#F1F6FB\],
+.dashboard-viewport.dashboard-theme-light .bg-\[\#EBF2FA\],
+.dashboard-viewport.dashboard-theme-light .bg-slate-50\/80,
+.dashboard-viewport.dashboard-theme-light .bg-slate-50\/50 {
+  background-color: rgba(255, 255, 255, 0.80) !important;
+  border-color: rgba(11, 74, 87, 0.14) !important;
+}
+
+/* Card Drop Shadows */
+.dashboard-viewport.dashboard-theme-light .shadow-xs,
+.dashboard-viewport.dashboard-theme-light .shadow-sm,
+.dashboard-viewport.dashboard-theme-light .shadow-2xs,
+.dashboard-viewport.dashboard-theme-light .shadow-md,
+.dashboard-viewport.dashboard-theme-light .shadow-lg {
+  box-shadow: 0 4px 20px -2px rgba(11, 74, 87, 0.08), 0 1px 4px -1px rgba(11, 74, 87, 0.04) !important;
+}
+
+/* --- 3. Typography & Contrast Hierarchy --- */
+.dashboard-viewport.dashboard-theme-light h1,
+.dashboard-viewport.dashboard-theme-light h2,
+.dashboard-viewport.dashboard-theme-light h3,
+.dashboard-viewport.dashboard-theme-light h4,
+.dashboard-viewport.dashboard-theme-light .font-display,
+.dashboard-viewport.dashboard-theme-light .text-slate-900,
+.dashboard-viewport.dashboard-theme-light .text-slate-800,
+.dashboard-viewport.dashboard-theme-light .text-\[\#0F172A\],
+.dashboard-viewport.dashboard-theme-light .text-\#0F172A {
+  color: #0B4A57 !important;
+}
+
+/* Secondary Sub-labels (Solid #235D69: contrast > 6.5:1 against backdrop) */
+.dashboard-viewport.dashboard-theme-light .text-slate-700,
+.dashboard-viewport.dashboard-theme-light .text-slate-600,
+.dashboard-viewport.dashboard-theme-light .text-\[\#334155\],
+.dashboard-viewport.dashboard-theme-light .text-\[\#556D8A\],
+.dashboard-viewport.dashboard-theme-light .text-\[\#5B718E\] {
+  color: #235D69 !important;
+}
+
+/* Muted / Tertiary Text (Solid #1A4F59: contrast > 7.0:1 against backdrop) */
+.dashboard-viewport.dashboard-theme-light .text-slate-500,
+.dashboard-viewport.dashboard-theme-light .text-slate-400,
+.dashboard-viewport.dashboard-theme-light .text-\[\#64748B\],
+.dashboard-viewport.dashboard-theme-light .text-\[\#768CA8\] {
+  color: #1A4F59 !important;
+}
+
+/* --- 4. Interactive Buttons & Controls --- */
+.dashboard-viewport.dashboard-theme-light button {
+  color: #0B4A57;
+}
+
+/* Primary Clinical Action Buttons (Clinical Teal #076358: white text contrast 6.36:1) */
+.dashboard-viewport.dashboard-theme-light button.bg-\[\#0F172A\],
+.dashboard-viewport.dashboard-theme-light button.bg-emerald-600,
+.dashboard-viewport.dashboard-theme-light button.bg-\[\#10B981\],
+.dashboard-viewport.dashboard-theme-light .btn-primary {
+  background-color: #076358 !important;
+  color: #FFFFFF !important;
+  border: 1px solid #054840 !important;
+  box-shadow: 0 2px 8px -1px rgba(7, 99, 88, 0.35) !important;
+}
+
+.dashboard-viewport.dashboard-theme-light button.bg-\[\#0F172A\]:hover,
+.dashboard-viewport.dashboard-theme-light button.bg-emerald-600:hover,
+.dashboard-viewport.dashboard-theme-light button.bg-\[\#10B981\]:hover,
+.dashboard-viewport.dashboard-theme-light .btn-primary:hover {
+  background-color: #054840 !important;
+  color: #FFFFFF !important;
+}
+
+.dashboard-viewport.dashboard-theme-light button.bg-\[\#0F172A\] svg,
+.dashboard-viewport.dashboard-theme-light button.bg-emerald-600 svg,
+.dashboard-viewport.dashboard-theme-light button.bg-\[\#10B981\] svg,
+.dashboard-viewport.dashboard-theme-light .btn-primary svg {
+  color: #FFFFFF !important;
+  stroke: #FFFFFF !important;
+}
+
+/* Simulation Play / Pause Button */
+.dashboard-viewport.dashboard-theme-light button.bg-emerald-600.text-white,
+.dashboard-viewport.dashboard-theme-light button.bg-amber-500.text-white {
+  background-color: #076358 !important;
+  color: #FFFFFF !important;
+  border: 1px solid #054840 !important;
+}
+
+.dashboard-viewport.dashboard-theme-light button.bg-emerald-600.text-white:hover,
+.dashboard-viewport.dashboard-theme-light button.bg-amber-500.text-white:hover {
+  background-color: #054840 !important;
+}
+
+.dashboard-viewport.dashboard-theme-light button.bg-emerald-600.text-white svg,
+.dashboard-viewport.dashboard-theme-light button.bg-amber-500.text-white svg {
+  color: #FFFFFF !important;
+  stroke: #FFFFFF !important;
+}
+
+/* Secondary / Ghost Buttons (Refresh, Download, Advance +1h, Reset, Filter) */
+.dashboard-viewport.dashboard-theme-light button.bg-white,
+.dashboard-viewport.dashboard-theme-light button.bg-slate-100,
+.dashboard-viewport.dashboard-theme-light button.bg-\[\#EBF2FA\],
+.dashboard-viewport.dashboard-theme-light button.bg-\[\#F0F5FA\] {
+  background-color: rgba(255, 255, 255, 0.88) !important;
+  border: 1.5px solid rgba(11, 74, 87, 0.25) !important;
+  color: #0B4A57 !important;
+}
+
+.dashboard-viewport.dashboard-theme-light button.bg-white:hover,
+.dashboard-viewport.dashboard-theme-light button.bg-slate-100:hover,
+.dashboard-viewport.dashboard-theme-light button.bg-\[\#EBF2FA\]:hover,
+.dashboard-viewport.dashboard-theme-light button.bg-\[\#F0F5FA\]:hover {
+  background-color: rgba(182, 228, 242, 0.50) !important;
+  border-color: #076358 !important;
+  color: #0B4A57 !important;
+}
+
+/* Simulation Speed Selector (1x, 2x, 5x) */
+.dashboard-viewport.dashboard-theme-light .flex.items-center.rounded-xl.bg-\[\#EBF2FA\] {
+  background-color: rgba(255, 255, 255, 0.75) !important;
+  border: 1.5px solid rgba(11, 74, 87, 0.20) !important;
+}
+
+.dashboard-viewport.dashboard-theme-light .flex.items-center.rounded-xl.bg-\[\#EBF2FA\] button.bg-white {
+  background-color: #076358 !important;
+  color: #FFFFFF !important;
+  border: 1px solid #054840 !important;
+  font-weight: 800 !important;
+}
+
+.dashboard-viewport.dashboard-theme-light .flex.items-center.rounded-xl.bg-\[\#EBF2FA\] button.bg-transparent {
+  background-color: transparent !important;
+  color: #235D69 !important;
+}
+
+.dashboard-viewport.dashboard-theme-light .flex.items-center.rounded-xl.bg-\[\#EBF2FA\] button.bg-transparent:hover {
+  background-color: rgba(182, 228, 242, 0.45) !important;
+  color: #0B4A57 !important;
+}
+
+
+/* --- Permitted Butter Cream Elements --- */
+/* 1. Demo Flowsheet Button */
+.dashboard-viewport.dashboard-theme-light button.bg-emerald-500\/10,
+.dashboard-viewport.dashboard-theme-light .badge-demo,
+.dashboard-viewport.dashboard-theme-light [title*="Demo Flowsheet"] {
+  background-color: #F8EDB0 !important;
+  color: #0B4A57 !important;
+  border: 1.5px solid rgba(11, 74, 87, 0.28) !important;
+}
+
+.dashboard-viewport.dashboard-theme-light button.bg-emerald-500\/10:hover,
+.dashboard-viewport.dashboard-theme-light [title*="Demo Flowsheet"]:hover {
+  background-color: #F2E496 !important;
+  color: #0B4A57 !important;
+}
+
+.dashboard-viewport.dashboard-theme-light button.bg-emerald-500\/10 svg,
+.dashboard-viewport.dashboard-theme-light [title*="Demo Flowsheet"] svg {
+  color: #0B4A57 !important;
+  stroke: #0B4A57 !important;
+}
+
+/* 2. Baseline Seed & Awaiting Feed Status Chips */
+.dashboard-viewport.dashboard-theme-light .badge-awaiting-feed,
+.dashboard-viewport.dashboard-theme-light [data-status="awaiting-feed"],
+.dashboard-viewport.dashboard-theme-light span.bg-amber-500\/10,
+.dashboard-viewport.dashboard-theme-light span.border-amber-500\/30 {
+  background-color: #F8EDB0 !important;
+  color: #0B4A57 !important;
+  border: 1px solid rgba(11, 74, 87, 0.28) !important;
+}
+
+/* 3. Empty States (Ward empty banner, zero-data notices) */
+.dashboard-viewport.dashboard-theme-light .empty-state,
+.dashboard-viewport.dashboard-theme-light [data-empty-state="true"],
+.dashboard-viewport.dashboard-theme-light div.rounded-3xl.p-5.border-dashed.border-emerald-400\/50 {
+  background-color: rgba(248, 237, 176, 0.40) !important;
+  border: 1.5px dashed rgba(11, 74, 87, 0.35) !important;
+  color: #0B4A57 !important;
+}
+
+/* --- Alert & Triage Notices (Frosted-White or Aqua Mist with Deep Teal Borders - NEVER Butter Cream) --- */
+.dashboard-viewport.dashboard-theme-light .grid-cols-1.md\:grid-cols-3 > div.border-rose-300,
+.dashboard-viewport.dashboard-theme-light .grid-cols-1.md\:grid-cols-3 > div.bg-\[\#FFF5F6\] {
+  background-color: rgba(255, 255, 255, 0.92) !important;
+  border: 1.5px solid #0B4A57 !important;
+  box-shadow: 0 4px 16px -2px rgba(11, 74, 87, 0.08) !important;
+}
+
+.dashboard-viewport.dashboard-theme-light .grid-cols-1.md\:grid-cols-3 > div.border-amber-300,
+.dashboard-viewport.dashboard-theme-light .grid-cols-1.md\:grid-cols-3 > div.bg-\[\#FFFBEB\] {
+  background-color: rgba(255, 255, 255, 0.92) !important;
+  border: 1.5px solid #0B4A57 !important;
+  box-shadow: 0 4px 16px -2px rgba(11, 74, 87, 0.08) !important;
+}
+
+.dashboard-viewport.dashboard-theme-light .alert-notice,
+.dashboard-viewport.dashboard-theme-light .triage-notice,
+.dashboard-viewport.dashboard-theme-light div[role="alert"]:not(.empty-state) {
+  background-color: rgba(182, 228, 242, 0.45) !important;
+  border: 1.5px solid #0B4A57 !important;
+  color: #0B4A57 !important;
+}
+
+/* --- 5. Sidebar Navigation Styling --- */
+/* Active Navigation Item */
+.dashboard-viewport.dashboard-theme-light aside button.bg-emerald-50 {
+  background-color: rgba(182, 228, 242, 0.70) !important;
+  color: #0B4A57 !important;
+  font-weight: 700 !important;
+  border-left: 4px solid #076358 !important;
+  border-top: 1px solid rgba(182, 228, 242, 0.90) !important;
+  border-bottom: 1px solid rgba(182, 228, 242, 0.90) !important;
+  border-right: 1px solid rgba(182, 228, 242, 0.90) !important;
+}
+
+.dashboard-viewport.dashboard-theme-light aside button.bg-emerald-50 svg {
+  color: #076358 !important;
+  stroke: #076358 !important;
+}
+
+/* Inactive Navigation Items */
+.dashboard-viewport.dashboard-theme-light aside button.bg-transparent {
+  color: #235D69 !important;
+}
+
+.dashboard-viewport.dashboard-theme-light aside button.bg-transparent:hover {
+  background-color: rgba(182, 228, 242, 0.40) !important;
+  color: #0B4A57 !important;
+}
+
+.dashboard-viewport.dashboard-theme-light aside button.bg-transparent:hover svg {
+  color: #0B4A57 !important;
+}
+
+/* --- 6. Inputs, Search & Focus Rings --- */
+.dashboard-viewport.dashboard-theme-light input,
+.dashboard-viewport.dashboard-theme-light textarea,
+.dashboard-viewport.dashboard-theme-light select {
+  background-color: rgba(255, 255, 255, 0.92) !important;
+  border: 1.5px solid rgba(11, 74, 87, 0.25) !important;
+  color: #0B4A57 !important;
+}
+
+.dashboard-viewport.dashboard-theme-light input::placeholder,
+.dashboard-viewport.dashboard-theme-light textarea::placeholder {
+  color: #235D69 !important;
+  opacity: 0.90 !important;
+}
+
+/* 2px Clinical Teal Focus Ring (with 2px offset) across all interactive elements */
+.dashboard-viewport.dashboard-theme-light button:focus-visible,
+.dashboard-viewport.dashboard-theme-light input:focus-visible,
+.dashboard-viewport.dashboard-theme-light select:focus-visible,
+.dashboard-viewport.dashboard-theme-light textarea:focus-visible,
+.dashboard-viewport.dashboard-theme-light [tabindex]:focus-visible {
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.95), 0 0 0 4px #076358 !important;
+  border-color: #076358 !important;
+}
+
+/* Chat Input Bar Container */
+.dashboard-viewport.dashboard-theme-light div[style*="9999px"].border-slate-300,
+.dashboard-viewport.dashboard-theme-light .rounded-full.border-slate-300 {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border: 1.5px solid rgba(11, 74, 87, 0.28) !important;
+}
+
+/* --- 7. View Switcher Tabs (Ward Heatmap / Clinical Alerts Queue) --- */
+.dashboard-viewport.dashboard-theme-light .rounded-full.p-2.border-\[1\.5px\] {
+  background-color: rgba(255, 255, 255, 0.75) !important;
+  border-color: rgba(11, 74, 87, 0.20) !important;
+}
+
+.dashboard-viewport.dashboard-theme-light .flex.items-center.gap-1.p-1.rounded-full.border-\[1\.5px\] {
+  background-color: rgba(255, 255, 255, 0.88) !important;
+  border-color: rgba(11, 74, 87, 0.20) !important;
+}
+
+.dashboard-viewport.dashboard-theme-light .flex.items-center.gap-1.p-1.rounded-full button.bg-emerald-50 {
+  background-color: rgba(182, 228, 242, 0.75) !important;
+  color: #0B4A57 !important;
+  border: 1.5px solid #076358 !important;
+  font-weight: 700 !important;
+}
+
+.dashboard-viewport.dashboard-theme-light .flex.items-center.gap-1.p-1.rounded-full button.bg-transparent {
+  background-color: transparent !important;
+  color: #235D69 !important;
+}
+
+.dashboard-viewport.dashboard-theme-light .flex.items-center.gap-1.p-1.rounded-full button.bg-transparent:hover {
+  background-color: rgba(182, 228, 242, 0.40) !important;
+  color: #0B4A57 !important;
+}
+
+/* --- 8. ICU Ward Bed Cards & Vacant Bed Styling --- */
+.dashboard-viewport.dashboard-theme-light .grid > div.rounded-3xl {
+  background-color: rgba(255, 255, 255, 0.90) !important;
+  box-shadow: 0 4px 22px -2px rgba(11, 74, 87, 0.08) !important;
+}
+
+/* Vacant Beds */
+.dashboard-viewport.dashboard-theme-light div.rounded-3xl.bg-\[\#F8FAFC\] {
+  background-color: rgba(255, 255, 255, 0.78) !important;
+  border-color: rgba(11, 74, 87, 0.20) !important;
+}
+
+.dashboard-viewport.dashboard-theme-light div.rounded-3xl.bg-\[\#F8FAFC\]:hover {
+  border-color: #076358 !important;
+  background-color: rgba(182, 228, 242, 0.30) !important;
+}
+
+/* Vitals strip nested inside cards */
+.dashboard-viewport.dashboard-theme-light .rounded-2xl.grid.grid-cols-3 {
+  background-color: rgba(255, 255, 255, 0.78) !important;
+  border: 1px solid rgba(11, 74, 87, 0.15) !important;
+}
+
+/* --- 9. Tables, Rows & Headers --- */
+.dashboard-viewport.dashboard-theme-light .grid.grid-cols-12.border-b-\[1\.5px\].bg-slate-50,
+.dashboard-viewport.dashboard-theme-light thead th {
+  background-color: rgba(182, 228, 242, 0.50) !important;
+  color: #0B4A57 !important;
+  border-bottom: 1.5px solid rgba(11, 74, 87, 0.20) !important;
+  font-weight: 700 !important;
+}
+
+.dashboard-viewport.dashboard-theme-light .custom-scrollbar > button:hover,
+.dashboard-viewport.dashboard-theme-light tbody tr:hover {
+  background-color: rgba(182, 228, 242, 0.25) !important;
+}
+
+/* --- 10. Modals & Dialogs --- */
+.dashboard-viewport.dashboard-theme-light .fixed.inset-0.bg-black\/60,
+.dashboard-viewport.dashboard-theme-light .fixed.inset-0.bg-slate-900\/60,
+.dashboard-viewport.dashboard-theme-light .fixed.inset-0.bg-black\/50 {
+  background-color: rgba(11, 74, 87, 0.40) !important;
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
+}
+
+.dashboard-viewport.dashboard-theme-light .fixed.inset-0 > div.bg-white,
+.dashboard-viewport.dashboard-theme-light .fixed.inset-0 .bg-white.rounded-3xl,
+.dashboard-viewport.dashboard-theme-light .fixed.inset-0 .bg-white.rounded-2xl {
+  background-color: rgba(255, 255, 255, 0.97) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1.5px solid rgba(11, 74, 87, 0.22) !important;
+  box-shadow: 0 25px 50px -12px rgba(11, 74, 87, 0.30) !important;
+  color: #0B4A57 !important;
+}
+
+/* --- 11. Preserved Semantic Status Palettes (WCAG AAA Compliant Text) --- */
+/* Critical (Red) */
+.dashboard-viewport.dashboard-theme-light .bg-rose-50,
+.dashboard-viewport.dashboard-theme-light .bg-red-50 {
+  background-color: rgba(254, 242, 242, 0.92) !important;
+}
+.dashboard-viewport.dashboard-theme-light .border-rose-200,
+.dashboard-viewport.dashboard-theme-light .border-rose-300,
+.dashboard-viewport.dashboard-theme-light .border-red-200,
+.dashboard-viewport.dashboard-theme-light .border-red-300 {
+  border-color: #FCA5A5 !important;
+}
+.dashboard-viewport.dashboard-theme-light .text-rose-700,
+.dashboard-viewport.dashboard-theme-light .text-rose-600,
+.dashboard-viewport.dashboard-theme-light .text-red-700,
+.dashboard-viewport.dashboard-theme-light span.bg-rose-50.text-rose-700,
+.dashboard-viewport.dashboard-theme-light span[class*="text-rose"],
+.dashboard-viewport.dashboard-theme-light span[class*="text-red"] {
+  color: #991B1B !important; /* Red 800: contrast > 7.5:1 */
+}
+
+/* Moderate / Warning (Amber) */
+.dashboard-viewport.dashboard-theme-light .bg-amber-50,
+.dashboard-viewport.dashboard-theme-light .bg-yellow-50 {
+  background-color: rgba(255, 251, 235, 0.92) !important;
+}
+.dashboard-viewport.dashboard-theme-light .border-amber-200,
+.dashboard-viewport.dashboard-theme-light .border-amber-300,
+.dashboard-viewport.dashboard-theme-light .border-yellow-200 {
+  border-color: #FCD34D !important;
+}
+.dashboard-viewport.dashboard-theme-light .text-amber-800,
+.dashboard-viewport.dashboard-theme-light .text-amber-700,
+.dashboard-viewport.dashboard-theme-light span.bg-amber-50.text-amber-800,
+.dashboard-viewport.dashboard-theme-light span[class*="text-amber"] {
+  color: #78350F !important; /* Amber 900: contrast > 8.0:1 */
+}
+
+/* Stable / Normal (Emerald - Darkened to #065F46 for strict 6.0:1+ contrast) */
+.dashboard-viewport.dashboard-theme-light .border-emerald-200,
+.dashboard-viewport.dashboard-theme-light .border-emerald-300 {
+  border-color: #6EE7B7 !important;
+}
+.dashboard-viewport.dashboard-theme-light .text-emerald-800,
+.dashboard-viewport.dashboard-theme-light .text-emerald-700,
+.dashboard-viewport.dashboard-theme-light span.bg-emerald-50.text-emerald-800,
+.dashboard-viewport.dashboard-theme-light span[class*="text-emerald"] {
+  color: #065F46 !important; /* Emerald 800: contrast > 6.0:1 */
+}
+
+/* --- 12. Consultation Workspace & Chat Stream --- */
+.dashboard-viewport.dashboard-theme-light .chat-user-message,
+.dashboard-viewport.dashboard-theme-light div:has(> p.text-white):has(> div.bg-emerald-600) {
+  background-color: #076358 !important;
+  color: #FFFFFF !important;
+}
+
+.dashboard-viewport.dashboard-theme-light .chat-assistant-message {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(11, 74, 87, 0.18) !important;
+  color: #0B4A57 !important;
+}
+
+/* Suggested Clinical Prompt Chips */
+.dashboard-viewport.dashboard-theme-light .flex.flex-wrap.gap-2 button {
+  background-color: rgba(182, 228, 242, 0.45) !important;
+  border: 1.5px solid rgba(11, 74, 87, 0.25) !important;
+  color: #0B4A57 !important;
+}
+
+.dashboard-viewport.dashboard-theme-light .flex.flex-wrap.gap-2 button:hover {
+  background-color: rgba(182, 228, 242, 0.75) !important;
+  border-color: #076358 !important;
+  color: #0B4A57 !important;
+}
+
+/* Fixed Bottom Chat Dock */
+.dashboard-viewport.dashboard-theme-light footer.sticky.bottom-0 {
+  background: linear-gradient(to top, rgba(255, 255, 255, 0.96) 75%, rgba(255, 255, 255, 0.80) 90%, transparent 100%) !important;
+  border-top: 1.5px solid rgba(11, 74, 87, 0.18) !important;
+}
+
+/* --- 13. Tooltips & Badges --- */
+.dashboard-viewport.dashboard-theme-light [role="tooltip"],
+.dashboard-viewport.dashboard-theme-light .tooltip {
+  background-color: #0B4A57 !important;
+  color: #FFFFFF !important;
+  border-radius: 6px !important;
+}
+
+/* Header Text Scoping */
+.dashboard-viewport.dashboard-theme-light header h1,
+.dashboard-viewport.dashboard-theme-light header span.font-display,
+.dashboard-viewport.dashboard-theme-light header .font-bold:not(.text-white):not([class*="bg-emerald-600"]):not([class*="bg-[#10B981]"]) {
+  color: #0B4A57 !important;
+}
+
+/* --- 14. Scrollbars & Text Selection --- */
+.dashboard-viewport.dashboard-theme-light ::-webkit-scrollbar-thumb {
+  background-color: rgba(7, 99, 88, 0.35) !important;
+  border-radius: 9999px !important;
+}
+
+.dashboard-viewport.dashboard-theme-light ::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.dashboard-viewport.dashboard-theme-light ::selection {
+  background-color: #B6E4F2 !important;
+  color: #0B4A57 !important;
+}
+
+/* --- 15. Real Backdrop WCAG 2.1 AA Precision Contrast Overrides --- */
+
+/* Badge & Avatar Surfaces with White Text (Solid #076358: contrast 6.36:1) */
+.dashboard-viewport.dashboard-theme-light .bg-gradient-to-br.from-emerald-500.to-teal-700,
+.dashboard-viewport.dashboard-theme-light div.rounded-lg.bg-emerald-600,
+.dashboard-viewport.dashboard-theme-light div.rounded-xl.bg-emerald-600,
+.dashboard-viewport.dashboard-theme-light div.bg-emerald-600.font-mono,
+.dashboard-viewport.dashboard-theme-light div:has(> span.font-mono):has(.bg-emerald-600) {
+  background-color: #076358 !important;
+  background-image: none !important;
+  color: #FFFFFF !important;
+  border-color: rgba(5, 72, 64, 0.40) !important;
+}
+
+/* Header & Sidebar Emerald Icons (Darkened to #065F46: contrast > 6.0:1) */
+.dashboard-viewport.dashboard-theme-light header svg.text-emerald-500,
+.dashboard-viewport.dashboard-theme-light aside svg.text-emerald-500,
+.dashboard-viewport.dashboard-theme-light svg[class*="text-emerald-500"] {
+  color: #065F46 !important;
+  stroke: #065F46 !important;
+}
+
+/* Universal Tag/Div/Span High-Contrast Semantic Overrides */
+/* Amber / Moderate Warning: #78350F (contrast > 8.0:1 against white/tint) */
+.dashboard-viewport.dashboard-theme-light [class*="text-amber-600"],
+.dashboard-viewport.dashboard-theme-light [class*="text-amber-700"],
+.dashboard-viewport.dashboard-theme-light [class*="text-amber-800"],
+.dashboard-viewport.dashboard-theme-light [class*="text-amber-500"],
+.dashboard-viewport.dashboard-theme-light .text-amber-600,
+.dashboard-viewport.dashboard-theme-light .text-amber-700,
+.dashboard-viewport.dashboard-theme-light .text-amber-800 {
+  color: #78350F !important;
+}
+
+/* Rose / Critical Red: #991B1B (contrast > 7.5:1 against white/tint) */
+.dashboard-viewport.dashboard-theme-light [class*="text-rose-600"],
+.dashboard-viewport.dashboard-theme-light [class*="text-rose-700"],
+.dashboard-viewport.dashboard-theme-light [class*="text-red-600"],
+.dashboard-viewport.dashboard-theme-light [class*="text-red-700"],
+.dashboard-viewport.dashboard-theme-light .text-rose-600,
+.dashboard-viewport.dashboard-theme-light .text-rose-700,
+.dashboard-viewport.dashboard-theme-light .text-red-600,
+.dashboard-viewport.dashboard-theme-light .text-red-700 {
+  color: #991B1B !important;
+}
+
+/* Emerald / Stable Green: #065F46 (contrast > 6.0:1 against white/tint) */
+.dashboard-viewport.dashboard-theme-light [class*="text-emerald-600"],
+.dashboard-viewport.dashboard-theme-light [class*="text-emerald-700"],
+.dashboard-viewport.dashboard-theme-light [class*="text-emerald-800"],
+.dashboard-viewport.dashboard-theme-light .text-emerald-600,
+.dashboard-viewport.dashboard-theme-light .text-emerald-700,
+.dashboard-viewport.dashboard-theme-light .text-emerald-800 {
+  color: #065F46 !important;
+}

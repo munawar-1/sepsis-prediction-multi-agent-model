@@ -108,7 +108,7 @@ export default function InboxView({
           targetX,
           targetY
         );
-        ctx.strokeStyle = isDark ? '#1E2D44' : '#E5E7EB';
+        ctx.strokeStyle = isDark ? '#1E2D44' : '#B6E4F2';
         ctx.lineWidth = 1.2;
         ctx.stroke();
       });

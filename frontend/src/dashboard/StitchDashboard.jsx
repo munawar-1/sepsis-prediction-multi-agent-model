@@ -18,6 +18,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { clinicalApi } from '../services/api';
 import './dashboard-theme.css';
+import './dashboard-theme-light.css';
 
 const STORAGE_SIDEBAR_WIDTH_KEY = 'aegis_sidebar_width';
 const MIN_SIDEBAR_WIDTH = 220;

@@ -52,15 +52,17 @@ export default function RegisterPage({ onNavigate }) {
   };
 
   return (
-    <div style={{
-      backgroundColor: isDark ? '#080E18' : '#F4F6F9',
+    <div
+      className={isDark ? 'auth-viewport auth-theme-dark' : 'auth-viewport auth-theme-light'}
+      style={{
+        background: isDark ? '#080E18' : 'linear-gradient(115deg, #B6E4F2 0%, #B3EEDC 30%, #D5FCBD 55%, #F5FCC0 78%, #F8EDB0 100%)',
       minHeight: '100vh',
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'center',
       alignItems: 'center',
       padding: '32px 24px',
-      color: isDark ? '#F1F5FA' : '#0F172A',
+      color: isDark ? '#F1F5FA' : '#0B4A57',
       position: 'relative',
       transition: 'background-color 0.2s ease, color 0.2s ease'
     }}>
@@ -71,9 +73,9 @@ export default function RegisterPage({ onNavigate }) {
           position: 'absolute',
           top: '24px',
           left: '24px',
-          background: isDark ? '#111C2B' : '#FFFFFF',
-          border: isDark ? '1px solid #243247' : '1px solid #CBD5E1',
-          color: isDark ? '#9AA9BA' : '#475569',
+          background: isDark ? '#111C2B' : 'rgba(255, 255, 255, 0.88)',
+          border: isDark ? '1px solid #243247' : '1px solid #B6E4F2',
+          color: isDark ? '#9AA9BA' : '#1A4F59',
           padding: '8px 14px',
           borderRadius: '8px',
           display: 'flex',
@@ -86,7 +88,7 @@ export default function RegisterPage({ onNavigate }) {
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.color = isDark ? '#F1F5FA' : '#0F172A';
-          e.currentTarget.style.borderColor = isDark ? '#35D6C5' : '#0D9488';
+          e.currentTarget.style.borderColor = isDark ? '#35D6C5' : '#076358';
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.color = isDark ? '#9AA9BA' : '#475569';
@@ -106,9 +108,9 @@ export default function RegisterPage({ onNavigate }) {
           position: 'absolute',
           top: '24px',
           right: '24px',
-          background: isDark ? '#111C2B' : '#FFFFFF',
-          border: isDark ? '1px solid #243247' : '1px solid #CBD5E1',
-          color: isDark ? '#F1F5FA' : '#0F172A',
+          background: isDark ? '#111C2B' : 'rgba(255, 255, 255, 0.88)',
+          border: isDark ? '1px solid #243247' : '1px solid #B6E4F2',
+          color: isDark ? '#F1F5FA' : '#0B4A57',
           padding: '8px 14px',
           borderRadius: '8px',
           display: 'flex',
@@ -137,11 +139,13 @@ export default function RegisterPage({ onNavigate }) {
       <div style={{
         width: '100%',
         maxWidth: '520px',
-        backgroundColor: isDark ? '#0D1624' : '#FFFFFF',
-        border: isDark ? '1px solid #243247' : '1px solid #E2E8F0',
+        backgroundColor: isDark ? '#0D1624' : 'rgba(255, 255, 255, 0.90)',
+        backdropFilter: isDark ? 'none' : 'blur(16px)',
+        WebkitBackdropFilter: isDark ? 'none' : 'blur(16px)',
+        border: isDark ? '1px solid #243247' : '1px solid rgba(182, 228, 242, 0.85)',
         borderRadius: '16px',
         padding: '36px 32px',
-        boxShadow: isDark ? '0 20px 40px rgba(0,0,0,0.4)' : '0 10px 30px rgba(0,0,0,0.08)',
+        boxShadow: isDark ? '0 20px 40px rgba(0,0,0,0.4)' : '0 12px 32px rgba(11, 74, 87, 0.08)',
         position: 'relative',
         transition: 'background-color 0.2s ease, border-color 0.2s ease'
       }}>
@@ -160,14 +164,14 @@ export default function RegisterPage({ onNavigate }) {
             justifyContent: 'center',
             marginBottom: '12px'
           }}>
-            <Shield size={22} color={isDark ? "#35D6C5" : "#0D9488"} />
+            <Shield size={22} color={isDark ? "#35D6C5" : "#076358"} />
           </div>
 
           <h1 style={{
             fontSize: '20px',
             fontWeight: 700,
             fontFamily: 'var(--font-display)',
-            color: isDark ? '#F1F5FA' : '#0F172A',
+            color: isDark ? '#F1F5FA' : '#0B4A57',
             letterSpacing: '-0.02em',
             marginBottom: '6px'
           }}>
@@ -175,7 +179,7 @@ export default function RegisterPage({ onNavigate }) {
           </h1>
           <p style={{
             fontSize: '12.5px',
-            color: isDark ? '#9AA9BA' : '#64748B',
+            color: isDark ? '#9AA9BA' : '#235D69',
             lineHeight: 1.5
           }}>
             Register authorized ICU Clinician profile for HourZero
@@ -208,7 +212,7 @@ export default function RegisterPage({ onNavigate }) {
             display: 'block',
             fontSize: '11px',
             fontFamily: 'var(--font-mono)',
-            color: isDark ? '#9AA9BA' : '#64748B',
+            color: isDark ? '#9AA9BA' : '#235D69',
             marginBottom: '8px',
             textTransform: 'uppercase',
             letterSpacing: '0.04em'
@@ -221,11 +225,11 @@ export default function RegisterPage({ onNavigate }) {
               onClick={() => setRole('DOCTOR')}
               style={{
                 backgroundColor: role === 'DOCTOR'
-                  ? (isDark ? 'rgba(53, 214, 197, 0.1)' : 'rgba(13, 148, 136, 0.08)')
-                  : (isDark ? '#111C2B' : '#F8FAFC'),
+                  ? (isDark ? 'rgba(53, 214, 197, 0.1)' : 'rgba(7, 99, 88, 0.10)')
+                  : (isDark ? '#111C2B' : 'rgba(255, 255, 255, 0.70)'),
                 border: role === 'DOCTOR'
-                  ? (isDark ? '1.5px solid #35D6C5' : '1.5px solid #0D9488')
-                  : (isDark ? '1px solid #243247' : '1px solid #CBD5E1'),
+                  ? (isDark ? '1.5px solid #35D6C5' : '1.5px solid #076358')
+                  : (isDark ? '1px solid #243247' : '1px solid #B6E4F2'),
                 borderRadius: '10px',
                 padding: '12px',
                 cursor: 'pointer',
@@ -242,7 +246,7 @@ export default function RegisterPage({ onNavigate }) {
                   Doctor (MD/DO)
                 </span>
               </div>
-              <p style={{ fontSize: '10.5px', color: isDark ? '#9AA9BA' : '#64748B', lineHeight: 1.4, margin: 0 }}>
+              <p style={{ fontSize: '10.5px', color: isDark ? '#9AA9BA' : '#235D69', lineHeight: 1.4, margin: 0 }}>
                 Diagnostic authority, medication orders, bundle sign-off & AI override rights.
               </p>
             </div>
@@ -252,11 +256,11 @@ export default function RegisterPage({ onNavigate }) {
               onClick={() => setRole('NURSE')}
               style={{
                 backgroundColor: role === 'NURSE'
-                  ? (isDark ? 'rgba(14, 165, 233, 0.1)' : 'rgba(14, 165, 233, 0.08)')
-                  : (isDark ? '#111C2B' : '#F8FAFC'),
+                  ? (isDark ? 'rgba(14, 165, 233, 0.1)' : 'rgba(14, 165, 233, 0.10)')
+                  : (isDark ? '#111C2B' : 'rgba(255, 255, 255, 0.70)'),
                 border: role === 'NURSE'
-                  ? '1.5px solid #0EA5E9'
-                  : (isDark ? '1px solid #243247' : '1px solid #CBD5E1'),
+                  ? '1.5px solid #0284C7'
+                  : (isDark ? '1px solid #243247' : '1px solid #B6E4F2'),
                 borderRadius: '10px',
                 padding: '12px',
                 cursor: 'pointer',
@@ -273,7 +277,7 @@ export default function RegisterPage({ onNavigate }) {
                   Nurse (RN/BSN)
                 </span>
               </div>
-              <p style={{ fontSize: '10.5px', color: isDark ? '#9AA9BA' : '#64748B', lineHeight: 1.4, margin: 0 }}>
+              <p style={{ fontSize: '10.5px', color: isDark ? '#9AA9BA' : '#235D69', lineHeight: 1.4, margin: 0 }}>
                 Bedside telemetry monitoring, vital signs recording & STAT lab escalation.
               </p>
             </div>
@@ -287,7 +291,7 @@ export default function RegisterPage({ onNavigate }) {
               display: 'block',
               fontSize: '11px',
               fontFamily: 'var(--font-mono)',
-              color: isDark ? '#9AA9BA' : '#64748B',
+              color: isDark ? '#9AA9BA' : '#235D69',
               marginBottom: '5px',
               textTransform: 'uppercase',
               letterSpacing: '0.04em'
@@ -304,16 +308,16 @@ export default function RegisterPage({ onNavigate }) {
                 style={{
                   width: '100%',
                   padding: '9px 12px 9px 36px',
-                  backgroundColor: isDark ? '#080E18' : '#F8FAFC',
-                  border: isDark ? '1px solid #243247' : '1px solid #CBD5E1',
+                  backgroundColor: isDark ? '#080E18' : 'rgba(255, 255, 255, 0.95)',
+                  border: isDark ? '1px solid #243247' : '1px solid #B6E4F2',
                   borderRadius: '8px',
-                  color: isDark ? '#F1F5FA' : '#0F172A',
+                  color: isDark ? '#F1F5FA' : '#0B4A57',
                   fontSize: '13px',
                   outline: 'none',
                   fontFamily: 'var(--font-sans)',
                   transition: 'border-color 0.15s'
                 }}
-                onFocus={(e) => e.target.style.borderColor = isDark ? '#35D6C5' : '#0D9488'}
+                onFocus={(e) => e.target.style.borderColor = isDark ? '#35D6C5' : '#076358'}
                 onBlur={(e) => e.target.style.borderColor = isDark ? '#243247' : '#CBD5E1'}
               />
             </div>
@@ -325,7 +329,7 @@ export default function RegisterPage({ onNavigate }) {
                 display: 'block',
                 fontSize: '11px',
                 fontFamily: 'var(--font-mono)',
-                color: isDark ? '#9AA9BA' : '#64748B',
+                color: isDark ? '#9AA9BA' : '#235D69',
                 marginBottom: '5px',
                 textTransform: 'uppercase',
                 letterSpacing: '0.04em'
@@ -341,16 +345,16 @@ export default function RegisterPage({ onNavigate }) {
                 style={{
                   width: '100%',
                   padding: '9px 12px',
-                  backgroundColor: isDark ? '#080E18' : '#F8FAFC',
-                  border: isDark ? '1px solid #243247' : '1px solid #CBD5E1',
+                  backgroundColor: isDark ? '#080E18' : 'rgba(255, 255, 255, 0.95)',
+                  border: isDark ? '1px solid #243247' : '1px solid #B6E4F2',
                   borderRadius: '8px',
-                  color: isDark ? '#F1F5FA' : '#0F172A',
+                  color: isDark ? '#F1F5FA' : '#0B4A57',
                   fontSize: '13px',
                   outline: 'none',
                   fontFamily: 'var(--font-sans)',
                   transition: 'border-color 0.15s'
                 }}
-                onFocus={(e) => e.target.style.borderColor = isDark ? '#35D6C5' : '#0D9488'}
+                onFocus={(e) => e.target.style.borderColor = isDark ? '#35D6C5' : '#076358'}
                 onBlur={(e) => e.target.style.borderColor = isDark ? '#243247' : '#CBD5E1'}
               />
             </div>
@@ -360,7 +364,7 @@ export default function RegisterPage({ onNavigate }) {
                 display: 'block',
                 fontSize: '11px',
                 fontFamily: 'var(--font-mono)',
-                color: isDark ? '#9AA9BA' : '#64748B',
+                color: isDark ? '#9AA9BA' : '#235D69',
                 marginBottom: '5px',
                 textTransform: 'uppercase',
                 letterSpacing: '0.04em'
@@ -378,16 +382,16 @@ export default function RegisterPage({ onNavigate }) {
                   style={{
                     width: '100%',
                     padding: '9px 10px 9px 32px',
-                    backgroundColor: isDark ? '#080E18' : '#F8FAFC',
-                    border: isDark ? '1px solid #243247' : '1px solid #CBD5E1',
+                    backgroundColor: isDark ? '#080E18' : 'rgba(255, 255, 255, 0.95)',
+                    border: isDark ? '1px solid #243247' : '1px solid #B6E4F2',
                     borderRadius: '8px',
-                    color: isDark ? '#F1F5FA' : '#0F172A',
+                    color: isDark ? '#F1F5FA' : '#0B4A57',
                     fontSize: '13px',
                     outline: 'none',
                     fontFamily: 'var(--font-sans)',
                     transition: 'border-color 0.15s'
                   }}
-                  onFocus={(e) => e.target.style.borderColor = isDark ? '#35D6C5' : '#0D9488'}
+                  onFocus={(e) => e.target.style.borderColor = isDark ? '#35D6C5' : '#076358'}
                   onBlur={(e) => e.target.style.borderColor = isDark ? '#243247' : '#CBD5E1'}
                 />
               </div>
@@ -400,7 +404,7 @@ export default function RegisterPage({ onNavigate }) {
                 display: 'block',
                 fontSize: '11px',
                 fontFamily: 'var(--font-mono)',
-                color: isDark ? '#9AA9BA' : '#64748B',
+                color: isDark ? '#9AA9BA' : '#235D69',
                 marginBottom: '5px',
                 textTransform: 'uppercase',
                 letterSpacing: '0.04em'
@@ -417,16 +421,16 @@ export default function RegisterPage({ onNavigate }) {
                   style={{
                     width: '100%',
                     padding: '9px 10px 9px 32px',
-                    backgroundColor: isDark ? '#080E18' : '#F8FAFC',
-                    border: isDark ? '1px solid #243247' : '1px solid #CBD5E1',
+                    backgroundColor: isDark ? '#080E18' : 'rgba(255, 255, 255, 0.95)',
+                    border: isDark ? '1px solid #243247' : '1px solid #B6E4F2',
                     borderRadius: '8px',
-                    color: isDark ? '#F1F5FA' : '#0F172A',
+                    color: isDark ? '#F1F5FA' : '#0B4A57',
                     fontSize: '13px',
                     outline: 'none',
                     fontFamily: 'var(--font-sans)',
                     transition: 'border-color 0.15s'
                   }}
-                  onFocus={(e) => e.target.style.borderColor = isDark ? '#35D6C5' : '#0D9488'}
+                  onFocus={(e) => e.target.style.borderColor = isDark ? '#35D6C5' : '#076358'}
                   onBlur={(e) => e.target.style.borderColor = isDark ? '#243247' : '#CBD5E1'}
                 />
               </div>
@@ -437,7 +441,7 @@ export default function RegisterPage({ onNavigate }) {
                 display: 'block',
                 fontSize: '11px',
                 fontFamily: 'var(--font-mono)',
-                color: isDark ? '#9AA9BA' : '#64748B',
+                color: isDark ? '#9AA9BA' : '#235D69',
                 marginBottom: '5px',
                 textTransform: 'uppercase',
                 letterSpacing: '0.04em'
@@ -454,16 +458,16 @@ export default function RegisterPage({ onNavigate }) {
                   style={{
                     width: '100%',
                     padding: '9px 10px 9px 32px',
-                    backgroundColor: isDark ? '#080E18' : '#F8FAFC',
-                    border: isDark ? '1px solid #243247' : '1px solid #CBD5E1',
+                    backgroundColor: isDark ? '#080E18' : 'rgba(255, 255, 255, 0.95)',
+                    border: isDark ? '1px solid #243247' : '1px solid #B6E4F2',
                     borderRadius: '8px',
-                    color: isDark ? '#F1F5FA' : '#0F172A',
+                    color: isDark ? '#F1F5FA' : '#0B4A57',
                     fontSize: '13px',
                     outline: 'none',
                     fontFamily: 'var(--font-sans)',
                     transition: 'border-color 0.15s'
                   }}
-                  onFocus={(e) => e.target.style.borderColor = isDark ? '#35D6C5' : '#0D9488'}
+                  onFocus={(e) => e.target.style.borderColor = isDark ? '#35D6C5' : '#076358'}
                   onBlur={(e) => e.target.style.borderColor = isDark ? '#243247' : '#CBD5E1'}
                 />
               </div>
@@ -475,7 +479,7 @@ export default function RegisterPage({ onNavigate }) {
               display: 'block',
               fontSize: '11px',
               fontFamily: 'var(--font-mono)',
-              color: isDark ? '#9AA9BA' : '#64748B',
+              color: isDark ? '#9AA9BA' : '#235D69',
               marginBottom: '5px',
               textTransform: 'uppercase',
               letterSpacing: '0.04em'
@@ -493,16 +497,16 @@ export default function RegisterPage({ onNavigate }) {
                 style={{
                   width: '100%',
                   padding: '9px 12px 9px 36px',
-                  backgroundColor: isDark ? '#080E18' : '#F8FAFC',
-                  border: isDark ? '1px solid #243247' : '1px solid #CBD5E1',
+                  backgroundColor: isDark ? '#080E18' : 'rgba(255, 255, 255, 0.95)',
+                  border: isDark ? '1px solid #243247' : '1px solid #B6E4F2',
                   borderRadius: '8px',
-                  color: isDark ? '#F1F5FA' : '#0F172A',
+                  color: isDark ? '#F1F5FA' : '#0B4A57',
                   fontSize: '13px',
                   outline: 'none',
                   fontFamily: 'var(--font-sans)',
                   transition: 'border-color 0.15s'
                 }}
-                onFocus={(e) => e.target.style.borderColor = isDark ? '#35D6C5' : '#0D9488'}
+                onFocus={(e) => e.target.style.borderColor = isDark ? '#35D6C5' : '#076358'}
                 onBlur={(e) => e.target.style.borderColor = isDark ? '#243247' : '#CBD5E1'}
               />
             </div>
@@ -512,9 +516,7 @@ export default function RegisterPage({ onNavigate }) {
             type="submit"
             disabled={authLoading}
             style={{
-              backgroundColor: role === 'DOCTOR'
-                ? (isDark ? '#35D6C5' : '#0D9488')
-                : '#0EA5E9',
+              backgroundColor: role === 'DOCTOR' ? (isDark ? '#35D6C5' : '#076358') : (isDark ? '#0EA5E9' : '#0284C7'),
               color: isDark ? '#080E18' : '#FFFFFF',
               border: 'none',
               borderRadius: '8px',
@@ -540,7 +542,7 @@ export default function RegisterPage({ onNavigate }) {
         <div style={{
           marginTop: '20px',
           paddingTop: '16px',
-          borderTop: isDark ? '1px solid #1F293D' : '1px solid #E2E8F0',
+          borderTop: isDark ? '1px solid #1F293D' : '1px solid #B6E4F2',
           textAlign: 'center',
           fontSize: '12px',
           color: isDark ? '#9AA9BA' : '#64748B'
@@ -552,7 +554,7 @@ export default function RegisterPage({ onNavigate }) {
             style={{
               background: 'none',
               border: 'none',
-              color: isDark ? '#35D6C5' : '#0D9488',
+              color: isDark ? '#35D6C5' : '#076358',
               fontWeight: 600,
               cursor: 'pointer',
               textDecoration: 'none',

@@ -38,15 +38,17 @@ export default function LoginPage({ onNavigate, returnPath = '/dashboard' }) {
   };
 
   return (
-    <div style={{
-      backgroundColor: isDark ? '#080E18' : '#F4F6F9',
+    <div
+      className={isDark ? 'auth-viewport auth-theme-dark' : 'auth-viewport auth-theme-light'}
+      style={{
+        background: isDark ? '#080E18' : 'linear-gradient(115deg, #B6E4F2 0%, #B3EEDC 30%, #D5FCBD 55%, #F5FCC0 78%, #F8EDB0 100%)',
       minHeight: '100vh',
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'center',
       alignItems: 'center',
       padding: '24px',
-      color: isDark ? '#F1F5FA' : '#0F172A',
+      color: isDark ? '#F1F5FA' : '#0B4A57',
       position: 'relative',
       transition: 'background-color 0.2s ease, color 0.2s ease'
     }}>
@@ -57,9 +59,9 @@ export default function LoginPage({ onNavigate, returnPath = '/dashboard' }) {
           position: 'absolute',
           top: '24px',
           left: '24px',
-          background: isDark ? '#111C2B' : '#FFFFFF',
-          border: isDark ? '1px solid #243247' : '1px solid #CBD5E1',
-          color: isDark ? '#9AA9BA' : '#475569',
+          background: isDark ? '#111C2B' : 'rgba(255, 255, 255, 0.88)',
+          border: isDark ? '1px solid #243247' : '1px solid #B6E4F2',
+          color: isDark ? '#9AA9BA' : '#1A4F59',
           padding: '8px 14px',
           borderRadius: '8px',
           display: 'flex',
@@ -72,7 +74,7 @@ export default function LoginPage({ onNavigate, returnPath = '/dashboard' }) {
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.color = isDark ? '#F1F5FA' : '#0F172A';
-          e.currentTarget.style.borderColor = isDark ? '#35D6C5' : '#0D9488';
+          e.currentTarget.style.borderColor = isDark ? '#35D6C5' : '#076358';
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.color = isDark ? '#9AA9BA' : '#475569';
@@ -92,9 +94,9 @@ export default function LoginPage({ onNavigate, returnPath = '/dashboard' }) {
           position: 'absolute',
           top: '24px',
           right: '24px',
-          background: isDark ? '#111C2B' : '#FFFFFF',
-          border: isDark ? '1px solid #243247' : '1px solid #CBD5E1',
-          color: isDark ? '#F1F5FA' : '#0F172A',
+          background: isDark ? '#111C2B' : 'rgba(255, 255, 255, 0.88)',
+          border: isDark ? '1px solid #243247' : '1px solid #B6E4F2',
+          color: isDark ? '#F1F5FA' : '#0B4A57',
           padding: '8px 14px',
           borderRadius: '8px',
           display: 'flex',
@@ -123,11 +125,13 @@ export default function LoginPage({ onNavigate, returnPath = '/dashboard' }) {
       <div style={{
         width: '100%',
         maxWidth: '440px',
-        backgroundColor: isDark ? '#0D1624' : '#FFFFFF',
-        border: isDark ? '1px solid #243247' : '1px solid #E2E8F0',
+        backgroundColor: isDark ? '#0D1624' : 'rgba(255, 255, 255, 0.90)',
+        backdropFilter: isDark ? 'none' : 'blur(16px)',
+        WebkitBackdropFilter: isDark ? 'none' : 'blur(16px)',
+        border: isDark ? '1px solid #243247' : '1px solid rgba(182, 228, 242, 0.85)',
         borderRadius: '16px',
         padding: '36px 32px',
-        boxShadow: isDark ? '0 20px 40px rgba(0,0,0,0.4)' : '0 10px 30px rgba(0,0,0,0.08)',
+        boxShadow: isDark ? '0 20px 40px rgba(0,0,0,0.4)' : '0 12px 32px rgba(11, 74, 87, 0.08)',
         position: 'relative',
         transition: 'background-color 0.2s ease, border-color 0.2s ease'
       }}>
@@ -146,14 +150,14 @@ export default function LoginPage({ onNavigate, returnPath = '/dashboard' }) {
             justifyContent: 'center',
             marginBottom: '14px'
           }}>
-            <Shield size={22} color={isDark ? "#35D6C5" : "#0D9488"} />
+            <Shield size={22} color={isDark ? "#35D6C5" : "#076358"} />
           </div>
 
           <h1 style={{
             fontSize: '20px',
             fontWeight: 700,
             fontFamily: 'var(--font-display)',
-            color: isDark ? '#F1F5FA' : '#0F172A',
+            color: isDark ? '#F1F5FA' : '#0B4A57',
             letterSpacing: '-0.02em',
             marginBottom: '6px'
           }}>
@@ -161,7 +165,7 @@ export default function LoginPage({ onNavigate, returnPath = '/dashboard' }) {
           </h1>
           <p style={{
             fontSize: '12.5px',
-            color: isDark ? '#9AA9BA' : '#64748B',
+            color: isDark ? '#9AA9BA' : '#235D69',
             lineHeight: 1.5
           }}>
             Multi-Agent Sepsis Surveillance & Clinical Triage
@@ -190,8 +194,8 @@ export default function LoginPage({ onNavigate, returnPath = '/dashboard' }) {
 
         {/* Quick Demo Credentials */}
         <div style={{
-          backgroundColor: isDark ? '#111C2B' : '#F8FAFC',
-          border: isDark ? '1px solid #1F293D' : '1px solid #E2E8F0',
+          backgroundColor: isDark ? '#111C2B' : 'rgba(240, 253, 250, 0.75)',
+          border: isDark ? '1px solid #1F293D' : '1px solid #B6E4F2',
           borderRadius: '10px',
           padding: '12px',
           marginBottom: '22px'
@@ -199,7 +203,7 @@ export default function LoginPage({ onNavigate, returnPath = '/dashboard' }) {
           <div style={{
             fontSize: '10.5px',
             fontFamily: 'var(--font-mono)',
-            color: isDark ? '#35D6C5' : '#0D9488',
+            color: isDark ? '#35D6C5' : '#076358',
             textTransform: 'uppercase',
             letterSpacing: '0.05em',
             marginBottom: '8px',
@@ -213,21 +217,21 @@ export default function LoginPage({ onNavigate, returnPath = '/dashboard' }) {
               onClick={() => handleQuickFill('dr.sharma', 'Doctor123!')}
               style={{
                 backgroundColor: isDark ? '#162337' : '#FFFFFF',
-                border: isDark ? '1px solid #243247' : '1px solid #CBD5E1',
+                border: isDark ? '1px solid #243247' : '1px solid #B6E4F2',
                 borderRadius: '6px',
                 padding: '6px 8px',
                 fontSize: '11px',
-                color: isDark ? '#F1F5FA' : '#0F172A',
+                color: isDark ? '#F1F5FA' : '#0B4A57',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
                 transition: 'all 0.15s'
               }}
-              onMouseEnter={(e) => e.currentTarget.style.borderColor = isDark ? '#35D6C5' : '#0D9488'}
+              onMouseEnter={(e) => e.currentTarget.style.borderColor = isDark ? '#35D6C5' : '#076358'}
               onMouseLeave={(e) => e.currentTarget.style.borderColor = isDark ? '#243247' : '#CBD5E1'}
             >
-              <Stethoscope size={13} color={isDark ? "#35D6C5" : "#0D9488"} />
+              <Stethoscope size={13} color={isDark ? "#35D6C5" : "#076358"} />
               <div style={{ textAlign: 'left' }}>
                 <div style={{ fontWeight: 600 }}>Doctor</div>
                 <div style={{ fontSize: '9px', color: isDark ? '#9AA9BA' : '#64748B' }}>dr.sharma</div>
@@ -239,11 +243,11 @@ export default function LoginPage({ onNavigate, returnPath = '/dashboard' }) {
               onClick={() => handleQuickFill('nurse.priya', 'Nurse123!')}
               style={{
                 backgroundColor: isDark ? '#162337' : '#FFFFFF',
-                border: isDark ? '1px solid #243247' : '1px solid #CBD5E1',
+                border: isDark ? '1px solid #243247' : '1px solid #B6E4F2',
                 borderRadius: '6px',
                 padding: '6px 8px',
                 fontSize: '11px',
-                color: isDark ? '#F1F5FA' : '#0F172A',
+                color: isDark ? '#F1F5FA' : '#0B4A57',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
@@ -269,7 +273,7 @@ export default function LoginPage({ onNavigate, returnPath = '/dashboard' }) {
               display: 'block',
               fontSize: '11px',
               fontFamily: 'var(--font-mono)',
-              color: isDark ? '#9AA9BA' : '#64748B',
+              color: isDark ? '#9AA9BA' : '#235D69',
               marginBottom: '6px',
               textTransform: 'uppercase',
               letterSpacing: '0.04em'
@@ -287,16 +291,16 @@ export default function LoginPage({ onNavigate, returnPath = '/dashboard' }) {
                 style={{
                   width: '100%',
                   padding: '9px 12px 9px 36px',
-                  backgroundColor: isDark ? '#080E18' : '#F8FAFC',
-                  border: isDark ? '1px solid #243247' : '1px solid #CBD5E1',
+                  backgroundColor: isDark ? '#080E18' : 'rgba(255, 255, 255, 0.95)',
+                  border: isDark ? '1px solid #243247' : '1px solid #B6E4F2',
                   borderRadius: '8px',
-                  color: isDark ? '#F1F5FA' : '#0F172A',
+                  color: isDark ? '#F1F5FA' : '#0B4A57',
                   fontSize: '13px',
                   outline: 'none',
                   fontFamily: 'var(--font-sans)',
                   transition: 'border-color 0.15s'
                 }}
-                onFocus={(e) => e.target.style.borderColor = isDark ? '#35D6C5' : '#0D9488'}
+                onFocus={(e) => e.target.style.borderColor = isDark ? '#35D6C5' : '#076358'}
                 onBlur={(e) => e.target.style.borderColor = isDark ? '#243247' : '#CBD5E1'}
               />
             </div>
@@ -307,7 +311,7 @@ export default function LoginPage({ onNavigate, returnPath = '/dashboard' }) {
               display: 'block',
               fontSize: '11px',
               fontFamily: 'var(--font-mono)',
-              color: isDark ? '#9AA9BA' : '#64748B',
+              color: isDark ? '#9AA9BA' : '#235D69',
               marginBottom: '6px',
               textTransform: 'uppercase',
               letterSpacing: '0.04em'
@@ -325,16 +329,16 @@ export default function LoginPage({ onNavigate, returnPath = '/dashboard' }) {
                 style={{
                   width: '100%',
                   padding: '9px 12px 9px 36px',
-                  backgroundColor: isDark ? '#080E18' : '#F8FAFC',
-                  border: isDark ? '1px solid #243247' : '1px solid #CBD5E1',
+                  backgroundColor: isDark ? '#080E18' : 'rgba(255, 255, 255, 0.95)',
+                  border: isDark ? '1px solid #243247' : '1px solid #B6E4F2',
                   borderRadius: '8px',
-                  color: isDark ? '#F1F5FA' : '#0F172A',
+                  color: isDark ? '#F1F5FA' : '#0B4A57',
                   fontSize: '13px',
                   outline: 'none',
                   fontFamily: 'var(--font-sans)',
                   transition: 'border-color 0.15s'
                 }}
-                onFocus={(e) => e.target.style.borderColor = isDark ? '#35D6C5' : '#0D9488'}
+                onFocus={(e) => e.target.style.borderColor = isDark ? '#35D6C5' : '#076358'}
                 onBlur={(e) => e.target.style.borderColor = isDark ? '#243247' : '#CBD5E1'}
               />
             </div>
@@ -344,7 +348,7 @@ export default function LoginPage({ onNavigate, returnPath = '/dashboard' }) {
             type="submit"
             disabled={authLoading}
             style={{
-              backgroundColor: isDark ? '#35D6C5' : '#0D9488',
+              backgroundColor: isDark ? '#35D6C5' : '#076358',
               color: isDark ? '#080E18' : '#FFFFFF',
               border: 'none',
               borderRadius: '8px',
@@ -370,7 +374,7 @@ export default function LoginPage({ onNavigate, returnPath = '/dashboard' }) {
         <div style={{
           marginTop: '24px',
           paddingTop: '18px',
-          borderTop: isDark ? '1px solid #1F293D' : '1px solid #E2E8F0',
+          borderTop: isDark ? '1px solid #1F293D' : '1px solid #B6E4F2',
           textAlign: 'center',
           fontSize: '12px',
           color: isDark ? '#9AA9BA' : '#64748B'
@@ -382,7 +386,7 @@ export default function LoginPage({ onNavigate, returnPath = '/dashboard' }) {
             style={{
               background: 'none',
               border: 'none',
-              color: isDark ? '#35D6C5' : '#0D9488',
+              color: isDark ? '#35D6C5' : '#076358',
               fontWeight: 600,
               cursor: 'pointer',
               textDecoration: 'none',

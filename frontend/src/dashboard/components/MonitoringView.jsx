@@ -65,7 +65,7 @@ export default function MonitoringView({ alert = {}, patientHistory = null }) {
       const mid = h / 2;
 
       // Soft Grid
-      ctx.strokeStyle = isDark ? '#1E2D44' : '#E2E8F0';
+      ctx.strokeStyle = isDark ? '#1E2D44' : '#B6E4F2';
       ctx.lineWidth = 1;
       for (let x = 0; x < w; x += 24) {
         ctx.beginPath();
@@ -82,7 +82,7 @@ export default function MonitoringView({ alert = {}, patientHistory = null }) {
 
       // Continuous pulse wave in Emerald (#10B981)
       ctx.lineWidth = 2.2;
-      ctx.strokeStyle = '#10B981';
+      ctx.strokeStyle = isDark ? '#10B981' : '#0A7D70';
       ctx.beginPath();
 
       for (let x = 0; x < w; x++) {
