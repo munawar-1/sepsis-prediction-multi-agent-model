@@ -19,6 +19,8 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import MultiAgentConsensusCard from './MultiAgentConsensusCard';
+import ClinicalMarkdownRenderer from './ClinicalMarkdownRenderer';
 
 export default function ConversationWorkspace({
   alert,
@@ -500,22 +502,75 @@ export default function ConversationWorkspace({
             </div>
           </div>
 
-          {/* Suggested Prompt Chips */}
-          <div className="pt-3 border-t-[1.5px] border-slate-100">
-            <div className="text-[11px] font-mono text-slate-500 mb-2 font-bold uppercase tracking-wider">
-              Suggested clinical inquiries:
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {suggestedPrompts.map((p, idx) => (
+          {/* Suggested Prompt Chips & Multi-Agent Trajectory Inquiries */}
+          <div className="pt-3 border-t-[1.5px] border-slate-100 space-y-3">
+            {/* Dedicated Multi-Agent Trajectory Inquiry Buttons */}
+            <div>
+              <div className="text-[11px] font-mono text-emerald-800 font-bold uppercase tracking-wider flex items-center gap-1.5 mb-2">
+                <Zap className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Multi-Agent Trajectory Deep-Dive (Orchestrator Inference):</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 <button
-                  key={idx}
-                  onClick={() => handleChipClick(p.query)}
-                  className="rounded-full text-xs font-semibold px-4 py-1.5 bg-white border-[1.5px] border-slate-300 text-slate-800 hover:border-emerald-500 hover:text-emerald-800 hover:bg-emerald-50 transition-all duration-200 ease-in-out cursor-pointer flex items-center gap-1.5 shadow-2xs active:scale-95"
+                  type="button"
+                  onClick={() => handleChipClick("Explain the hourly sepsis risk trend across all monitored hours with clinical inflection points")}
+                  className="px-3.5 py-2.5 rounded-2xl text-xs font-semibold bg-emerald-50/80 hover:bg-emerald-100/90 text-emerald-900 border-[1.5px] border-emerald-300 transition-all duration-200 cursor-pointer flex items-center gap-2.5 text-left shadow-2xs group active:scale-[0.98]"
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>{p.label}</span>
+                  <div className="w-7 h-7 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                    <Activity className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-slate-900 leading-tight">Hourly Risk Trend</div>
+                    <div className="text-[10px] text-emerald-700 font-medium">Trajectory & Inflections</div>
+                  </div>
                 </button>
-              ))}
+
+                <button
+                  type="button"
+                  onClick={() => handleChipClick("Compare each model prediction trend: Vitals Agent (XGBoost) vs Labs Agent (LightGBM) vs Skeptic Filter")}
+                  className="px-3.5 py-2.5 rounded-2xl text-xs font-semibold bg-blue-50/80 hover:bg-blue-100/90 text-blue-900 border-[1.5px] border-blue-300 transition-all duration-200 cursor-pointer flex items-center gap-2.5 text-left shadow-2xs group active:scale-[0.98]"
+                >
+                  <div className="w-7 h-7 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                    <Zap className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-slate-900 leading-tight">Model Prediction Trends</div>
+                    <div className="text-[10px] text-blue-700 font-medium">Vitals vs Labs vs Skeptic</div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleChipClick("Show each feature trend per hour (Shock Index, MAP, Lactate, RR) in a structured telemetry table")}
+                  className="px-3.5 py-2.5 rounded-2xl text-xs font-semibold bg-purple-50/80 hover:bg-purple-100/90 text-purple-900 border-[1.5px] border-purple-300 transition-all duration-200 cursor-pointer flex items-center gap-2.5 text-left shadow-2xs group active:scale-[0.98]"
+                >
+                  <div className="w-7 h-7 rounded-xl bg-purple-600 text-white flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                    <Gauge className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-slate-900 leading-tight">Hourly Feature Trends</div>
+                    <div className="text-[10px] text-purple-700 font-medium">SI, MAP, Lactate, RR</div>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <div className="text-[11px] font-mono text-slate-500 mb-2 font-bold uppercase tracking-wider">
+                Suggested clinical inquiries:
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {suggestedPrompts.map((p, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => handleChipClick(p.query)}
+                    className="rounded-full text-xs font-semibold px-4 py-1.5 bg-white border-[1.5px] border-slate-300 text-slate-800 hover:border-emerald-500 hover:text-emerald-800 hover:bg-emerald-50 transition-all duration-200 ease-in-out cursor-pointer flex items-center gap-1.5 shadow-2xs active:scale-95"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>{p.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -576,16 +631,17 @@ export default function ConversationWorkspace({
                     </span>
                   </div>
 
-                  {/* Prose / Markdown-style structured response in Pure White Card */}
-                  <div
-                    className="bg-white border-[1.5px] border-slate-200 rounded-3xl p-5 text-xs text-slate-800 leading-relaxed space-y-4 font-sans shadow-2xs"
-                  >
-                    <div className="whitespace-pre-wrap leading-relaxed text-slate-900 font-medium text-xs">
-                      {msg.text}
-                    </div>
+                  {/* Visual Multi-Agent Consensus Card or Clinical Markdown Card */}
+                  {msg.multiAgentData ? (
+                    <MultiAgentConsensusCard {...msg.multiAgentData} />
+                  ) : (
+                    <div
+                      className="bg-white border-[1.5px] border-slate-200 rounded-3xl p-5 text-xs text-slate-800 leading-relaxed space-y-4 font-sans shadow-2xs"
+                    >
+                      <ClinicalMarkdownRenderer content={msg.text} />
 
-                    {/* Expandable Evidence Sections */}
-                    {msg.evidence && msg.evidence.length > 0 && (
+                      {/* Expandable Evidence Sections */}
+                      {msg.evidence && msg.evidence.length > 0 && (
                       <div className="pt-3 border-t-[1.5px] border-slate-100 space-y-2.5">
                         <div className="text-[11px] font-mono text-slate-500 uppercase font-bold tracking-wider">
                           Corroborating Evidence Accordions:
@@ -637,6 +693,7 @@ export default function ConversationWorkspace({
                       </div>
                     )}
                   </div>
+                )}
                 </div>
               </div>
             );
@@ -698,6 +755,37 @@ export default function ConversationWorkspace({
               <span>{attachmentNotice}</span>
             </div>
           )}
+
+          {/* Quick Multi-Agent Trajectory Analysis Ribbon */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+            <span className="text-[10px] font-mono uppercase font-bold text-slate-500 whitespace-nowrap pl-1 shrink-0">
+              Agent Trajectory:
+            </span>
+            <button
+              type="button"
+              onClick={() => handleChipClick("Explain the hourly sepsis risk trend across all monitored hours with clinical inflection points")}
+              className="px-3 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-800 border-[1.5px] border-emerald-300 hover:bg-emerald-100 hover:border-emerald-400 transition-all duration-200 cursor-pointer flex items-center gap-1.5 shrink-0 shadow-2xs active:scale-95"
+            >
+              <Activity className="w-3 h-3 text-emerald-600" />
+              <span>Hourly Risk Trend</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleChipClick("Compare each model prediction trend: Vitals Agent (XGBoost) vs Labs Agent (LightGBM) vs Skeptic Filter")}
+              className="px-3 py-1 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-800 border-[1.5px] border-blue-300 hover:bg-blue-100 hover:border-blue-400 transition-all duration-200 cursor-pointer flex items-center gap-1.5 shrink-0 shadow-2xs active:scale-95"
+            >
+              <Zap className="w-3 h-3 text-blue-600" />
+              <span>Model Prediction Trends</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleChipClick("Show each feature trend per hour (Shock Index, MAP, Lactate, RR) in a structured telemetry table")}
+              className="px-3 py-1 rounded-full text-[11px] font-semibold bg-purple-50 text-purple-800 border-[1.5px] border-purple-300 hover:bg-purple-100 hover:border-purple-400 transition-all duration-200 cursor-pointer flex items-center gap-1.5 shrink-0 shadow-2xs active:scale-95"
+            >
+              <Gauge className="w-3 h-3 text-purple-600" />
+              <span>Feature Trends Per Hour</span>
+            </button>
+          </div>
 
           {/* Floating Pill / Rounded-2xl Input Container */}
           <div

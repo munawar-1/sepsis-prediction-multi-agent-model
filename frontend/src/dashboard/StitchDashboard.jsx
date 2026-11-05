@@ -11,7 +11,7 @@ import SettingsView from './components/SettingsView';
 import OverrideModal from './components/OverrideModal';
 import NurseEntryModal from './components/NurseEntryModal';
 import ExcelUploadModal from './components/ExcelUploadModal';
-import { downloadDemoWorkbookFile } from './data/demoFlowsheetData';
+import { downloadDemoWorkbookFile, DEMO_FLOWSHEET_ROWS } from './data/demoFlowsheetData';
 import Header from './components/Header';
 import { Activity } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
@@ -515,6 +515,31 @@ export default function StitchDashboard({ onExitToLanding }) {
             ? Number(evalData.shock_index).toFixed(2)
             : (hr / sbp).toFixed(2);
 
+          // Extract granular agent reasonings from evidence_chain_narrative if present
+          const narrativeText = narrative || '';
+          const vitalsMatch = narrativeText.match(/\[VITALS AGENT: ([\s\S]*?)\](?:\n|$)/);
+          const labsMatch = narrativeText.match(/\[LABS AGENT: ([\s\S]*?)\](?:\n|$)/);
+          const skepticMatch = narrativeText.match(/\[SKEPTIC FILTER: ([\s\S]*?)\](?:\n|$)/);
+
+          const vitalsReasoning = vitalsMatch ? vitalsMatch[1].trim() : (evalData.vitals_evidence?.clinical_reasoning || `Shock Index is ${shockIdx} with MAP ${mapVal} mmHg and HR ${hr} bpm.`);
+          const labsReasoning = labsMatch ? labsMatch[1].trim() : (evalData.labs_evidence?.clinical_reasoning || `Venous lactate ${lactate} mmol/L reflecting metabolic organ profile.`);
+          const skepticReasoning = skepticMatch ? skepticMatch[1].trim() : (evalData.skeptic_evidence?.clinical_reasoning || `Verified against confounding EHR medication orders.`);
+
+          const multiAgentData = {
+            patientId: targetAlert.patientId,
+            bedNumber: targetAlert.bed,
+            urgency: urgency,
+            compositeRiskPct: compositeRiskPct,
+            shockIndex: shockIdx,
+            mapVal: `${mapVal} mmHg`,
+            lactateVal: `${lactate} mmol/L`,
+            vitalsReasoning: vitalsReasoning,
+            labsReasoning: labsReasoning,
+            skepticReasoning: skepticReasoning,
+            actionBundle: evalData.recommended_action_bundle || [],
+            evidenceList: (evalData.agent_findings || [])
+          };
+
           const initialText = narrative
             ? `Attending Intensivist: Multi-Agent Triage Engine reporting on Patient ${targetAlert.patientId} (${targetAlert.bed}).\n\n` +
               `• Composite Sepsis Risk: ${compositeRiskPct}% (${urgency})\n` +
@@ -547,6 +572,7 @@ export default function StitchDashboard({ onExitToLanding }) {
                 agentKey: targetAlert.agentKey,
                 time: nowStr,
                 text: initialText,
+                multiAgentData: multiAgentData,
                 evidence: dynamicEvidence.length > 0 ? dynamicEvidence : (targetAlert.evidenceSections || [])
               }
             ]
@@ -687,6 +713,17 @@ export default function StitchDashboard({ onExitToLanding }) {
 
     try {
       const evalData = patientEvaluations[selectedAlert.id] || {};
+
+      // Retrieve longitudinal flowsheet trajectory for patient
+      let patientRows = [];
+      if (simulationDataset && Array.isArray(simulationDataset.rows)) {
+        patientRows = simulationDataset.rows.filter(r => (r.patientId === selectedAlert.patientId || r.patient_id === selectedAlert.patientId));
+      }
+      if (!patientRows || patientRows.length === 0) {
+        patientRows = DEMO_FLOWSHEET_ROWS.filter(r => r.patient_id === selectedAlert.patientId);
+      }
+      patientRows = [...patientRows].sort((a, b) => (a.hour_index ?? a.hourIndex ?? 0) - (b.hour_index ?? b.hourIndex ?? 0));
+
       const clinicalContext = {
         patient_id: selectedAlert.patientId,
         bed_number: selectedAlert.bed,
@@ -696,7 +733,8 @@ export default function StitchDashboard({ onExitToLanding }) {
         vitals_evidence: evalData.vitals_evidence || {},
         labs_evidence: evalData.labs_evidence || {},
         skeptic_evidence: evalData.skeptic_evidence || {},
-        evidence_chain_narrative: evalData.evidence_chain_narrative || ""
+        evidence_chain_narrative: evalData.evidence_chain_narrative || "",
+        hourly_history: patientRows
       };
 
       const res = await clinicalApi.chatWithTriageOrchestrator(selectedAlert.patientId, userText, clinicalContext);
