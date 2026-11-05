@@ -27,6 +27,7 @@ except ImportError:
 # =====================================================================
 
 class TelemetryTickRequest(BaseModel):
+    model_config = {"extra": "ignore"}
     patient_id: str = Field(description="De-identified patient token e.g. 'p000011'")
     hour_index: int = Field(default=0, description="ICU hour offset (0, 1, 2, ...)")
     # Vitals (Agent 1)
@@ -108,6 +109,7 @@ class NurseVerificationResponse(BaseModel):
 # =====================================================================
 
 class DoctorChatRequest(BaseModel):
+    model_config = {"extra": "ignore"}
     patient_id: str
     doctor_question: str
     clinical_context: Optional[Dict[str, Any]] = Field(

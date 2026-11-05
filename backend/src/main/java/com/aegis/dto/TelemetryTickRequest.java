@@ -120,13 +120,21 @@ public class TelemetryTickRequest {
         }
     }
 
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public Double getHeartRate() { return hr != null ? hr : 80.0; }
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public Double getSystolicBp() { return sbp != null ? sbp : 120.0; }
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public Double getDiastolicBp() { return dbp != null ? dbp : 80.0; }
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public Double getMeanArterialPressure() { return map != null ? map : (getSystolicBp() + 2 * getDiastolicBp()) / 3.0; }
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public Double getRespiratoryRate() { return resp != null ? resp : 16.0; }
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public Double getO2Saturation() { return o2Sat != null ? o2Sat : 98.0; }
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public Double getTemperature() { return temp != null ? temp : 37.0; }
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public Double getWhiteBloodCellCount() { return wbc != null ? wbc : 10.0; }
 }
 

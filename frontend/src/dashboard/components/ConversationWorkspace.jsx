@@ -181,8 +181,9 @@ export default function ConversationWorkspace({
 
           <div className="flex items-center gap-2 flex-wrap min-w-0">
             {/* Patient ID Pill */}
-            <span className="font-bold text-xs text-slate-900 font-mono whitespace-nowrap px-3.5 py-1 rounded-full bg-slate-100 border-[1.5px] border-slate-300 shadow-2xs">
-              {alert.patientId}
+            <span className="font-bold text-xs text-slate-900 font-mono whitespace-nowrap px-3.5 py-1 rounded-full bg-slate-100 border-[1.5px] border-slate-300 shadow-2xs flex items-center gap-1.5">
+              <span className="text-[10px] text-slate-500 font-sans font-bold uppercase">Patient</span>
+              <span>{alert.patientId}</span>
             </span>
 
             {/* Bed & Ward Pill */}
