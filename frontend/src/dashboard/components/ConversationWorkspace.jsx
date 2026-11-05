@@ -633,7 +633,10 @@ export default function ConversationWorkspace({
 
                   {/* Visual Multi-Agent Consensus Card or Clinical Markdown Card */}
                   {msg.multiAgentData ? (
-                    <MultiAgentConsensusCard {...msg.multiAgentData} />
+                    <MultiAgentConsensusCard
+                      {...msg.multiAgentData}
+                      onAcknowledge={onAcknowledgeAlert}
+                    />
                   ) : (
                     <div
                       className="bg-white border-[1.5px] border-slate-200 rounded-3xl p-5 text-xs text-slate-800 leading-relaxed space-y-4 font-sans shadow-2xs"

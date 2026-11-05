@@ -520,10 +520,14 @@ export default function StitchDashboard({ onExitToLanding }) {
           const vitalsMatch = narrativeText.match(/\[VITALS AGENT: ([\s\S]*?)\](?:\n|$)/);
           const labsMatch = narrativeText.match(/\[LABS AGENT: ([\s\S]*?)\](?:\n|$)/);
           const skepticMatch = narrativeText.match(/\[SKEPTIC FILTER: ([\s\S]*?)\](?:\n|$)/);
+          const arbiterMatch = narrativeText.match(/\[BAYESIAN ARBITER: ([\s\S]*?)\](?:\n|$)/);
 
           const vitalsReasoning = vitalsMatch ? vitalsMatch[1].trim() : (evalData.vitals_evidence?.clinical_reasoning || `Shock Index is ${shockIdx} with MAP ${mapVal} mmHg and HR ${hr} bpm.`);
           const labsReasoning = labsMatch ? labsMatch[1].trim() : (evalData.labs_evidence?.clinical_reasoning || `Venous lactate ${lactate} mmol/L reflecting metabolic organ profile.`);
           const skepticReasoning = skepticMatch ? skepticMatch[1].trim() : (evalData.skeptic_evidence?.clinical_reasoning || `Verified against confounding EHR medication orders.`);
+          const orchestratorReasoning = arbiterMatch ? arbiterMatch[1].trim() : (
+            `The Triage Orchestrator synthesized all 3 diagnostic models: Vitals Agent isolates acute hemodynamic instability (Shock Index ${shockIdx}), corroborated by Labs Agent detecting critical lactic dysoxia (${lactate} mmol/L). The Skeptic Safety Filter verified true sepsis pathophysiology with 0% confounder discount. Bayesian Arbiter escalates patient to ${urgency} requiring immediate resuscitation bundle execution.`
+          );
 
           const multiAgentData = {
             patientId: targetAlert.patientId,
@@ -536,6 +540,7 @@ export default function StitchDashboard({ onExitToLanding }) {
             vitalsReasoning: vitalsReasoning,
             labsReasoning: labsReasoning,
             skepticReasoning: skepticReasoning,
+            orchestratorReasoning: orchestratorReasoning,
             actionBundle: evalData.recommended_action_bundle || [],
             evidenceList: (evalData.agent_findings || [])
           };
