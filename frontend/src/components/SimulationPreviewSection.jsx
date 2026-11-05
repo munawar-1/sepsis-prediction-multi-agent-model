@@ -56,7 +56,7 @@ export default function SimulationPreviewSection({ onOpenFlightDeck }) {
           </h2>
 
           <p className="font-body" style={{ fontSize: '15px', color: isDark ? '#9AA9BA' : '#475569', lineHeight: 1.6 }}>
-            Scrub across an accelerated 24-hour ICU trajectory to see how Aegis coordinates physiological, laboratory, and medication evidence as deterioration unfolds.
+            Scrub across an accelerated 24-hour ICU trajectory to see how HourZero coordinates physiological, laboratory, and medication evidence as deterioration unfolds.
           </p>
         </div>
 
@@ -247,7 +247,7 @@ export default function SimulationPreviewSection({ onOpenFlightDeck }) {
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                   <span style={{ fontSize: '10.5px', fontFamily: 'var(--font-mono)', color: isDark ? '#9AA9BA' : '#475569' }}>
-                    AEGIS COMPOSITE RISK SCORE:
+                    HourZero COMPOSITE RISK SCORE:
                   </span>
                   <span style={{
                     fontSize: '10px',

@@ -113,7 +113,7 @@ export default function ExcelUploadModal({
   const handleLoadDemoFlowsheet = () => {
     setIsProcessing(true);
     try {
-      parseAndValidateJsonRows(DEMO_FLOWSHEET_ROWS, 'Aegis_ICU_Demo_Flowsheet.xlsx');
+      parseAndValidateJsonRows(DEMO_FLOWSHEET_ROWS, 'HourZero_Demo_Flowsheet.xlsx');
     } finally {
       setIsProcessing(false);
     }
@@ -239,7 +239,7 @@ export default function ExcelUploadModal({
                   type="button"
                   onClick={handleDownloadTemplate}
                   className="py-2 px-3 rounded-xl border-[1.5px] border-emerald-300 bg-white hover:bg-emerald-50 text-emerald-800 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs"
-                  title="Download Aegis_ICU_Demo_Flowsheet.xlsx"
+                  title="Download HourZero_Demo_Flowsheet.xlsx"
                 >
                   <Download className="w-3.5 h-3.5 text-emerald-600" />
                   <span className="hidden sm:inline">Download .xlsx</span>
@@ -270,7 +270,7 @@ export default function ExcelUploadModal({
                   className="mt-3 w-full py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs"
                 >
                   <Upload className="w-3.5 h-3.5 text-emerald-400" />
-                  <span className="truncate">{fileName && fileName !== 'Aegis_ICU_Demo_Flowsheet.xlsx' ? `Loaded: ${fileName}` : 'Choose Custom File...'}</span>
+                  <span className="truncate">{fileName && fileName !== 'HourZero_Demo_Flowsheet.xlsx' ? `Loaded: ${fileName}` : 'Choose Custom File...'}</span>
                 </button>
               </div>
             </div>

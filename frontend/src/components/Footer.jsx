@@ -54,7 +54,7 @@ export default function Footer({ onOpenFlightDeck }) {
                 letterSpacing: '-0.01em'
               }}
             >
-              AEGIS-ICU
+              HourZero
             </AsciiGlitchRipple>
           </div>
 
@@ -334,7 +334,7 @@ export default function Footer({ onOpenFlightDeck }) {
         fontFamily: 'var(--font-mono)'
       }}>
         <p style={{ margin: 0 }}>
-          © {new Date().getFullYear()} Aegis-ICU
+          © {new Date().getFullYear()} HourZero
         </p>
       </div>
 

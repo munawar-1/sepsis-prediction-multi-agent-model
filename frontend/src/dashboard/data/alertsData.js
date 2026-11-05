@@ -236,7 +236,7 @@ export const INITIAL_ALERTS_DATA = [
     ],
     knowledgeBase: {
       "medication": "Yes, exactly. The scheduled Metoprolol taken 5 hours ago is suppressing the normal tachycardic reflex. A doctor glancing at a heart rate of 76 might assume the patient is calm, but the high fever (38.9°C) and rapid breathing prove severe systemic inflammation.",
-      "hold": "While Aegis does not prescribe, clinical pharmacology consensus strongly advises holding beta-blockers when a surgical patient develops high fevers, borderline MAP (<65-70 mmHg), or escalating fluid requirements.",
+      "hold": "While HourZero does not prescribe, clinical pharmacology consensus strongly advises holding beta-blockers when a surgical patient develops high fevers, borderline MAP (<65-70 mmHg), or escalating fluid requirements.",
       "source": "Given day-1 status post-Hartmann's procedure for perforated diverticulitis, anastomotic/stump leak or pelvic collection represents the highest risk source.",
       "simpler": "The patient's heart rate looks normal (76 bpm) only because his blood pressure medication is putting the brakes on his heart. Under the surface, he has a 38.9°C fever and high white count, meaning infection is progressing."
     }
@@ -370,7 +370,7 @@ export function createSimulatedAlert() {
     chips: [
       "Why did you flag this patient as Critical?",
       "Explain the hypothermic septic phenotype.",
-      "What immediate actions does Aegis suggest?"
+      "What immediate actions does HourZero suggest?"
     ],
     knowledgeBase: {
       "why": "Hypothermia in severe sepsis (<36.0°C) carries twice the mortality of hyperthermic fever. In combination with lactate 4.1 mmol/L and MAP 56 mmHg, immediate evaluation is indicated.",

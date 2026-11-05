@@ -20,6 +20,6 @@ export default function ClosingSection({onOpenFlightDeck}){
       <div className="end-actions"><button className="end-primary" onClick={onOpenFlightDeck} onPointerMove={magnet}
         onPointerLeave={e=>{e.currentTarget.style.removeProperty('--mx');e.currentTarget.style.removeProperty('--my')}}>Launch Clinical Flight Deck <ArrowUpRight size={16}/></button>
         <button className="end-link" onClick={()=>scrollTo('#clinical-review')}>Explore the review</button></div></div>
-    <figure className="ascii-instrument"><figcaption>OUTPUT / SIGNAL TRACE</figcaption><AsciiSignal light={!isDark}/><small>AEGIS–ICU · RESEARCH PLATFORM</small></figure>
+    <figure className="ascii-instrument"><figcaption>OUTPUT / SIGNAL TRACE</figcaption><AsciiSignal light={!isDark}/><small>HourZero · RESEARCH PLATFORM</small></figure>
   </section>;
 }

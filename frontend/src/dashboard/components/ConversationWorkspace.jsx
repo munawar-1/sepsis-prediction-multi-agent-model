@@ -488,13 +488,13 @@ export default function ConversationWorkspace({
             </div>
             <div className="space-y-1">
               <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                AEGIS Clinical Intelligence
+                HourZero Clinical Intelligence
                 <span className="text-[11px] font-mono px-3 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border-[1.5px] border-emerald-300 font-bold">
                   Sepsis-3 Active
                 </span>
               </h2>
               <p className="text-xs text-slate-600 font-medium leading-relaxed">
-                Hello Doctor, I'm AEGIS Clinical Intelligence. I have analyzed the available telemetry and EHR stream for <strong>{alert.patientId}</strong>. How can I assist your clinical evaluation today?
+                Hello Doctor, I'm HourZero Clinical Intelligence. I have analyzed the available telemetry and EHR stream for <strong>{alert.patientId}</strong>. How can I assist your clinical evaluation today?
               </p>
             </div>
           </div>
@@ -566,7 +566,7 @@ export default function ConversationWorkspace({
 
                 <div className="flex-1 space-y-3 min-w-0">
                   <div className="flex items-center gap-2 text-xs">
-                    <span className="font-bold text-slate-900">AEGIS Clinical Intelligence</span>
+                    <span className="font-bold text-slate-900">HourZero Clinical Intelligence</span>
                     <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border-[1.5px] border-emerald-300">
                       {msg.agentName || alert.agent}
                     </span>
@@ -655,7 +655,7 @@ export default function ConversationWorkspace({
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-bounce [animation-delay:0.2s]" />
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-bounce [animation-delay:0.4s]" />
                 </span>
-                <span className="text-slate-800 font-semibold">{typingText || 'AEGIS is synthesizing multi-agent telemetry...'}</span>
+                <span className="text-slate-800 font-semibold">{typingText || 'HourZero is synthesizing multi-agent telemetry...'}</span>
               </div>
             </div>
           )}
@@ -732,7 +732,7 @@ export default function ConversationWorkspace({
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask AEGIS about this patient's condition..."
+              placeholder="Ask HourZero about this patient's condition..."
               className="flex-1 px-3 py-2 text-sm font-medium text-slate-900 placeholder:text-slate-400 bg-transparent focus:outline-none font-sans"
             />
 
@@ -753,7 +753,7 @@ export default function ConversationWorkspace({
 
           {/* Safety Disclaimer */}
           <div className="text-[11px] font-medium text-center text-slate-500 font-sans select-none pt-0.5">
-            AEGIS-ICU is an AI clinical decision support system. Attending physician retains diagnostic authority.
+            HourZero is an AI clinical decision support system. Attending physician retains diagnostic authority.
           </div>
         </div>
       </footer>

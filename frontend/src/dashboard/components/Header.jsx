@@ -229,7 +229,7 @@ export default function Header({
             Æ
           </div>
           <span className="font-bold text-xs tracking-tight font-display hidden md:inline">
-            AEGIS-ICU
+            HourZero
           </span>
           <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded font-bold uppercase tracking-wider hidden lg:inline border ${
             isDark
@@ -399,61 +399,23 @@ export default function Header({
           <Search className="w-4 h-4" />
         </button>
 
-        {/* Live Multi-Agent Telemetry Pulse Badge */}
-        <div className={`hidden xl:flex items-center gap-2 px-2.5 py-1.5 rounded-xl border text-xs font-mono ${
-          isDark ? 'bg-[#0B1322] border-[#1A2C46]' : 'bg-[#F0F5FA] border-[#D0DFEF]'
-        }`}>
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className={`text-[10px] ${isDark ? 'text-[#768CA8]' : 'text-[#64748B]'}`}>
-            Ensemble:
-          </span>
-          <span className={`text-[10px] font-bold ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>
-            96.8% Sync
-          </span>
-        </div>
-
-        {/* ===================================================================
-            THEME TOGGLE: POLISHED SEGMENTED SWITCH (SUN & MOON)
-            =================================================================== */}
-        <div
-          className={`flex items-center p-0.5 rounded-xl border transition-all duration-200 ${
+        {/* Compact Single Theme Toggle Button */}
+        <button
+          onClick={toggleTheme}
+          className={`w-8 h-8 rounded-xl border flex items-center justify-center transition-all duration-200 shrink-0 cursor-pointer shadow-2xs ${
             isDark
-              ? 'bg-[#0B1322] border-[#1A2C46]'
-              : 'bg-[#EBF2FA] border-[#D0DFEF]'
+              ? 'bg-[#0B1322] hover:bg-[#14263F] border-[#1A2C46] text-amber-400 hover:text-amber-300'
+              : 'bg-[#EBF2FA] hover:bg-[#DFEAF5] border-[#D0DFEF] text-slate-700 hover:text-slate-900'
           }`}
-          role="radiogroup"
-          aria-label="Color Theme Switcher"
+          title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+          aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
         >
-          <button
-            onClick={() => setTheme('light')}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer ${
-              !isDark
-                ? 'bg-white text-[#0F172A] shadow-xs border border-[#CBDCEE] font-bold'
-                : 'bg-transparent text-[#7A91AD] hover:text-[#CBD5E1] hover:bg-[#0E1B2E] border border-transparent'
-            }`}
-            title="Switch to Daylight Mode"
-            aria-checked={!isDark}
-            role="radio"
-          >
-            <Sun className={`w-3.5 h-3.5 ${!isDark ? 'text-amber-500' : 'text-[#7A91AD]'}`} />
-            <span className="hidden sm:inline text-[11px] font-mono">Day</span>
-          </button>
-
-          <button
-            onClick={() => setTheme('dark')}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer ${
-              isDark
-                ? 'bg-[#14263F] text-[#00E5B9] shadow-xs border border-[#00E5B9]/40 font-bold'
-                : 'bg-transparent text-[#5B718E] hover:text-[#0F172A] hover:bg-[#DFEAF5] border border-transparent'
-            }`}
-            title="Switch to Night Clinical Mode"
-            aria-checked={isDark}
-            role="radio"
-          >
-            <Moon className={`w-3.5 h-3.5 ${isDark ? 'text-[#00E5B9]' : 'text-[#5B718E]'}`} />
-            <span className="hidden sm:inline text-[11px] font-mono">Night</span>
-          </button>
-        </div>
+          {isDark ? (
+            <Sun className="w-4 h-4 text-amber-400" />
+          ) : (
+            <Moon className="w-4 h-4 text-slate-700" />
+          )}
+        </button>
 
         {/* ===================================================================
             NOTIFICATIONS BELL & INTERACTIVE ALERT PANEL

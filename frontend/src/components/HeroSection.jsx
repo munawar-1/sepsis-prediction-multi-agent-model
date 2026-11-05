@@ -33,11 +33,11 @@ export default function HeroSection() {
       <img className="cine-photo" src="/assets/hero-icu-cinematic.jpg" alt="" fetchPriority="high"/>
       <div className="cine-grid" aria-hidden="true"/>
       <div className="cine-copy">
-        <div className="cine-label"><i/> AEGIS–ICU <span>/</span> CLINICAL INTELLIGENCE</div>
+        <div className="cine-label"><i/> HourZero <span>/</span> CLINICAL INTELLIGENCE</div>
         <h1 className="cine-title"><span><b>See the signals</b></span><span><b>before they become</b></span><span><b>a crisis.</b></span></h1>
-        <p className="cine-intro">Aegis-ICU brings vital trends, laboratory evidence, and medication context together through specialized AI agents to support earlier recognition of potential sepsis risk.</p>
+        <p className="cine-intro">HourZero brings vital trends, laboratory evidence, and medication context together through specialized AI agents to support earlier recognition of potential sepsis risk.</p>
         <div className="cine-actions">
-          <button onClick={() => scrollTo('#problem')}>Explore Aegis <ArrowDown size={16}/></button>
+          <button onClick={() => scrollTo('#problem')}>Explore HourZero <ArrowDown size={16}/></button>
           <button onClick={() => scrollTo('#how-it-works')}>Discover how it works <ArrowUpRight size={16}/></button>
         </div>
       </div>

@@ -87,7 +87,7 @@ function AppContent() {
           <div className="h-screen w-screen flex items-center justify-center font-mono text-sm select-none bg-[#F9FAFB] text-[#10B981]">
             <div className="flex items-center gap-3">
               <span className="w-2.5 h-2.5 rounded-full bg-[#10B981] animate-ping" />
-              <span>INITIALIZING AEGIS-ICU WORKSPACE...</span>
+              <span>INITIALIZING HourZero WORKSPACE...</span>
             </div>
           </div>
         }

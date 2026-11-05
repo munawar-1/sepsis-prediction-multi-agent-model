@@ -37,7 +37,7 @@ export default function AnatomySection() {
     <div className="cine-anatomy-layout">
       <div><small>FIG. 01 · ANTERIOR VIEW</small>
         <h2>At the center,<br/>a patient.</h2>
-        <p>Heart rate, respiration, and laboratory findings describe different parts of the same patient. Aegis brings those observations together for review.</p>
+        <p>Heart rate, respiration, and laboratory findings describe different parts of the same patient. HourZero brings those observations together for review.</p>
         <div className="cine-credit">Anatomical study adapted from <a href="https://dbarchive.biosciencedbc.jp/data/bodyparts3d/LATEST/README_e.html">BodyParts3D</a>, © The Database Center for Life Science. <a href="/assets/anatomy-credits.txt">Model sources and licenses</a>.</div>
       </div>
       <div ref={stage} className="cine-anatomy-view" role="img" aria-label="Full-body anatomical study with translucent skin, ribs, lungs and illuminated heart">

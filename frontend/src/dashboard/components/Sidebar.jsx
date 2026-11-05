@@ -78,7 +78,7 @@ export default function Sidebar({
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5 font-bold text-xs text-slate-900 leading-tight tracking-tight">
-                  AEGIS-ICU
+                  HourZero
                   <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border-[1.5px] border-emerald-300 font-bold">
                     v3.0
                   </span>

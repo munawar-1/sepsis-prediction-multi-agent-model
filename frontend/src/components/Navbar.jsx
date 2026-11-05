@@ -100,7 +100,7 @@ export default function Navbar({ onOpenFlightDeck, onNavigate }) {
                 color: isDark ? '#F1F5FA' : '#0F172A',
                 letterSpacing: '0.04em'
               }}>
-                AEGIS-ICU
+                HourZero
               </span>
               <span style={{
                 fontSize: '10px',
@@ -299,7 +299,7 @@ export default function Navbar({ onOpenFlightDeck, onNavigate }) {
                     borderRadius: '6px'
                   }}
                 >
-                  <span>Explore Aegis</span>
+                  <span>Explore HourZero</span>
                   <ArrowUpRight size={14} />
                 </button>
               </>

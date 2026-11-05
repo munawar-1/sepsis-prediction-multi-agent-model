@@ -66,7 +66,7 @@ export default function FlightDeckModal({ isOpen, onClose, onLaunchDashboard }) 
               </div>
               <div>
                 <h2 style={{ fontSize: '15px', fontWeight: 700, color: isDark ? '#F1F5FA' : '#0F172A', margin: 0, fontFamily: 'var(--font-display)' }}>
-                  AEGIS-ICU | Clinical Flight Deck Console
+                  HourZero | Clinical Flight Deck Console
                 </h2>
                 <p style={{ fontSize: '11px', color: isDark ? '#9AA9BA' : '#475569', margin: '2px 0 0 0', fontFamily: 'var(--font-mono)' }}>
                   Multi-Agent Deterioration &amp; Alert Fatigue Prevention Concept
@@ -190,7 +190,7 @@ export default function FlightDeckModal({ isOpen, onClose, onLaunchDashboard }) 
             }}>
               <div>
                 <h3 style={{ fontSize: '14px', fontWeight: 600, color: isDark ? '#F1F5FA' : '#0F172A', margin: '0 0 8px 0', fontFamily: 'var(--font-display)' }}>
-                  Aegis Consensus Directive
+                  HourZero Consensus Directive
                 </h3>
                 <p style={{ fontSize: '12px', color: isDark ? '#9AA9BA' : '#475569', lineHeight: 1.5, margin: '0 0 16px 0' }}>
                   High confidence indication of early septic decompensation. Recommend initiating Sepsis-3 1-Hour Bundled Care Protocol under attending physician oversight.

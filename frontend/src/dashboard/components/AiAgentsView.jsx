@@ -174,7 +174,7 @@ export default function AiAgentsView({ alert = {}, onOpenConsultation }) {
           </div>
 
           <p className="text-xs font-medium text-slate-600 leading-relaxed">
-            The Aegis Multi-Agent Architecture executes asynchronous Bayesian evidence fusion. Each agent independently analyzes high-frequency physiological streams before submitting findings to the central Orchestrator for clinical consensus.
+            The HourZero Multi-Agent Architecture executes asynchronous Bayesian evidence fusion. Each agent independently analyzes high-frequency physiological streams before submitting findings to the central Orchestrator for clinical consensus.
           </p>
 
           {/* Consensus Weight Distribution Bar */}

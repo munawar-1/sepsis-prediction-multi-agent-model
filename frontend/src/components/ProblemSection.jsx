@@ -43,7 +43,7 @@ export default function ProblemSection() {
     },
     {
       hour: "08:15",
-      stageLabel: "Phase 2: Signal Divergence (Aegis Window)",
+      stageLabel: "Phase 2: Signal Divergence (HourZero Window)",
       hr: 102,
       bp: "114/72",
       shockIndex: "0.89",
@@ -233,7 +233,7 @@ export default function ProblemSection() {
 
                 {/* Aegis Early Window Box */}
                 <rect x="200" y="10" width="140" height="110" fill={isDark ? "#111C2B" : "#F0FDFA"} stroke={isDark ? "#35D6C5" : "#0D9488"} strokeWidth="1" strokeDasharray="2 2" rx="4" />
-                <text x="210" y="24" fill={isDark ? "#35D6C5" : "#0D9488"} fontSize="9" fontWeight="600" fontFamily="var(--font-mono)">AEGIS WINDOW</text>
+                <text x="210" y="24" fill={isDark ? "#35D6C5" : "#0D9488"} fontSize="9" fontWeight="600" fontFamily="var(--font-mono)">HourZero WINDOW</text>
                 <text x="210" y="34" fill={isDark ? "#9AA9BA" : "#0F766E"} fontSize="8" fontFamily="var(--font-mono)">Signal Decoupling</text>
 
                 {/* Progressive Heart Rate Trend Path */}
@@ -331,7 +331,7 @@ export default function ProblemSection() {
                 border: isDark ? '1px solid #243247' : '1px solid #CCFBF1',
                 fontSize: '11px'
               }}>
-                <div style={{ color: isDark ? '#35D6C5' : '#0D9488', fontFamily: 'var(--font-mono)', marginBottom: '2px' }}>AEGIS DECISION ENGINE</div>
+                <div style={{ color: isDark ? '#35D6C5' : '#0D9488', fontFamily: 'var(--font-mono)', marginBottom: '2px' }}>HourZero DECISION ENGINE</div>
                 <div style={{ color: isDark ? '#F1F5FA' : '#0F172A', fontWeight: 600 }}>RISK PROBABILITY: {current.aegisRisk}</div>
               </div>
             </div>

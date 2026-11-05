@@ -564,7 +564,7 @@ export default function StitchDashboard({ onExitToLanding }) {
     }));
 
     setIsTyping(true);
-    setTypingText(`Aegis Multi-Agent Engine is synthesizing TreeSHAP evidence for ${selectedAlert.patientId}...`);
+    setTypingText(`HourZero Multi-Agent Engine is synthesizing TreeSHAP evidence for ${selectedAlert.patientId}...`);
 
     try {
       const res = await clinicalApi.explainAlert(selectedAlert.patientId, userText);

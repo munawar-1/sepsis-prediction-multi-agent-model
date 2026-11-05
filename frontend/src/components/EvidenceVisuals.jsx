@@ -6,7 +6,7 @@ export const scenes=[
   {name:'Vitals',field:'Physiology',title:'Read the rhythm.',copy:'The Vitals Agent compares heart rate, blood pressure, and respiration across rolling five-minute windows. Its Random Forest model looks for signals that drift apart.',fact:'72 → 101 bpm',note:'Heart rate from admission to hour 14',caption:'Bedside telemetry · illustrative replay'},
   {name:'Labs',field:'Biochemistry',title:'Follow the sample.',copy:'The Labs Agent compares new results with earlier samples. Lactate rises while platelets fall in this case. The age of the specimen matters when interpreting either change.',fact:'1.0 → 2.1 mmol/L',note:'Serum lactate over the same interval',caption:'Paired specimen results · admission and hour 14'},
   {name:'Medication',field:'Clinical context',title:'Check the timing.',copy:'The Medication Agent checks the administration record. In this replay, a recent albuterol dose offers a possible explanation for the rising pulse. The agent compares its timing with the persistent physiological changes.',fact:'5 hours',note:'Since albuterol administration at the hour 14 review',caption:'Medication record · illustrative timing'},
-  {name:'Convergence',field:'Decision support',title:'Review the evidence.',copy:'The Aegis decision engine combines the three assessments into an explanation. A clinician can inspect the evidence, authorize a response, or record a reason to override it.',fact:'3 evidence streams',note:'One assessment for clinician review',caption:'Agent synthesis · clinician retains decision authority'}
+  {name:'Convergence',field:'Decision support',title:'Review the evidence.',copy:'The HourZero decision engine combines the three assessments into an explanation. A clinician can inspect the evidence, authorize a response, or record a reason to override it.',fact:'3 evidence streams',note:'One assessment for clinician review',caption:'Agent synthesis · clinician retains decision authority'}
 ];
 function Trace({d,color='var(--ink-a)',delay=0}) {
   return <g fill="none" stroke={color}><path d={d} strokeWidth="2"/><path className="signal-runner" d={d} pathLength="100" strokeDasharray="5 95" strokeWidth="4" style={{animationDelay:delay+'s'}}/></g>;
@@ -40,7 +40,7 @@ function Convergence() {
     <Trace d={'M112 '+(60+i*72)+' C190 '+(60+i*72)+' 180 132 230 132'} color={['var(--ink-a)','var(--ink-b)','var(--ink-c)'][i]} delay={i*-.65}/></g>)}
     <path d="M260 99l30 17v33l-30 17-30-17v-33z" fill="var(--surface)" stroke="var(--ink-a)" strokeWidth="2"/>
     <path d="M246 134h6l5-11 5 21 5-14h8" stroke="var(--ink-a)" fill="none"/><Trace d="M290 132H423"/>
-    <circle cx="425" cy="132" r="8" fill="var(--ink-a)"/><text x="260" y="193" textAnchor="middle">AEGIS</text>
+    <circle cx="425" cy="132" r="8" fill="var(--ink-a)"/><text x="260" y="193" textAnchor="middle">HourZero</text>
     <text x="425" y="166" textAnchor="middle">REVIEW</text></>;
 }
 const diagrams=[Vitals,Labs,Medication,Convergence];

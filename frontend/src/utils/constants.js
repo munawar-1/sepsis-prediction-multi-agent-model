@@ -118,7 +118,7 @@ export const SIMULATION_TIMELINE = [
     vitalsStatus: "DECOMPENSATION",
     labsStatus: "HYPERLACTATEMIA",
     skepticStatus: "GENUINE_SEPSIS_CONFIRMED",
-    summary: "Severe organ hypoperfusion pattern identified. Traditional bedside monitors only now triggering low BP alarm (3.8h later than Aegis).",
+    summary: "Severe organ hypoperfusion pattern identified. Traditional bedside monitors only now triggering low BP alarm (3.8h later than HourZero).",
     color: "#FF5268"
   }
 ];
@@ -218,7 +218,7 @@ export const WORKFLOW_STEPS = [
   {
     step: "05",
     title: "Consensus Synthesis",
-    role: "Aegis Decision Engine",
+    role: "HourZero Decision Engine",
     detail: "Synthesizes multi-agent evidence vectors into an explainable composite risk score with full feature-attribution reasoning.",
     icon: "Cpu"
   },

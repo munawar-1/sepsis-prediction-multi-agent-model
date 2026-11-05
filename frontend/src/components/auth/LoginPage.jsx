@@ -157,7 +157,7 @@ export default function LoginPage({ onNavigate, returnPath = '/dashboard' }) {
             letterSpacing: '-0.02em',
             marginBottom: '6px'
           }}>
-            Aegis-ICU Flight Deck
+            HourZero Flight Deck
           </h1>
           <p style={{
             fontSize: '12.5px',

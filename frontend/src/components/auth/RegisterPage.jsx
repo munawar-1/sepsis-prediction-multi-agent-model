@@ -178,7 +178,7 @@ export default function RegisterPage({ onNavigate }) {
             color: isDark ? '#9AA9BA' : '#64748B',
             lineHeight: 1.5
           }}>
-            Register authorized ICU Clinician profile for Aegis-ICU
+            Register authorized ICU Clinician profile for HourZero
           </p>
         </div>
 
@@ -373,7 +373,7 @@ export default function RegisterPage({ onNavigate }) {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@aegis.icu"
+                  placeholder="name@hourzero.icu"
                   autoComplete="email"
                   style={{
                     width: '100%',

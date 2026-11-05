@@ -1,0 +1,1611 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aegis-ICU — Clinical Intelligence Workspace</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['"Inter Tight"', 'sans-serif'],
+            sans: ['"Inter"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            navy: {
+              950: '#070A0F', // deep charcoal / midnight navy base
+              900: '#0B1017', // elevated dark surface
+              850: '#101721', // card / panel surface
+              800: '#17212F', // component surface
+              700: '#223042', // border light
+              600: '#32445C',
+            },
+            clinical: {
+              teal: '#14B8A6',
+              'teal-dim': 'rgba(20, 184, 166, 0.12)',
+              amber: '#F59E0B',
+              'amber-dim': 'rgba(245, 158, 11, 0.12)',
+              rose: '#F43F5E',
+              'rose-dim': 'rgba(244, 63, 94, 0.12)',
+              slate: '#94A3B8',
+              muted: '#64748B',
+            }
+          },
+          animation: {
+            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0B1017;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #223042;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #32445C;
+    }
+
+    /* Subdued waveform line */
+    .waveform-canvas {
+      filter: drop-shadow(0 0 2px rgba(20, 184, 166, 0.4));
+    }
+
+    /* Message bounce */
+    @keyframes slideInUp {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .animate-message {
+      animation: slideInUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+  </style>
+</head>
+<body class="bg-navy-950 text-slate-200 font-sans antialiased h-screen overflow-hidden flex select-none">
+
+  <!-- ======================================================== -->
+  <!-- LEFT FIXED SIDEBAR -->
+  <!-- ======================================================== -->
+  <aside id="sidebar" class="w-64 bg-navy-900 border-r border-navy-700/60 flex flex-col justify-between shrink-0 transition-all duration-300 z-30">
+    <div class="p-5 flex flex-col gap-6">
+      <!-- Wordmark & Environment -->
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-md bg-gradient-to-br from-clinical-teal/20 to-teal-950 border border-clinical-teal/40 flex items-center justify-center text-clinical-teal font-mono font-semibold text-sm">
+            Æ
+          </div>
+          <div>
+            <div class="font-display font-bold text-slate-100 text-sm tracking-tight leading-tight flex items-center gap-1.5">
+              AEGIS-ICU
+              <span class="text-[9px] font-mono tracking-normal px-1 py-0.5 rounded bg-navy-800 text-slate-400 border border-navy-700">v2.4</span>
+            </div>
+            <div class="text-[10px] text-slate-400 tracking-wide font-mono">CLINICAL INTELLIGENCE</div>
+          </div>
+        </div>
+        <span class="px-1.5 py-0.5 text-[10px] font-mono font-medium rounded bg-clinical-amber-dim text-clinical-amber border border-clinical-amber/30">
+          DEMO
+        </span>
+      </div>
+
+      <!-- Navigation: Single item requirement -->
+      <nav class="flex flex-col gap-1.5 mt-2">
+        <div class="text-[10px] font-mono uppercase text-slate-400 px-3 tracking-wider mb-1">Navigation</div>
+        
+        <button id="nav-dashboard-btn" onclick="showInboxView()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-navy-800/80 text-clinical-teal border border-clinical-teal/30 shadow-sm text-xs font-medium transition-all group">
+          <i data-lucide="layout-grid" class="w-4 h-4 text-clinical-teal transition-transform group-hover:scale-105"></i>
+          <span>Dashboard</span>
+          <span class="ml-auto text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-clinical-teal-dim text-clinical-teal font-semibold" id="sidebar-alert-badge">4</span>
+        </button>
+      </nav>
+
+      <!-- System Telemetry Pulse -->
+      <div class="bg-navy-850 rounded-lg p-3.5 border border-navy-700/60 mt-2">
+        <div class="flex items-center justify-between text-[11px] mb-2 font-mono">
+          <span class="text-slate-400 flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-clinical-teal animate-pulse"></span>
+            Telemetry Stream
+          </span>
+          <span class="text-slate-300 text-[10px]" id="sim-clock">14:38:09</span>
+        </div>
+        <div class="h-9 w-full bg-navy-950/70 rounded border border-navy-700/40 relative overflow-hidden flex items-center">
+          <canvas id="miniWaveform" class="w-full h-full waveform-canvas opacity-85"></canvas>
+        </div>
+        <div class="flex justify-between items-center text-[10px] font-mono text-slate-400 mt-2">
+          <span>ICU Ward 3B</span>
+          <span class="text-slate-300">12 Beds Monitored</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Agent Quick Readiness Grid -->
+    <div class="p-5 border-t border-navy-700/50 flex flex-col gap-3">
+      <div class="text-[10px] font-mono uppercase text-slate-400 tracking-wider">Active Intelligence Agents</div>
+      <div class="space-y-1.5">
+        <div class="flex items-center justify-between text-xs px-2.5 py-1.5 rounded bg-navy-850/60 border border-navy-700/40">
+          <span class="text-slate-300 text-[11px] flex items-center gap-2">
+            <i data-lucide="activity" class="w-3.5 h-3.5 text-clinical-teal"></i>
+            Vitals Agent
+          </span>
+          <span class="text-[10px] font-mono text-emerald-400">ACTIVE</span>
+        </div>
+        <div class="flex items-center justify-between text-xs px-2.5 py-1.5 rounded bg-navy-850/60 border border-navy-700/40">
+          <span class="text-slate-300 text-[11px] flex items-center gap-2">
+            <i data-lucide="test-tube-2" class="w-3.5 h-3.5 text-cyan-400"></i>
+            Laboratory Agent
+          </span>
+          <span class="text-[10px] font-mono text-emerald-400">ACTIVE</span>
+        </div>
+        <div class="flex items-center justify-between text-xs px-2.5 py-1.5 rounded bg-navy-850/60 border border-navy-700/40">
+          <span class="text-slate-300 text-[11px] flex items-center gap-2">
+            <i data-lucide="pill" class="w-3.5 h-3.5 text-purple-400"></i>
+            Medication Agent
+          </span>
+          <span class="text-[10px] font-mono text-emerald-400">ACTIVE</span>
+        </div>
+      </div>
+
+      <!-- Doctor Profile Bar -->
+      <div class="pt-3 border-t border-navy-700/40 flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full bg-navy-800 border border-navy-600 flex items-center justify-center font-display font-medium text-xs text-slate-300">
+          DR
+        </div>
+        <div class="flex flex-col flex-1 min-w-0">
+          <span class="text-xs font-medium text-slate-200 truncate">Dr. Sarah Al-Mansoor</span>
+          <span class="text-[10px] font-mono text-slate-400 truncate">Attending Intensivist</span>
+        </div>
+        <button title="Notifications" class="p-1.5 hover:bg-navy-800 rounded text-slate-400 hover:text-slate-200 transition-colors">
+          <i data-lucide="bell" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ======================================================== -->
+  <!-- MAIN WORKSPACE -->
+  <!-- ======================================================== -->
+  <main class="flex-1 flex flex-col bg-navy-950 overflow-hidden relative">
+
+    <!-- Top Unified App Bar -->
+    <header class="h-14 border-b border-navy-700/60 bg-navy-900/90 backdrop-blur-md px-6 flex items-center justify-between shrink-0 z-20">
+      <div class="flex items-center gap-4">
+        <button id="sidebar-toggle" onclick="toggleSidebar()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded hover:bg-navy-800 transition-colors">
+          <i data-lucide="panel-left-close" id="sidebar-toggle-icon" class="w-4 h-4"></i>
+        </button>
+
+        <div class="flex items-center gap-2 text-xs">
+          <span class="font-display font-semibold text-slate-100 text-sm tracking-tight" id="header-title">Clinical Inbox</span>
+          <span class="text-slate-600">/</span>
+          <span class="text-slate-400 font-mono text-[11px]" id="header-subtitle">Multi-Agent Sepsis Early Warning Surveillance</span>
+        </div>
+      </div>
+
+      <!-- Header Center / Right items -->
+      <div class="flex items-center gap-4">
+        <!-- Integrated Clinical Photographic Element (8-10% footprint constraint, professional reference) -->
+        <div class="hidden xl:flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-navy-850/80 border border-navy-700/60">
+          <div class="w-9 h-6 rounded overflow-hidden relative shrink-0 border border-navy-700">
+            <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuABr0WchJ19QHYUqHBhm6CslbHP6arbBUb6JLGJ99DuGPzwzPLK7t03b2g1gM5pXnOwczndTaV389kVRHaVTZq0TU3_d0tgrtEemctv1XkXPFTDeVsDfBZBA_1lbDt97uiqZKNHNakNfNOeG3RDtxRPZFHkB1w1UOepVGc7HcXjFiDIVUNCkVKk3Be4AwUVbyosZDtgh3689nSQbMuxh07uZz5Um0XU-mVhLesc-6q2" alt="ICU Monitor Telemetry" class="w-full h-full object-cover">
+          </div>
+          <div class="flex flex-col text-[10px]">
+            <span class="text-slate-300 font-mono flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              Live Telemetry Linked
+            </span>
+            <span class="text-slate-400 font-sans">Philips IntelliVue Integration</span>
+          </div>
+        </div>
+
+        <!-- Demonstration Notice Banner Tag -->
+        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-navy-850 border border-navy-700 text-[11px] font-mono text-slate-300">
+          <i data-lucide="shield-check" class="w-3.5 h-3.5 text-clinical-teal"></i>
+          <span>Decision-Support Mode</span>
+        </div>
+
+        <div class="h-4 w-px bg-navy-700"></div>
+
+        <!-- Time & Status -->
+        <div class="text-[11px] font-mono text-slate-400">
+          <span>ICU-SYNC: </span><span class="text-clinical-teal font-semibold">100% OK</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- CONTENT WRAPPER: Views Switch between Inbox & Conversation -->
+    <div class="flex-1 overflow-hidden relative">
+
+      <!-- ======================================================== -->
+      <!-- VIEW 1: CLINICAL ALERT INBOX -->
+      <!-- ======================================================== -->
+      <div id="view-inbox" class="h-full flex flex-col p-6 overflow-y-auto">
+        
+        <!-- Compact Clinical Overview (Active, Critical, Awaiting, Agents) -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div class="bg-navy-900 border border-navy-700/60 rounded-xl p-4 flex items-center justify-between">
+            <div>
+              <div class="text-[11px] font-mono uppercase text-slate-400 tracking-wider">Active Alerts</div>
+              <div class="text-2xl font-display font-bold text-slate-100 mt-1" id="stat-active-count">4</div>
+              <div class="text-[11px] text-slate-400 mt-0.5">ICU Ward 3B Patients</div>
+            </div>
+            <div class="w-10 h-10 rounded-lg bg-navy-800 border border-navy-700 flex items-center justify-center text-slate-300">
+              <i data-lucide="inbox" class="w-5 h-5 text-slate-300"></i>
+            </div>
+          </div>
+
+          <div class="bg-navy-900 border border-clinical-rose/30 rounded-xl p-4 flex items-center justify-between bg-gradient-to-r from-navy-900 to-clinical-rose-dim">
+            <div>
+              <div class="text-[11px] font-mono uppercase text-rose-300 tracking-wider">Critical Sepsis Alerts</div>
+              <div class="text-2xl font-display font-bold text-rose-400 mt-1" id="stat-critical-count">1</div>
+              <div class="text-[11px] text-rose-300/80 mt-0.5">Immediate intervention review</div>
+            </div>
+            <div class="w-10 h-10 rounded-lg bg-rose-950/80 border border-clinical-rose/40 flex items-center justify-center text-clinical-rose">
+              <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+            </div>
+          </div>
+
+          <div class="bg-navy-900 border border-clinical-amber/30 rounded-xl p-4 flex items-center justify-between bg-gradient-to-r from-navy-900 to-clinical-amber-dim">
+            <div>
+              <div class="text-[11px] font-mono uppercase text-amber-300 tracking-wider">Awaiting Review</div>
+              <div class="text-2xl font-display font-bold text-amber-400 mt-1" id="stat-pending-count">3</div>
+              <div class="text-[11px] text-amber-300/80 mt-0.5">High & Moderate convergence</div>
+            </div>
+            <div class="w-10 h-10 rounded-lg bg-amber-950/80 border border-clinical-amber/40 flex items-center justify-center text-clinical-amber">
+              <i data-lucide="clock" class="w-5 h-5"></i>
+            </div>
+          </div>
+
+          <div class="bg-navy-900 border border-navy-700/60 rounded-xl p-4 flex items-center justify-between">
+            <div>
+              <div class="text-[11px] font-mono uppercase text-slate-400 tracking-wider">AI Consensus Engine</div>
+              <div class="text-sm font-display font-semibold text-clinical-teal mt-1 flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-clinical-teal"></span>
+                Triple Agent Sync
+              </div>
+              <div class="text-[11px] text-slate-400 mt-0.5 font-mono">Vitals • Lab • Meds</div>
+            </div>
+            <div class="w-10 h-10 rounded-lg bg-navy-800 border border-navy-700 flex items-center justify-center text-clinical-teal">
+              <i data-lucide="cpu" class="w-5 h-5"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter & Search Bar -->
+        <div class="bg-navy-900 border border-navy-700/60 rounded-xl p-3 mb-4 flex flex-wrap items-center justify-between gap-3">
+          <!-- Filter Tabs -->
+          <div class="flex items-center gap-1 bg-navy-950 p-1 rounded-lg border border-navy-700/50">
+            <button onclick="setInboxFilter('all')" id="filter-all" class="px-3 py-1.5 rounded-md text-xs font-medium transition-all bg-navy-800 text-slate-100 shadow-sm">
+              All Alerts
+            </button>
+            <button onclick="setInboxFilter('unread')" id="filter-unread" class="px-3 py-1.5 rounded-md text-xs font-medium text-slate-400 hover:text-slate-200 transition-all">
+              Unreviewed
+            </button>
+            <button onclick="setInboxFilter('high')" id="filter-high" class="px-3 py-1.5 rounded-md text-xs font-medium text-slate-400 hover:text-slate-200 transition-all">
+              Critical / High
+            </button>
+            <button onclick="setInboxFilter('reviewed')" id="filter-reviewed" class="px-3 py-1.5 rounded-md text-xs font-medium text-slate-400 hover:text-slate-200 transition-all">
+              Acknowledged
+            </button>
+          </div>
+
+          <!-- Search Input -->
+          <div class="flex items-center gap-2 flex-1 max-w-md">
+            <div class="relative w-full">
+              <i data-lucide="search" class="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2"></i>
+              <input type="text" id="inbox-search-input" oninput="handleSearch(this.value)" placeholder="Search by Patient ID (e.g. PT-8821), bed, or agent..." class="w-full bg-navy-950 border border-navy-700/80 rounded-lg pl-9 pr-4 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-clinical-teal">
+            </div>
+            <button onclick="simulateNewArrival()" title="Simulate incoming real-time alert" class="px-3 py-1.5 rounded-lg bg-navy-800 border border-navy-700 hover:border-slate-500 text-slate-300 text-xs font-mono flex items-center gap-1.5 shrink-0 transition-colors">
+              <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-clinical-teal"></i>
+              Simulate Alert
+            </button>
+          </div>
+        </div>
+
+        <!-- Alerts Table / List -->
+        <div class="flex-1 bg-navy-900 border border-navy-700/60 rounded-xl overflow-hidden flex flex-col">
+          <div class="grid grid-cols-12 px-5 py-3 border-b border-navy-700/60 text-[11px] font-mono uppercase tracking-wider text-slate-400 bg-navy-950/40">
+            <div class="col-span-3">Patient & Location</div>
+            <div class="col-span-5">Clinical Finding & Concern</div>
+            <div class="col-span-2">Responsible Agent</div>
+            <div class="col-span-1 text-center">Priority</div>
+            <div class="col-span-1 text-right">Time / Action</div>
+          </div>
+
+          <!-- Alert Items Container -->
+          <div id="alerts-container" class="divide-y divide-navy-700/40 overflow-y-auto flex-1">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- ======================================================== -->
+      <!-- VIEW 2: AGENT CONVERSATION WORKSPACE (ChatGPT-like Experience) -->
+      <!-- ======================================================== -->
+      <div id="view-conversation" class="h-full hidden flex overflow-hidden">
+        
+        <!-- Center: Interactive Conversation Interface -->
+        <div class="flex-1 flex flex-col bg-navy-950 overflow-hidden relative">
+          
+          <!-- Conversation Top Navigation Bar -->
+          <div class="h-14 border-b border-navy-700/60 bg-navy-900/90 px-6 flex items-center justify-between shrink-0">
+            <div class="flex items-center gap-3">
+              <button onclick="showInboxView()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-navy-800 hover:bg-navy-700 text-slate-300 hover:text-slate-100 text-xs font-medium border border-navy-700 transition-colors">
+                <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+                Back to Inbox
+              </button>
+              
+              <div class="h-4 w-px bg-navy-700"></div>
+
+              <div class="flex items-center gap-2.5">
+                <div id="conv-agent-icon-wrap" class="w-7 h-7 rounded-md bg-clinical-teal-dim border border-clinical-teal/30 flex items-center justify-center text-clinical-teal">
+                  <i data-lucide="activity" class="w-4 h-4"></i>
+                </div>
+                <div>
+                  <div class="text-xs font-display font-bold text-slate-100 flex items-center gap-2">
+                    <span id="conv-agent-name">Vitals Intelligence Agent</span>
+                    <span id="conv-patient-badge" class="font-mono text-[10px] px-1.5 py-0.2 rounded bg-navy-800 text-slate-300 border border-navy-700">Bed 04 • PT-9042</span>
+                  </div>
+                  <div class="text-[10px] text-slate-400 font-mono" id="conv-agent-specialty">Physiological Telemetry & Trend Decomposition</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Doctor Status & Direct Action Toolbar -->
+            <div class="flex items-center gap-2.5">
+              <span id="conv-priority-pill" class="px-2.5 py-0.5 text-xs font-mono font-medium rounded-full bg-clinical-rose-dim text-clinical-rose border border-clinical-rose/30">
+                CRITICAL
+              </span>
+
+              <div class="h-4 w-px bg-navy-700"></div>
+
+              <!-- Acknowledge / Review Actions -->
+              <button id="btn-mark-reviewed" onclick="markCurrentAlertReviewed()" class="px-3 py-1.5 rounded-lg bg-navy-800 hover:bg-navy-700 border border-navy-600 text-xs font-medium text-slate-200 flex items-center gap-1.5 transition-colors">
+                <i data-lucide="check" class="w-3.5 h-3.5 text-clinical-teal"></i>
+                <span id="btn-reviewed-text">Acknowledge Alert</span>
+              </button>
+
+              <button onclick="toggleOverrideModal()" class="px-3 py-1.5 rounded-lg bg-navy-800/80 hover:bg-navy-800 border border-navy-700 text-xs font-medium text-slate-400 hover:text-slate-200 flex items-center gap-1.5 transition-colors">
+                <i data-lucide="shield-alert" class="w-3.5 h-3.5"></i>
+                Clinical Disagreement
+              </button>
+
+              <!-- Patient Context Panel Toggle -->
+              <button onclick="togglePatientPanel()" id="patient-panel-toggle" class="p-1.5 rounded-lg bg-navy-800 border border-navy-700 text-slate-400 hover:text-slate-200 transition-colors" title="Toggle Patient Context Panel">
+                <i data-lucide="sidebar-open" id="patient-panel-icon" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Message History Scroll Area -->
+          <div id="messages-container" class="flex-1 overflow-y-auto p-6 space-y-5">
+            <!-- Messages rendered dynamically -->
+          </div>
+
+          <!-- Typing Indicator -->
+          <div id="typing-indicator" class="hidden px-6 py-2 text-xs font-mono text-slate-400 flex items-center gap-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-clinical-teal animate-bounce"></span>
+            <span class="w-1.5 h-1.5 rounded-full bg-clinical-teal animate-bounce [animation-delay:0.15s]"></span>
+            <span class="w-1.5 h-1.5 rounded-full bg-clinical-teal animate-bounce [animation-delay:0.3s]"></span>
+            <span class="text-slate-400 ml-1" id="typing-agent-label">Agent is analyzing telemetry records...</span>
+          </div>
+
+          <!-- Message Composer Area -->
+          <div class="p-4 border-t border-navy-700/60 bg-navy-900/90 shrink-0">
+            <!-- Quick Inquire Suggestion Chips -->
+            <div class="flex items-center gap-2 overflow-x-auto pb-2.5 scrollbar-none" id="suggestion-chips">
+              <!-- Rendered per alert -->
+            </div>
+
+            <!-- Composer Input Bar -->
+            <div class="relative bg-navy-950 border border-navy-700/80 rounded-xl focus-within:border-clinical-teal focus-within:ring-1 focus-within:ring-clinical-teal transition-all p-2.5 flex items-end gap-3">
+              <textarea id="doctor-input" rows="2" placeholder="Ask the agent to explain evidence, challenge assumptions, or probe medication timing... (Enter to send, Shift+Enter for newline)" class="w-full bg-transparent resize-none border-0 text-slate-200 text-xs placeholder-slate-500 focus:outline-none focus:ring-0 leading-relaxed font-sans"></textarea>
+              
+              <div class="flex items-center gap-2 shrink-0 pb-0.5">
+                <button onclick="sendMessage()" id="send-button" class="px-3 py-2 rounded-lg bg-clinical-teal hover:bg-teal-500 text-navy-950 font-medium text-xs flex items-center gap-1.5 transition-colors shadow-sm">
+                  <span>Inquire</span>
+                  <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </div>
+            
+            <div class="flex items-center justify-between mt-2 px-1 text-[10px] text-slate-400 font-mono">
+              <span class="flex items-center gap-1.5">
+                <i data-lucide="info" class="w-3 h-3 text-slate-400"></i>
+                Aegis-ICU assists clinical judgment. The physician remains responsible for diagnostic and therapeutic decisions.
+              </span>
+              <span>Synthetic ICU Benchmark Data</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ======================================================== -->
+        <!-- RIGHT: COLLAPSIBLE PATIENT CONTEXT PANEL (Drawer / Column) -->
+        <!-- ======================================================== -->
+        <aside id="patient-context-panel" class="w-80 bg-navy-900 border-l border-navy-700/60 flex flex-col shrink-0 overflow-y-auto transition-all duration-300">
+          <!-- Panel Header -->
+          <div class="p-4 border-b border-navy-700/60 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <i data-lucide="user-round" class="w-4 h-4 text-clinical-teal"></i>
+              <span class="text-xs font-display font-bold text-slate-200">Patient Clinical Context</span>
+            </div>
+            <button onclick="togglePatientPanel()" class="text-slate-400 hover:text-slate-200">
+              <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+          </div>
+
+          <!-- Panel Content (Dynamic per patient) -->
+          <div class="p-4 space-y-4" id="patient-context-body">
+            <!-- Injected by JS -->
+          </div>
+        </aside>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ======================================================== -->
+  <!-- CLINICAL DISAGREEMENT / OVERRIDE MODAL -->
+  <!-- ======================================================== -->
+  <div id="override-modal" class="fixed inset-0 bg-navy-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-navy-900 border border-navy-700 rounded-xl max-w-md w-full p-5 shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-navy-700/60">
+        <div class="flex items-center gap-2 text-rose-400 font-display font-semibold text-sm">
+          <i data-lucide="shield-alert" class="w-4 h-4"></i>
+          Clinical Override / Disagreement
+        </div>
+        <button onclick="toggleOverrideModal()" class="text-slate-400 hover:text-slate-200">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="py-3 text-xs text-slate-300 space-y-3 font-sans">
+        <p class="text-slate-400">
+          Document rationale for disagreeing with or modifying the agent's alert assessment for audit trail:
+        </p>
+        
+        <div>
+          <label class="block text-[11px] font-mono text-slate-400 mb-1">Override Reason</label>
+          <select id="override-category" class="w-full bg-navy-950 border border-navy-700 rounded-lg p-2 text-xs text-slate-200 focus:outline-none focus:border-clinical-teal">
+            <option>Alternative Etiology Identified (e.g. Post-op shivering, cardiogenic)</option>
+            <option>Medication Confounder Verified (Vasopressor titration)</option>
+            <option>Transient Artifact / Sensor Dislodgement</option>
+            <option>Clinical Plan Already Initiated (Fluids & Cultures drawn)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-mono text-slate-400 mb-1">Attending Clinical Notes</label>
+          <textarea id="override-notes" rows="3" placeholder="Enter clinical rationale..." class="w-full bg-navy-950 border border-navy-700 rounded-lg p-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-clinical-teal"></textarea>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-3 border-t border-navy-700/60">
+        <button onclick="toggleOverrideModal()" class="px-3 py-1.5 rounded-lg bg-navy-800 text-slate-300 text-xs font-medium hover:bg-navy-700">Cancel</button>
+        <button onclick="submitOverride()" class="px-3 py-1.5 rounded-lg bg-clinical-amber hover:bg-amber-500 text-navy-950 text-xs font-semibold">Save Override Rationale</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- APPLICATION DATA & LOGIC SCRIPT -->
+  <!-- ======================================================== -->
+  <script>
+    // --- Realistic Synthetic Sepsis Surveillance Alert Dataset ---
+    const ALERTS_DATA = [
+      {
+        id: "ALT-1092",
+        patientId: "PT-9042",
+        bed: "Bed 04",
+        age: 62,
+        gender: "Female",
+        admissionDiagnosis: "Acute Hypoxemic Respiratory Failure",
+        icuDay: 3,
+        headline: "Vital-sign trend convergence: Shock Index > 1.0 with widening pulse pressure",
+        summary: "Heart rate acceleration (+34 bpm over 3 hrs) coupled with declining MAP despite fluid administration. Meets severe sepsis criteria.",
+        agent: "Vitals Intelligence Agent",
+        agentKey: "vitals",
+        agentIcon: "activity",
+        agentSpecialty: "Physiological Telemetry & Trend Decomposition",
+        priority: "CRITICAL",
+        timestamp: "6 mins ago",
+        rawTime: 6,
+        isRead: false,
+        isReviewed: false,
+        vitals: {
+          hr: "118 bpm (baseline 84)",
+          bp: "86/48 (MAP 60 mmHg)",
+          rr: "28 /min",
+          temp: "38.6 °C",
+          spo2: "92% on 4L NC",
+          shockIndex: "1.37 (Normal < 0.7)"
+        },
+        labs: {
+          lactate: "3.4 mmol/L (↑ from 1.6)",
+          wbc: "17.2 × 10³/µL",
+          creatinine: "1.9 mg/dL (Baseline 0.9)",
+          platelets: "112 × 10³/µL"
+        },
+        meds: {
+          current: "Norepinephrine 0.04 mcg/kg/min (titrated 15m ago), Piperacillin-Tazobactam IV (due in 1h)",
+          recentBolus: "1000 mL Plasmalyte at 11:30"
+        },
+        initialAgentMessage: "Attending Dr. Al-Mansoor: I have detected a high-consequence physiological shift in **Patient PT-9042 (Bed 04)**. Over the last 180 minutes, the patient exhibits sustained tachycardia reaching 118 bpm, coincident with an acute drop in Mean Arterial Pressure to 60 mmHg, driving the Shock Index to 1.37 (high risk for septic hypoperfusion).\n\nLaboratory Intelligence corroborates this with a concurrent venous lactate rise to 3.4 mmol/L. While Medication Agent notes a recent Norepinephrine initiation, this vasopressor support has not yet stabilized the perfusion trajectory.",
+        evidenceSections: [
+          {
+            title: "Vital-Sign Trend Analysis (0–3h Observation Window)",
+            details: [
+              { label: "Heart Rate Velocity", val: "+11.3 bpm/hour continuous upward trajectory" },
+              { label: "Mean Arterial Pressure (MAP)", val: "Fell from 74 mmHg to 60 mmHg despite 1L balanced crystalloid" },
+              { label: "Respiratory Rate Trend", val: "Tachypnea increased from 18 to 28 /min with work of breathing" },
+              { label: "Core Body Temperature", val: "Spike from 37.1°C to 38.6°C within 90 minutes" }
+            ],
+            interpretation: "Trend analysis rules out benign situational tachycardia. Dynamic arterial waveform confirms decreased systemic vascular resistance."
+          },
+          {
+            title: "Corroborating Laboratory Findings",
+            details: [
+              { label: "Serum Lactate", val: "3.4 mmol/L (Critical threshold > 2.0 mmol/L, indicates anaerobic metabolism)" },
+              { label: "Leukocytosis (WBC)", val: "17.2 × 10³/µL with 14% immature band forms" },
+              { label: "Renal Function", val: "Creatinine doubled to 1.9 mg/dL indicative of acute kidney injury (KDIGO Stage 2)" }
+            ],
+            interpretation: "Multi-organ involvement pattern consistent with Sepsis-3 consensus criteria."
+          },
+          {
+            title: "Medication & Fluid Context Evaluation",
+            details: [
+              { label: "Vasopressor Status", val: "Norepinephrine commenced 15 mins ago at 0.04 mcg/kg/min" },
+              { label: "Crystalloid Challenge", val: "1000 mL completed 90 mins ago with sub-therapeutic MAP recovery" },
+              { label: "Anti-infectives", val: "Blood cultures pending; Broad-spectrum empirical antibiotic due" }
+            ],
+            interpretation: "Shock state refractory to initial fluid bolus; vasopressor titration required."
+          }
+        ],
+        chips: [
+          "Why did you flag this patient as Critical?",
+          "Could medication timing explain the tachycardia?",
+          "Which vital parameter contributed most to the score?",
+          "Are there conflicting indicators with the lab values?",
+          "Explain the reasoning in simpler clinical terms."
+        ],
+        knowledgeBase: {
+          "why": "I flagged PT-9042 as CRITICAL because both the Shock Index (1.37) and lactate doubling (1.6 → 3.4 mmol/L) happened simultaneously. This multi-system convergence signals acute occult hypoperfusion consistent with Septic Shock rather than isolated dehydration.",
+          "medication": "The Medication Agent evaluated whether the tachycardia could be induced by inotropic or chronotropic medications. The patient is receiving Norepinephrine (predominantly an alpha-1 agonist with modest beta-1 activity) at a low rate (0.04 mcg/kg/min). The degree of tachycardia (118 bpm) significantly exceeds expected adrenergic side effects and preceded the infusion start by 75 minutes.",
+          "parameter": "The most significant contributor is the **Rate of MAP decline (-14 mmHg)** coupled with the **Shock Index surge**. In our early warning model, this parameter combination accounts for 44% of the risk weight.",
+          "conflicting": "There are minimal conflicting indicators. Platelets have modestly decreased (112k from 145k), and oxygenation remains at 92%. However, there is no evidence of cardiogenic failure on CVP telemetry.",
+          "simpler": "In short: The patient's heart is beating too fast, blood pressure is dropping dangerously low despite IV fluids, and lactic acid in the blood has doubled. Everything points to severe infection spreading into early septic shock."
+        }
+      },
+      {
+        id: "ALT-1088",
+        patientId: "PT-7719",
+        bed: "Bed 07",
+        age: 74,
+        gender: "Male",
+        admissionDiagnosis: "Biliary Pancreatitis",
+        icuDay: 2,
+        headline: "Elevated lactate trend identified with progressive metabolic acidemia",
+        summary: "Laboratory Agent flagged serial lactate increase (2.1 to 3.8 mmol/L over 4h) with rising base deficit. Hemodynamics currently compensated.",
+        agent: "Laboratory Intelligence Agent",
+        agentKey: "lab",
+        agentIcon: "test-tube-2",
+        agentSpecialty: "Biochemical Kinetics & Organ Failure Markers",
+        priority: "HIGH",
+        timestamp: "24 mins ago",
+        rawTime: 24,
+        isRead: false,
+        isReviewed: false,
+        vitals: {
+          hr: "96 bpm",
+          bp: "108/65 (MAP 79 mmHg)",
+          rr: "22 /min",
+          temp: "37.9 °C",
+          spo2: "95% on 2L NC",
+          shockIndex: "0.88 (Borderline)"
+        },
+        labs: {
+          lactate: "3.8 mmol/L (↑ from 2.1)",
+          wbc: "14.8 × 10³/µL",
+          creatinine: "1.4 mg/dL",
+          platelets: "168 × 10³/µL"
+        },
+        meds: {
+          current: "Maintenance LR 100 mL/hr, Fentanyl 25 mcg IV prn",
+          recentBolus: "None in past 6 hours"
+        },
+        initialAgentMessage: "Attending Dr. Al-Mansoor: Laboratory Intelligence Agent reporting on **PT-7719 (Bed 07)**. We have isolated a rapid, steep trajectory in arterial lactate from 2.1 to 3.8 mmol/L over 4 hours, accompanied by base deficit worsening from -2.1 to -5.8 mEq/L.\n\nCritically: Vital Signs Agent reports the patient's blood pressure remains superficially compensated (MAP 79 mmHg). This represents occult cellular dysoxia preceding overt macroscopic hemodynamic collapse.",
+        evidenceSections: [
+          {
+            title: "Serial Laboratory Kinetics",
+            details: [
+              { label: "Lactate Clearance Rate", val: "Negative clearance: +0.42 mmol/L/hr accumulation" },
+              { label: "Anion Gap", val: "Expanded from 11 to 18 mEq/L" },
+              { label: "Total Bilirubin", val: "Elevated at 2.4 mg/dL (consistent with biliary origin)" }
+            ],
+            interpretation: "Failure of metabolic clearance suggests worsening intra-abdominal septic focus or microvascular shunting."
+          },
+          {
+            title: "Hemodynamic Compensation Check",
+            details: [
+              { label: "Mean Arterial Pressure", val: "Stable between 75–82 mmHg via peripheral vasoconstriction" },
+              { label: "Peripheral Perfusion Index (PI)", val: "Down from 2.8 to 1.1 (Cool extremities noted)" }
+            ],
+            interpretation: "Normal MAP masks significant microcirculatory vasoconstriction."
+          }
+        ],
+        chips: [
+          "Why did you flag this patient as High priority?",
+          "Could liver hypoperfusion explain the lactate clearance?",
+          "Are blood cultures and repeat gases recommended?",
+          "Explain your reasoning in simpler terms."
+        ],
+        knowledgeBase: {
+          "why": "Lactate doubling while blood pressure appears 'normal' is a classic pitfall in ICU surveillance. Without early fluid resuscitation or source control, 68% of similar profiles progress to overt septic shock within 6 hours.",
+          "liver": "Hepatic clearance compromise can contribute to lactate accumulation in severe pancreatitis; however, transaminases are only mildly elevated (AST 68, ALT 72), suggesting the primary driver is systemic tissue hypoperfusion rather than acute liver failure.",
+          "recommend": "Clinical decision guidelines suggest sending repeat arterial blood gas with lactate at 2 hours, confirming blood culture draws, and assessing fluid responsiveness using dynamic measures.",
+          "simpler": "Even though this patient's blood pressure looks okay on the bedside monitor, his cells are not getting enough oxygen. Lactate has climbed fast, which warns us of trouble before the blood pressure crashes."
+        }
+      },
+      {
+        id: "ALT-1082",
+        patientId: "PT-6190",
+        bed: "Bed 11",
+        age: 58,
+        gender: "Male",
+        admissionDiagnosis: "Perforated Diverticulitis s/p Hartmann's",
+        icuDay: 1,
+        headline: "Medication context may mask heart-rate response in suspected sepsis",
+        summary: "Patient on therapeutic Beta-Blocker (Metoprolol 50mg); blunted tachycardia conceals underlying inflammatory storm despite fever and tachypnea.",
+        agent: "Medication Context Agent",
+        agentKey: "meds",
+        agentIcon: "pill",
+        agentSpecialty: "Pharmacological Confounder & Interaction Modeling",
+        priority: "HIGH",
+        timestamp: "1h 12m ago",
+        rawTime: 72,
+        isRead: false,
+        isReviewed: false,
+        vitals: {
+          hr: "76 bpm (Beta-blocked)",
+          bp: "92/58 (MAP 69 mmHg)",
+          rr: "26 /min",
+          temp: "38.9 °C",
+          spo2: "94% on RA",
+          shockIndex: "0.82 (Artificially depressed)"
+        },
+        labs: {
+          lactate: "2.6 mmol/L",
+          wbc: "19.8 × 10³/µL (82% PMNs)",
+          creatinine: "1.3 mg/dL",
+          platelets: "190 × 10³/µL"
+        },
+        meds: {
+          current: "Metoprolol Tartrate 50mg PO BID (Last dose 08:00), Meropenem 1g IV q8h",
+          recentBolus: "500 mL Normal Saline"
+        },
+        initialAgentMessage: "Attending Dr. Al-Mansoor: Medication Context Agent warning regarding **PT-6190 (Bed 11)**. Conventional early-warning scoring algorithms show a misleadingly low risk score because heart rate is only 76 bpm.\n\nOur pharmacological model indicates active beta-1 adrenergic blockade (oral Metoprolol administered at 08:00). When adjusting for chronological drug bioavailability, the patient exhibits significant systemic SIRS with temperature 38.9°C, tachypnea (28 /min), and severe leukocytosis (WBC 19.8k).",
+        evidenceSections: [
+          {
+            title: "Pharmacokinetic Blunting Assessment",
+            details: [
+              { label: "Active Drug", val: "Metoprolol Tartrate 50mg oral (Tmax ~1.5h, active plasma levels)" },
+              { label: "Expected Physiological HR", val: "Estimated 105–115 bpm in unblocked state with T=38.9°C" },
+              { label: "Adjusted Shock Index", val: "Recalibrated SI estimated at 1.15 vs raw 0.82" }
+            ],
+            interpretation: "Tachycardia is suppressed pharmacologically; patient has profound underlying vasodilation and inflammatory response."
+          }
+        ],
+        chips: [
+          "Could medication timing explain the vital sign findings?",
+          "Should we hold the next beta-blocker dose?",
+          "What is the infection source probability?",
+          "Explain your reasoning in simpler terms."
+        ],
+        knowledgeBase: {
+          "medication": "Yes, exactly. The scheduled Metoprolol taken 5 hours ago is suppressing the normal tachycardic reflex. A doctor glancing at a heart rate of 76 might assume the patient is calm, but the high fever (38.9°C) and rapid breathing (26/min) prove severe systemic inflammation.",
+          "hold": "While Aegis does not prescribe, clinical pharmacology consensus strongly advises holding beta-blockers when a surgical patient develops high fevers, borderline MAP (<65-70 mmHg), or escalating fluid requirements.",
+          "source": "Given day-1 status post-Hartmann's procedure for perforated diverticulitis, anastomotic/stump leak or pelvic collection represents the highest risk source.",
+          "simpler": "The patient's heart rate looks normal (76 bpm) only because his blood pressure medication is putting the brakes on his heart. Under the surface, he has a 38.9°C fever and high white count, meaning infection is progressing."
+        }
+      },
+      {
+        id: "ALT-1075",
+        patientId: "PT-4402",
+        bed: "Bed 02",
+        age: 69,
+        gender: "Female",
+        admissionDiagnosis: "Urosepsis / Pyelonephritis",
+        icuDay: 4,
+        headline: "Multiple indicators have changed over the observation window",
+        summary: "Composite alert: Gradual platelet consumption (-28% in 24h) and urine output drop to 0.4 mL/kg/h over consecutive 6 hours.",
+        agent: "Vitals Intelligence Agent",
+        agentKey: "vitals",
+        agentIcon: "activity",
+        agentSpecialty: "Physiological Telemetry & Trend Decomposition",
+        priority: "MODERATE",
+        timestamp: "3h 10m ago",
+        rawTime: 190,
+        isRead: true,
+        isReviewed: true,
+        vitals: {
+          hr: "88 bpm",
+          bp: "114/72 (MAP 86 mmHg)",
+          rr: "18 /min",
+          temp: "37.2 °C",
+          spo2: "97% on RA",
+          shockIndex: "0.77"
+        },
+        labs: {
+          lactate: "1.7 mmol/L (Improving)",
+          wbc: "11.1 × 10³/µL",
+          creatinine: "1.1 mg/dL",
+          platelets: "98 × 10³/µL (Consumptive trend)"
+        },
+        meds: {
+          current: "Ceftriaxone 2g IV q24h, Enoxaparin 40mg SC daily",
+          recentBolus: "None"
+        },
+        initialAgentMessage: "Attending Dr. Al-Mansoor: Monitoring summary for **PT-4402 (Bed 02)**. While hemodynamics and lactate have stabilized following antimicrobial therapy, our 24-hour delta surveillance notes progressive thrombocytopenia (platelets declining from 142k to 98k) and oliguria below 0.4 mL/kg/h.\n\nThis alert has been previously reviewed and logged for coagulation panel correlation.",
+        evidenceSections: [
+          {
+            title: "Observation Window Delta (24h)",
+            details: [
+              { label: "Platelet Drop Velocity", val: "-44 × 10³/µL over 24 hours" },
+              { label: "Urine Output", val: "22 mL/hr average (Patient weight 62 kg: 0.35 mL/kg/hr)" }
+            ],
+            interpretation: "Sub-clinical consumption; low risk of immediate overt shock but warrants DIC surveillance."
+          }
+        ],
+        chips: [
+          "What evidence supports the platelet consumption?",
+          "Are any conflicting indicators present?",
+          "Explain your reasoning in simpler terms."
+        ],
+        knowledgeBase: {
+          "evidence": "Platelets dropped across three successive draws: 142k → 121k → 98k. Fibrinogen is borderline at 190 mg/dL, suggesting mild consumptive coagulopathy associated with resolving Gram-negative bacteremia.",
+          "conflicting": "Patient is clinically afebrile, alert, and MAP is robust at 86 mmHg. This confirms the acute shock phase has passed, leaving localized hematologic recovery monitoring.",
+          "simpler": "Her fever and blood pressure are much better, but her blood clotting platelets have slipped under 100k, and urine output was slightly sluggish today. Good to keep an eye on her kidneys and blood counts."
+        }
+      }
+    ];
+
+    // State
+    let currentFilter = 'all';
+    let searchQuery = '';
+    let selectedAlertId = null;
+    let conversations = {}; // AlertId -> Array of messages
+    let isPatientPanelOpen = true;
+    let isSidebarOpen = true;
+
+    // Initialize Mock Conversations
+    ALERTS_DATA.forEach(alert => {
+      conversations[alert.id] = [
+        {
+          sender: "agent",
+          agentName: alert.agent,
+          agentSpecialty: alert.agentSpecialty,
+          agentKey: alert.agentKey,
+          time: alert.timestamp,
+          text: alert.initialAgentMessage,
+          evidence: alert.evidenceSections
+        }
+      ];
+    });
+
+    // --- Waveform Rendering Engine (Restrained, Subdued Canvas Animation) ---
+    function initWaveform() {
+      const canvas = document.getElementById('miniWaveform');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      let offset = 0;
+
+      function resize() {
+        canvas.width = canvas.parentElement.clientWidth;
+        canvas.height = canvas.parentElement.clientHeight;
+      }
+      resize();
+      window.addEventListener('resize', resize);
+
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = '#14B8A6'; // Restrained Teal
+        ctx.beginPath();
+
+        const w = canvas.width;
+        const h = canvas.height;
+        const mid = h / 2;
+
+        for (let x = 0; x < w; x++) {
+          const t = (x + offset) % 180;
+          let y = mid;
+
+          // ECG P-Q-R-S-T synthetic shape
+          if (t > 40 && t < 55) {
+            y = mid - Math.sin((t - 40) / 15 * Math.PI) * 3; // P wave
+          } else if (t >= 60 && t < 65) {
+            y = mid + (t - 60) * 1.5; // Q
+          } else if (t >= 65 && t < 72) {
+            y = mid - 14 + (t - 65) * 1.5; // R peak (subdued)
+          } else if (t >= 72 && t < 78) {
+            y = mid + 5; // S
+          } else if (t >= 95 && t < 120) {
+            y = mid - Math.sin((t - 95) / 25 * Math.PI) * 4.5; // T wave
+          }
+
+          if (x === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        offset = (offset + 1.2) % 360;
+        requestAnimationFrame(draw);
+      }
+      draw();
+    }
+
+    // --- Clock Simulation ---
+    function initClock() {
+      setInterval(() => {
+        const now = new Date();
+        const str = now.toTimeString().split(' ')[0];
+        const clockEl = document.getElementById('sim-clock');
+        if (clockEl) clockEl.innerText = str;
+      }, 1000);
+    }
+
+    // --- Inbox Rendering ---
+    function renderAlerts() {
+      const container = document.getElementById('alerts-container');
+      if (!container) return;
+
+      const filtered = ALERTS_DATA.filter(item => {
+        // Filter tabs
+        if (currentFilter === 'unread' && item.isReviewed) return false;
+        if (currentFilter === 'high' && (item.priority !== 'CRITICAL' && item.priority !== 'HIGH')) return false;
+        if (currentFilter === 'reviewed' && !item.isReviewed) return false;
+
+        // Search
+        if (searchQuery.trim() !== '') {
+          const q = searchQuery.toLowerCase();
+          const matchPatient = item.patientId.toLowerCase().includes(q);
+          const matchBed = item.bed.toLowerCase().includes(q);
+          const matchHeadline = item.headline.toLowerCase().includes(q);
+          const matchAgent = item.agent.toLowerCase().includes(q);
+          return matchPatient || matchBed || matchHeadline || matchAgent;
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="py-16 text-center text-slate-500">
+            <i data-lucide="check-circle-2" class="w-8 h-8 mx-auto mb-2 text-slate-600"></i>
+            <p class="text-sm font-medium">No alerts matching active criteria</p>
+            <p class="text-xs mt-1">Adjust search parameters or select 'All Alerts'</p>
+          </div>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      container.innerHTML = filtered.map(alert => {
+        // Priority styles
+        let priorityBadge = '';
+        let priorityBorder = 'border-l-2 border-transparent';
+        if (alert.priority === 'CRITICAL') {
+          priorityBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-clinical-rose-dim text-clinical-rose border border-clinical-rose/30">CRITICAL</span>`;
+          priorityBorder = 'border-l-2 border-clinical-rose';
+        } else if (alert.priority === 'HIGH') {
+          priorityBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-mono font-medium bg-clinical-amber-dim text-clinical-amber border border-clinical-amber/30">HIGH</span>`;
+          priorityBorder = 'border-l-2 border-clinical-amber';
+        } else {
+          priorityBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-mono font-medium bg-navy-800 text-slate-400 border border-navy-700">MODERATE</span>`;
+          priorityBorder = 'border-l-2 border-slate-600';
+        }
+
+        const unreadDot = !alert.isReviewed 
+          ? `<span class="w-2 h-2 rounded-full bg-clinical-teal animate-pulse" title="Unreviewed"></span>` 
+          : `<i data-lucide="check" class="w-3.5 h-3.5 text-slate-500" title="Reviewed"></i>`;
+
+        return `
+          <div onclick="openAlert('${alert.id}')" class="grid grid-cols-12 px-5 py-3.5 hover:bg-navy-850/70 cursor-pointer transition-all items-center ${priorityBorder} group">
+            
+            <!-- Patient & Bed -->
+            <div class="col-span-3 flex items-center gap-3">
+              <div class="w-2 flex justify-center">
+                ${unreadDot}
+              </div>
+              <div>
+                <div class="font-mono text-xs font-semibold text-slate-100 flex items-center gap-2">
+                  ${alert.patientId}
+                  <span class="text-[10px] font-normal px-1.5 py-0.2 rounded bg-navy-950 text-slate-400 border border-navy-700">${alert.bed}</span>
+                </div>
+                <div class="text-[11px] text-slate-400 truncate max-w-[190px] mt-0.5">${alert.admissionDiagnosis}</div>
+              </div>
+            </div>
+
+            <!-- Headline & Concern -->
+            <div class="col-span-5 pr-4">
+              <div class="text-xs font-medium text-slate-200 group-hover:text-clinical-teal transition-colors truncate">
+                ${alert.headline}
+              </div>
+              <div class="text-[11px] text-slate-400 truncate mt-0.5">
+                ${alert.summary}
+              </div>
+            </div>
+
+            <!-- Agent -->
+            <div class="col-span-2">
+              <div class="text-xs text-slate-300 flex items-center gap-1.5">
+                <i data-lucide="${alert.agentIcon}" class="w-3.5 h-3.5 text-clinical-teal"></i>
+                <span class="truncate">${alert.agent}</span>
+              </div>
+              <div class="text-[10px] text-slate-400 font-mono mt-0.5">Confidence 96.4%</div>
+            </div>
+
+            <!-- Priority -->
+            <div class="col-span-1 text-center">
+              ${priorityBadge}
+            </div>
+
+            <!-- Time & Open action -->
+            <div class="col-span-1 text-right flex items-center justify-end gap-2">
+              <span class="text-[11px] font-mono text-slate-400">${alert.timestamp}</span>
+              <i data-lucide="chevron-right" class="w-4 h-4 text-slate-600 group-hover:text-slate-300 transition-transform group-hover:translate-x-0.5"></i>
+            </div>
+
+          </div>
+        `;
+      }).join('');
+
+      lucide.createIcons();
+      updateBadgeCounts();
+    }
+
+    function updateBadgeCounts() {
+      const activeCount = ALERTS_DATA.filter(a => !a.isReviewed).length;
+      const critCount = ALERTS_DATA.filter(a => a.priority === 'CRITICAL' && !a.isReviewed).length;
+      
+      const badge = document.getElementById('sidebar-alert-badge');
+      if (badge) badge.innerText = activeCount;
+
+      const actEl = document.getElementById('stat-active-count');
+      if (actEl) actEl.innerText = ALERTS_DATA.length;
+
+      const critEl = document.getElementById('stat-critical-count');
+      if (critEl) critEl.innerText = critCount;
+
+      const pendEl = document.getElementById('stat-pending-count');
+      if (pendEl) pendEl.innerText = activeCount;
+    }
+
+    function setInboxFilter(filterType) {
+      currentFilter = filterType;
+      ['all', 'unread', 'high', 'reviewed'].forEach(f => {
+        const btn = document.getElementById(`filter-${f}`);
+        if (!btn) return;
+        if (f === filterType) {
+          btn.className = "px-3 py-1.5 rounded-md text-xs font-medium transition-all bg-navy-800 text-slate-100 shadow-sm";
+        } else {
+          btn.className = "px-3 py-1.5 rounded-md text-xs font-medium text-slate-400 hover:text-slate-200 transition-all";
+        }
+      });
+      renderAlerts();
+    }
+
+    function handleSearch(val) {
+      searchQuery = val;
+      renderAlerts();
+    }
+
+    function simulateNewArrival() {
+      const newAlert = {
+        id: "ALT-" + (1100 + Math.floor(Math.random() * 50)),
+        patientId: "PT-" + (8100 + Math.floor(Math.random() * 900)),
+        bed: "Bed 09",
+        age: 71,
+        gender: "Female",
+        admissionDiagnosis: "Aspiration Pneumonia",
+        icuDay: 2,
+        headline: "Sudden core temperature drop with paradoxical bradycardia",
+        summary: "Hypothermia trend (35.4°C) with declining pulse in elderly patient exhibiting cold septic shock phenotype.",
+        agent: "Vitals Intelligence Agent",
+        agentKey: "vitals",
+        agentIcon: "activity",
+        agentSpecialty: "Physiological Telemetry & Trend Decomposition",
+        priority: "CRITICAL",
+        timestamp: "Just now",
+        rawTime: 0,
+        isRead: false,
+        isReviewed: false,
+        vitals: {
+          hr: "54 bpm (Bradycardic)",
+          bp: "82/44 (MAP 56 mmHg)",
+          rr: "24 /min",
+          temp: "35.4 °C (Hypothermia)",
+          spo2: "91% on 3L NC",
+          shockIndex: "0.66"
+        },
+        labs: {
+          lactate: "4.1 mmol/L (Severe)",
+          wbc: "2.8 × 10³/µL (Leukopenia)",
+          creatinine: "2.1 mg/dL",
+          platelets: "88 × 10³/µL"
+        },
+        meds: {
+          current: "Broad-spectrum coverage pending",
+          recentBolus: "500 mL LR"
+        },
+        initialAgentMessage: "Attending Dr. Al-Mansoor: URGENT real-time arrival. Newly analyzed patient exhibiting hypothermic sepsis pattern. Temperature has fallen to 35.4°C with leukopenia (2.8k) and severe hyperlactatemia (4.1 mmol/L). Elderly phenotype with impaired febrile response.",
+        evidenceSections: [
+          {
+            title: "Hypothermic Septic Triad",
+            details: [
+              { label: "Core Temp Velocity", val: "-1.2°C over past 90 minutes" },
+              { label: "White Cell Count", val: "2.8k (Severe leukopenia consumes circulating reserves)" }
+            ],
+            interpretation: "Correlates with mortality risk > 45% if fluid and inotropic resuscitation delayed."
+          }
+        ],
+        chips: [
+          "Why did you flag this patient as Critical?",
+          "Explain the hypothermic septic phenotype.",
+          "What immediate actions does Aegis suggest?"
+        ],
+        knowledgeBase: {
+          "why": "Hypothermia in severe sepsis (<36.0°C) carries twice the mortality of hyperthermic fever. In combination with lactate 4.1 mmol/L and MAP 56 mmHg, immediate evaluation is indicated.",
+          "hypothermic": "Elderly immunocompromised patients often fail to mount a fever. Instead, thermoregulation collapses, creating cold shock with paradoxical peripheral failure.",
+          "immediate": "Sepsis-3 bundle recommends immediate warm balanced fluid resuscitation, blood cultures, target MAP >= 65 mmHg with vasopressor, and empiric broad-spectrum coverage."
+        }
+      };
+
+      ALERTS_DATA.unshift(newAlert);
+      conversations[newAlert.id] = [
+        {
+          sender: "agent",
+          agentName: newAlert.agent,
+          agentSpecialty: newAlert.agentSpecialty,
+          agentKey: newAlert.agentKey,
+          time: newAlert.timestamp,
+          text: newAlert.initialAgentMessage,
+          evidence: newAlert.evidenceSections
+        }
+      ];
+
+      renderAlerts();
+    }
+
+    // --- View Navigation ---
+    function showInboxView() {
+      document.getElementById('view-inbox').classList.remove('hidden');
+      document.getElementById('view-conversation').classList.add('hidden');
+      document.getElementById('header-title').innerText = "Clinical Inbox";
+      document.getElementById('header-subtitle').innerText = "Multi-Agent Sepsis Early Warning Surveillance";
+      selectedAlertId = null;
+      renderAlerts();
+    }
+
+    function openAlert(alertId) {
+      selectedAlertId = alertId;
+      const alert = ALERTS_DATA.find(a => a.id === alertId);
+      if (!alert) return;
+
+      alert.isRead = true;
+
+      // Update View
+      document.getElementById('view-inbox').classList.add('hidden');
+      document.getElementById('view-conversation').classList.remove('hidden');
+
+      // Update Header
+      document.getElementById('header-title').innerText = `${alert.patientId} (${alert.bed}) — Agent Dialogue`;
+      document.getElementById('header-subtitle').innerText = `${alert.headline}`;
+
+      // Update Conversation Bar
+      document.getElementById('conv-agent-name').innerText = alert.agent;
+      document.getElementById('conv-agent-specialty').innerText = alert.agentSpecialty;
+      document.getElementById('conv-patient-badge').innerText = `${alert.bed} • ${alert.patientId}`;
+
+      const iconWrap = document.getElementById('conv-agent-icon-wrap');
+      if (iconWrap) {
+        iconWrap.innerHTML = `<i data-lucide="${alert.agentIcon}" class="w-4 h-4"></i>`;
+      }
+
+      // Priority pill
+      const pill = document.getElementById('conv-priority-pill');
+      if (alert.priority === 'CRITICAL') {
+        pill.className = "px-2.5 py-0.5 text-xs font-mono font-bold rounded-full bg-clinical-rose-dim text-clinical-rose border border-clinical-rose/30";
+        pill.innerText = "CRITICAL PRIORITY";
+      } else if (alert.priority === 'HIGH') {
+        pill.className = "px-2.5 py-0.5 text-xs font-mono font-medium rounded-full bg-clinical-amber-dim text-clinical-amber border border-clinical-amber/30";
+        pill.innerText = "HIGH PRIORITY";
+      } else {
+        pill.className = "px-2.5 py-0.5 text-xs font-mono font-medium rounded-full bg-navy-800 text-slate-300 border border-navy-700";
+        pill.innerText = "MODERATE PRIORITY";
+      }
+
+      // Review state
+      updateReviewButtonState(alert);
+
+      // Render Messages & Suggestion Chips
+      renderConversationMessages();
+      renderSuggestionChips(alert.chips);
+      renderPatientContext(alert);
+
+      lucide.createIcons();
+    }
+
+    function updateReviewButtonState(alert) {
+      const btn = document.getElementById('btn-mark-reviewed');
+      const txt = document.getElementById('btn-reviewed-text');
+      if (!btn || !txt) return;
+
+      if (alert.isReviewed) {
+        btn.className = "px-3 py-1.5 rounded-lg bg-clinical-teal-dim border border-clinical-teal/40 text-xs font-medium text-clinical-teal flex items-center gap-1.5";
+        txt.innerText = "Alert Acknowledged";
+      } else {
+        btn.className = "px-3 py-1.5 rounded-lg bg-navy-800 hover:bg-navy-700 border border-navy-600 text-xs font-medium text-slate-200 flex items-center gap-1.5 transition-colors";
+        txt.innerText = "Acknowledge Alert";
+      }
+    }
+
+    function markCurrentAlertReviewed() {
+      if (!selectedAlertId) return;
+      const alert = ALERTS_DATA.find(a => a.id === selectedAlertId);
+      if (!alert) return;
+
+      alert.isReviewed = !alert.isReviewed;
+      updateReviewButtonState(alert);
+      updateBadgeCounts();
+
+      // Log system note in chat
+      const logText = alert.isReviewed 
+        ? "Dr. Al-Mansoor acknowledged this alert at " + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) + ". Clinical oversight maintained."
+        : "Alert marked as unreviewed.";
+        
+      conversations[alert.id].push({
+        sender: "system",
+        text: logText,
+        time: "Just now"
+      });
+
+      renderConversationMessages();
+    }
+
+    // --- Conversation Workspace Rendering ---
+    function renderConversationMessages() {
+      const container = document.getElementById('messages-container');
+      if (!container || !selectedAlertId) return;
+
+      const msgs = conversations[selectedAlertId] || [];
+
+      container.innerHTML = msgs.map((m, idx) => {
+        if (m.sender === "system") {
+          return `
+            <div class="flex justify-center my-3 animate-message">
+              <span class="px-3 py-1 rounded-full bg-navy-850 border border-navy-700/80 text-[11px] font-mono text-slate-400 flex items-center gap-1.5">
+                <i data-lucide="check-check" class="w-3.5 h-3.5 text-clinical-teal"></i>
+                ${m.text}
+              </span>
+            </div>
+          `;
+        }
+
+        if (m.sender === "doctor") {
+          return `
+            <div class="flex justify-end gap-3 animate-message">
+              <div class="max-w-xl flex flex-col items-end">
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="text-[10px] font-mono text-slate-400">${m.time}</span>
+                  <span class="text-xs font-semibold text-slate-200">Dr. Sarah Al-Mansoor</span>
+                </div>
+                <div class="p-3.5 rounded-2xl rounded-tr-sm bg-navy-800 border border-navy-700/80 text-slate-100 text-xs leading-relaxed shadow-sm font-sans">
+                  ${m.text.replace(/\n/g, '<br>')}
+                </div>
+              </div>
+              <div class="w-7 h-7 rounded-full bg-navy-800 border border-navy-600 flex items-center justify-center font-display font-medium text-[11px] text-slate-300 shrink-0 mt-4">
+                DR
+              </div>
+            </div>
+          `;
+        }
+
+        // Agent Message
+        let evidenceHtml = '';
+        if (m.evidence && m.evidence.length > 0) {
+          evidenceHtml = `
+            <div class="mt-4 pt-3 border-t border-navy-700/60 space-y-2.5">
+              <div class="text-[11px] font-mono uppercase text-clinical-teal font-semibold tracking-wider flex items-center gap-1.5">
+                <i data-lucide="layers" class="w-3.5 h-3.5"></i>
+                Supporting Clinical Evidence (Expandable)
+              </div>
+              
+              ${m.evidence.map((ev, eIdx) => `
+                <div class="bg-navy-950/80 rounded-lg border border-navy-700/80 overflow-hidden">
+                  <button onclick="toggleEvidence(${idx}, ${eIdx})" class="w-full px-3 py-2 flex items-center justify-between text-left text-xs font-medium text-slate-200 hover:bg-navy-850/60 transition-colors">
+                    <span class="flex items-center gap-2">
+                      <i data-lucide="chevron-right" id="ev-icon-${idx}-${eIdx}" class="w-3.5 h-3.5 text-slate-400 transition-transform"></i>
+                      ${ev.title}
+                    </span>
+                    <span class="text-[10px] font-mono text-slate-400">Verified</span>
+                  </button>
+                  
+                  <div id="ev-body-${idx}-${eIdx}" class="hidden p-3 pt-1 border-t border-navy-800 text-[11px] space-y-2 bg-navy-950">
+                    <div class="space-y-1">
+                      ${ev.details.map(d => `
+                        <div class="flex items-start justify-between py-1 border-b border-navy-850/60">
+                          <span class="text-slate-400 font-mono">${d.label}:</span>
+                          <span class="text-slate-200 font-medium text-right ml-4">${d.val}</span>
+                        </div>
+                      `).join('')}
+                    </div>
+                    <div class="p-2 rounded bg-navy-900 border border-navy-800 text-slate-300 text-[10px] font-sans italic">
+                      <strong class="text-clinical-teal not-italic font-mono">Agent Interpretation:</strong> ${ev.interpretation}
+                    </div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `;
+        }
+
+        // Parse markdown bold for agent message
+        const formattedText = m.text
+          .replace(/\*\*(.*?)\*\*/g, '<strong class="text-slate-100 font-semibold">$1</strong>')
+          .replace(/\n\n/g, '<br><br>');
+
+        return `
+          <div class="flex justify-start gap-3 animate-message">
+            <div class="w-7 h-7 rounded-md bg-clinical-teal-dim border border-clinical-teal/40 flex items-center justify-center text-clinical-teal shrink-0 mt-4">
+              <i data-lucide="bot" class="w-4 h-4"></i>
+            </div>
+            <div class="max-w-2xl flex flex-col items-start">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="text-xs font-semibold text-slate-200">${m.agentName}</span>
+                <span class="text-[10px] font-mono text-slate-400">${m.agentSpecialty}</span>
+                <span class="text-slate-600">•</span>
+                <span class="text-[10px] font-mono text-slate-400">${m.time}</span>
+              </div>
+              <div class="p-4 rounded-2xl rounded-tl-sm bg-navy-900 border border-navy-700/80 text-slate-200 text-xs leading-relaxed shadow-sm font-sans">
+                ${formattedText}
+                ${evidenceHtml}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      lucide.createIcons();
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function toggleEvidence(msgIdx, evIdx) {
+      const body = document.getElementById(`ev-body-${msgIdx}-${evIdx}`);
+      const icon = document.getElementById(`ev-icon-${msgIdx}-${evIdx}`);
+      if (!body) return;
+
+      if (body.classList.contains('hidden')) {
+        body.classList.remove('hidden');
+        if (icon) icon.classList.add('rotate-90');
+      } else {
+        body.classList.add('hidden');
+        if (icon) icon.classList.remove('rotate-90');
+      }
+    }
+
+    // --- Suggestion Chips ---
+    function renderSuggestionChips(chips) {
+      const container = document.getElementById('suggestion-chips');
+      if (!container) return;
+
+      if (!chips || chips.length === 0) {
+        container.innerHTML = '';
+        return;
+      }
+
+      container.innerHTML = chips.map(c => `
+        <button onclick="handleChipClick(this, '${c.replace(/'/g, "\\'")}')" class="px-2.5 py-1 rounded-full bg-navy-800 hover:bg-navy-750 border border-navy-700 text-slate-300 hover:text-slate-100 text-[11px] whitespace-nowrap transition-colors flex items-center gap-1">
+          <i data-lucide="sparkles" class="w-3 h-3 text-clinical-teal"></i>
+          <span>${c}</span>
+        </button>
+      `).join('');
+
+      lucide.createIcons();
+    }
+
+    function handleChipClick(btn, promptText) {
+      const input = document.getElementById('doctor-input');
+      if (input) {
+        input.value = promptText;
+        sendMessage();
+      }
+    }
+
+    // --- Message Sending & Deterministic Agent Response ---
+    function sendMessage() {
+      const input = document.getElementById('doctor-input');
+      if (!input || !selectedAlertId) return;
+
+      const userText = input.value.trim();
+      if (!userText) return;
+
+      const alert = ALERTS_DATA.find(a => a.id === selectedAlertId);
+      if (!alert) return;
+
+      // Add doctor message
+      conversations[selectedAlertId].push({
+        sender: "doctor",
+        text: userText,
+        time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+      });
+
+      input.value = '';
+      renderConversationMessages();
+
+      // Show typing indicator
+      const typingEl = document.getElementById('typing-indicator');
+      const typingLabel = document.getElementById('typing-agent-label');
+      if (typingLabel) typingLabel.innerText = `${alert.agent} is reasoning over historical records...`;
+      if (typingEl) typingEl.classList.remove('hidden');
+
+      // Scroll down
+      const msgContainer = document.getElementById('messages-container');
+      if (msgContainer) msgContainer.scrollTop = msgContainer.scrollHeight;
+
+      // Generate deterministic contextual response
+      setTimeout(() => {
+        if (typingEl) typingEl.classList.add('hidden');
+
+        const reply = formulateMockResponse(alert, userText);
+
+        conversations[selectedAlertId].push({
+          sender: "agent",
+          agentName: alert.agent,
+          agentSpecialty: alert.agentSpecialty,
+          agentKey: alert.agentKey,
+          time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+          text: reply.text,
+          evidence: reply.evidence || []
+        });
+
+        renderConversationMessages();
+      }, 950);
+    }
+
+    function formulateMockResponse(alert, userQuery) {
+      const q = userQuery.toLowerCase();
+      const kb = alert.knowledgeBase || {};
+
+      if (q.includes("why") || q.includes("flag") || q.includes("critical") || q.includes("high")) {
+        return {
+          text: kb["why"] || "The alert was triggered because the physiological trajectory diverged markedly from the ICU patient baseline, with multiple organ systems reflecting coordinated degradation."
+        };
+      } else if (q.includes("medication") || q.includes("timing") || q.includes("beta") || q.includes("vasopressor") || q.includes("pressor")) {
+        return {
+          text: kb["medication"] || kb["liver"] || "The Medication Context Agent correlated all administered doses over the past 8 hours to evaluate confounding. While active pharmacotherapy contributes subtle shifts, the primary driving force remains genuine tissue inflammation."
+        };
+      } else if (q.includes("parameter") || q.includes("contributed") || q.includes("most") || q.includes("vital")) {
+        return {
+          text: kb["parameter"] || "The most significant contributor is the rate of physiological velocity change (first derivative) rather than a single static threshold crossing."
+        };
+      } else if (q.includes("conflict") || q.includes("disagree") || q.includes("inconsistency")) {
+        return {
+          text: kb["conflicting"] || "We evaluated conflicting indicators across lab and ventilator telemetry. While oxygenation remains relatively preserved, peripheral perfusion and acid-base metrics are unmistakably concordant with sepsis."
+        };
+      } else if (q.includes("simple") || q.includes("plain") || q.includes("explain")) {
+        return {
+          text: kb["simpler"] || "In summary: The patient's vital signs and blood tests indicate the body is struggling against systemic infection. Early intervention now prevents sudden decompensation later."
+        };
+      } else {
+        return {
+          text: `Regarding your query: "${userQuery}"\n\nAegis evaluated this against ${alert.patientId}'s electronic flowsheet. The probability profile remains strongly indicative of sepsis progression. We recommend clinical bedside verification of volume status and reviewing pending microbiological isolates.`,
+          evidence: [
+            {
+              title: "On-Demand Parameter Snapshot",
+              details: [
+                { label: "Observed Heart Rate", val: alert.vitals.hr },
+                { label: "Current Blood Pressure", val: alert.vitals.bp },
+                { label: "Serum Lactate", val: alert.labs.lactate }
+              ],
+              interpretation: "Values cross-referenced across laboratory and telemetry time-series."
+            }
+          ]
+        };
+      }
+    }
+
+    // --- Patient Context Panel Rendering ---
+    function renderPatientContext(alert) {
+      const panel = document.getElementById('patient-context-body');
+      if (!panel) return;
+
+      panel.innerHTML = `
+        <!-- Demographics & Location -->
+        <div class="bg-navy-950/90 rounded-lg p-3 border border-navy-700/60">
+          <div class="flex items-center justify-between font-mono text-xs">
+            <span class="text-slate-100 font-bold">${alert.patientId}</span>
+            <span class="text-clinical-teal font-medium">${alert.bed}</span>
+          </div>
+          <div class="text-[11px] text-slate-400 mt-1">
+            ${alert.age}y / ${alert.gender} • ICU Day ${alert.icuDay}
+          </div>
+          <div class="text-[11px] text-slate-300 font-medium mt-1">
+            Dx: ${alert.admissionDiagnosis}
+          </div>
+        </div>
+
+        <!-- Vital Signs Card -->
+        <div class="bg-navy-950/90 rounded-lg p-3 border border-navy-700/60 space-y-2">
+          <div class="text-[10px] font-mono uppercase text-slate-400 tracking-wider flex items-center justify-between">
+            <span>Telemetry Vitals</span>
+            <span class="text-clinical-teal flex items-center gap-1 font-mono text-[9px]">
+              <span class="w-1.5 h-1.5 rounded-full bg-clinical-teal animate-pulse"></span> LIVE
+            </span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div class="bg-navy-900/80 p-2 rounded border border-navy-800">
+              <div class="text-[10px] font-mono text-slate-400">Heart Rate</div>
+              <div class="font-mono font-semibold text-slate-100 mt-0.5">${alert.vitals.hr}</div>
+            </div>
+            <div class="bg-navy-900/80 p-2 rounded border border-navy-800">
+              <div class="text-[10px] font-mono text-slate-400">Arterial BP</div>
+              <div class="font-mono font-semibold text-slate-100 mt-0.5">${alert.vitals.bp}</div>
+            </div>
+            <div class="bg-navy-900/80 p-2 rounded border border-navy-800">
+              <div class="text-[10px] font-mono text-slate-400">Resp Rate</div>
+              <div class="font-mono font-semibold text-slate-100 mt-0.5">${alert.vitals.rr}</div>
+            </div>
+            <div class="bg-navy-900/80 p-2 rounded border border-navy-800">
+              <div class="text-[10px] font-mono text-slate-400">Core Temp</div>
+              <div class="font-mono font-semibold text-slate-100 mt-0.5">${alert.vitals.temp}</div>
+            </div>
+          </div>
+          
+          <div class="p-1.5 rounded bg-navy-900/60 text-[10px] font-mono text-slate-400 flex justify-between">
+            <span>Shock Index:</span>
+            <span class="text-rose-400 font-semibold">${alert.vitals.shockIndex || '0.78'}</span>
+          </div>
+        </div>
+
+        <!-- Laboratory Snapshot -->
+        <div class="bg-navy-950/90 rounded-lg p-3 border border-navy-700/60 space-y-2">
+          <div class="text-[10px] font-mono uppercase text-slate-400 tracking-wider">
+            Laboratory Parameters
+          </div>
+          <div class="space-y-1.5 text-[11px] font-mono">
+            <div class="flex justify-between py-1 border-b border-navy-800/60">
+              <span class="text-slate-400">Lactate:</span>
+              <span class="text-rose-400 font-semibold">${alert.labs.lactate}</span>
+            </div>
+            <div class="flex justify-between py-1 border-b border-navy-800/60">
+              <span class="text-slate-400">WBC:</span>
+              <span class="text-slate-200">${alert.labs.wbc}</span>
+            </div>
+            <div class="flex justify-between py-1 border-b border-navy-800/60">
+              <span class="text-slate-400">Creatinine:</span>
+              <span class="text-slate-200">${alert.labs.creatinine}</span>
+            </div>
+            <div class="flex justify-between py-1">
+              <span class="text-slate-400">Platelets:</span>
+              <span class="text-slate-200">${alert.labs.platelets}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Medication Context -->
+        <div class="bg-navy-950/90 rounded-lg p-3 border border-navy-700/60 space-y-1.5">
+          <div class="text-[10px] font-mono uppercase text-slate-400 tracking-wider">
+            Active Pharmacotherapy
+          </div>
+          <div class="text-[11px] text-slate-300 leading-relaxed font-sans">
+            ${alert.meds.current}
+          </div>
+          <div class="text-[10px] font-mono text-slate-400 pt-1 border-t border-navy-800">
+            Recent Infusions: ${alert.meds.recentBolus}
+          </div>
+        </div>
+      `;
+    }
+
+    function togglePatientPanel() {
+      const panel = document.getElementById('patient-context-panel');
+      const icon = document.getElementById('patient-panel-icon');
+      if (!panel) return;
+
+      isPatientPanelOpen = !isPatientPanelOpen;
+      if (isPatientPanelOpen) {
+        panel.classList.remove('hidden');
+        if (icon) icon.setAttribute('data-lucide', 'sidebar-close');
+      } else {
+        panel.classList.add('hidden');
+        if (icon) icon.setAttribute('data-lucide', 'sidebar-open');
+      }
+      lucide.createIcons();
+    }
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const icon = document.getElementById('sidebar-toggle-icon');
+      if (!sidebar) return;
+
+      isSidebarOpen = !isSidebarOpen;
+      if (isSidebarOpen) {
+        sidebar.classList.remove('-ml-64');
+        if (icon) icon.setAttribute('data-lucide', 'panel-left-close');
+      } else {
+        sidebar.classList.add('-ml-64');
+        if (icon) icon.setAttribute('data-lucide', 'panel-left-open');
+      }
+      lucide.createIcons();
+    }
+
+    // --- Override / Disagreement Modal ---
+    function toggleOverrideModal() {
+      const modal = document.getElementById('override-modal');
+      if (modal) modal.classList.toggle('hidden');
+    }
+
+    function submitOverride() {
+      const cat = document.getElementById('override-category').value;
+      const notes = document.getElementById('override-notes').value || "No detailed notes provided.";
+      
+      if (selectedAlertId) {
+        conversations[selectedAlertId].push({
+          sender: "system",
+          text: `Physician Override Recorded [${cat}]: "${notes}"`,
+          time: "Just now"
+        });
+        renderConversationMessages();
+      }
+
+      toggleOverrideModal();
+    }
+
+    // --- Keyboard Event Listeners for Composer ---
+    window.addEventListener('DOMContentLoaded', () => {
+      initWaveform();
+      initClock();
+      renderAlerts();
+
+      const input = document.getElementById('doctor-input');
+      if (input) {
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>

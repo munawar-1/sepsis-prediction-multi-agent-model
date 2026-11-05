@@ -259,7 +259,7 @@ export default function InboxView({
             type="button"
             onClick={onDownloadDemoFlowsheet}
             className="h-9 px-3 rounded-full border-[1.5px] border-[#D0DFEF] dark:border-[#1E2D44] bg-white dark:bg-[#0D1524] hover:bg-[#F0F5FA] dark:hover:bg-[#142036] text-[#334155] dark:text-[#CBD5E1] text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
-            title="Download Aegis_ICU_Demo_Flowsheet.xlsx"
+            title="Download HourZero_Demo_Flowsheet.xlsx"
           >
             <Download className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
             <span className="hidden sm:inline">Download</span>

@@ -49,7 +49,7 @@ export default function AlertExperienceSection() {
           </h2>
 
           <p className="font-body" style={{ fontSize: '15px', color: isDark ? '#9AA9BA' : '#475569', lineHeight: 1.6 }}>
-            Black-box scores generate alarm fatigue and clinical hesitation. Aegis deconstructs each assessment into physiological, biochemical, and pharmacological evidence before requesting clinician authorization.
+            Black-box scores generate alarm fatigue and clinical hesitation. HourZero deconstructs each assessment into physiological, biochemical, and pharmacological evidence before requesting clinician authorization.
           </p>
         </div>
 

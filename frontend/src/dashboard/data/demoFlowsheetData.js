@@ -37,12 +37,12 @@ export const DEMO_FLOWSHEET_ROWS = [
 export function buildDemoWorkbook() {
   const ws = XLSX.utils.json_to_sheet(DEMO_FLOWSHEET_ROWS);
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Aegis_ICU_Telemetry');
+  XLSX.utils.book_append_sheet(wb, ws, 'HourZero_Telemetry');
   return wb;
 }
 
 export function downloadDemoWorkbookFile() {
   const wb = buildDemoWorkbook();
-  XLSX.writeFile(wb, 'Aegis_ICU_Demo_Flowsheet.xlsx');
+  XLSX.writeFile(wb, 'HourZero_Demo_Flowsheet.xlsx');
 }
 
