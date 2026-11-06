@@ -320,6 +320,17 @@ export const clinicalApi = {
   },
 
   /**
+   * Attending Doctor creates/assigns multiple medication changes or therapy tasks in batch to bedside nurse
+   * POST /api/v1/orders/assign/batch
+   */
+  async batchAssignDoctorOrders(ordersPayload) {
+    return apiRequest('/orders/assign/batch', {
+      method: 'POST',
+      body: JSON.stringify(ordersPayload)
+    });
+  },
+
+  /**
    * Bedside Nurse administers signed order (Role: NURSE required)
    * POST /api/v1/orders/{orderId}/administer
    */

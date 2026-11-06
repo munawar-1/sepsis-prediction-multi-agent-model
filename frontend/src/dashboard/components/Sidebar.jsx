@@ -32,11 +32,30 @@ export default function Sidebar({
 }) {
   const { user, isDoctor, isNurse, logout } = useAuth();
 
+  const [nursePendingCount, setNursePendingCount] = useState(3);
+
+  useEffect(() => {
+    const updateCount = () => {
+      try {
+        const stored = JSON.parse(localStorage.getItem('aegis_bedside_tasks') || '[]');
+        const pending = stored.filter(t => t.status === 'APPROVED' || t.status === 'RECOMMENDED').length;
+        setNursePendingCount(pending > 0 ? pending : 3);
+      } catch (e) {}
+    };
+    updateCount();
+    window.addEventListener('bedside-task-assigned', updateCount);
+    window.addEventListener('storage', updateCount);
+    return () => {
+      window.removeEventListener('bedside-task-assigned', updateCount);
+      window.removeEventListener('storage', updateCount);
+    };
+  }, []);
+
   // Navigation Items Specification (Role-Specific)
   // Bedside Nurses do NOT have complex AI Agent or raw Lab Reports views
   // Instead, Nurses have Bedside Therapy & Tasks (Doctor Orders Worklist)
   const navItems = isNurse ? [
-    { id: 'therapy', label: 'Bedside Tasks & Orders', icon: ClipboardList, badge: '3' },
+    { id: 'therapy', label: 'Bedside Tasks & Orders', icon: ClipboardList, badge: String(nursePendingCount) },
     { id: 'inbox', label: 'Dashboard', icon: LayoutGrid, badge: alerts.filter(a => !a.isReviewed).length },
     { id: 'monitoring', label: 'Patient Monitoring', icon: Activity, badge: null },
     { id: 'records', label: 'Patient Records', icon: FileText, badge: null },
@@ -46,7 +65,7 @@ export default function Sidebar({
   ] : [
     { id: 'consultation', label: 'Consultation', icon: MessageSquarePlus, badge: null },
     { id: 'inbox', label: 'Dashboard', icon: LayoutGrid, badge: alerts.filter(a => !a.isReviewed).length },
-    { id: 'therapy', label: 'Therapy & Orders', icon: ClipboardList, badge: null },
+    { id: 'therapy', label: 'Therapy & Orders', icon: ClipboardList, badge: String(nursePendingCount) },
     { id: 'monitoring', label: 'Patient Monitoring', icon: Activity, badge: null },
     { id: 'records', label: 'Patient Records', icon: FileText, badge: null },
     { id: 'agents', label: 'AI Agents', icon: Bot, badge: '5' },

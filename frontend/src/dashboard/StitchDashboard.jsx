@@ -545,6 +545,7 @@ export default function StitchDashboard({ onExitToLanding }) {
 
           const multiAgentData = {
             patientId: targetAlert.patientId,
+            patientName: targetAlert.patientName || 'Eleanor Vance',
             bedNumber: targetAlert.bed,
             urgency: urgency,
             compositeRiskPct: compositeRiskPct,

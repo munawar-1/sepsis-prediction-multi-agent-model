@@ -51,6 +51,28 @@ public class ClinicalOrderController {
     }
 
     /**
+     * Attending Doctor creates/assigns multiple medication change or therapy tasks in batch for the bedside nurse.
+     */
+    @PostMapping("/assign/batch")
+    @PreAuthorize("hasAnyRole('DOCTOR', 'NURSE')")
+    public ResponseEntity<?> batchAssignDoctorTasks(
+            @Valid @RequestBody List<DoctorAssignTaskRequest> requests,
+            Authentication authentication
+    ) {
+        try {
+            String doctorUsername = authentication != null ? authentication.getName() : "dr.munawar";
+            List<ClinicalActionOrder> assigned = orderService.batchAssignDoctorOrders(requests, doctorUsername);
+            return ResponseEntity.status(HttpStatus.CREATED).body(assigned);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "status", 400,
+                    "error", "BATCH_ASSIGNMENT_FAILED",
+                    "message", e.getMessage()
+            ));
+        }
+    }
+
+    /**
      * Get all recommended and active orders for a patient.
      */
     @GetMapping("/patient/{patientId}")

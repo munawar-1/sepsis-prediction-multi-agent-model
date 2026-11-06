@@ -236,6 +236,16 @@ public class ClinicalOrderService {
         return saved;
     }
 
+    @Transactional
+    public List<ClinicalActionOrder> batchAssignDoctorOrders(List<DoctorAssignTaskRequest> requests, String doctorUsername) {
+        if (requests == null || requests.isEmpty()) {
+            return List.of();
+        }
+        return requests.stream()
+                .map(req -> assignDoctorOrder(req, doctorUsername))
+                .toList();
+    }
+
     private String computeSha256(String input) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");

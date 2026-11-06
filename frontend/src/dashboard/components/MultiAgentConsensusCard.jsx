@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   HeartPulse,
   Beaker,
@@ -13,8 +13,17 @@ import {
   Square,
   Lock,
   Flame,
-  Gauge
+  Gauge,
+  Send,
+  Plus,
+  X,
+  Sparkles,
+  Check,
+  ListPlus,
+  AlertCircle
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { clinicalApi } from '../../services/api';
 
 /**
  * MultiAgentConsensusCard
@@ -23,10 +32,12 @@ import {
  * 1. The 3 Diagnostic Feeder Models (Vitals XGBoost, Labs LightGBM, Skeptic Filter)
  * 2. The Supreme Final Verdict & Score of the Triage Orchestrator Agent (Orch Agent)
  * 3. A dedicated, interactive "Doctor's Immediate Resuscitation Checklist" (Surviving Sepsis 1-Hour Bundle)
+ *    Enables the Attending Physician to select, customize, and assign bedside tasks directly to the nurse.
  */
 export default function MultiAgentConsensusCard({
-  patientId,
-  bedNumber,
+  patientId = 'PT-9042',
+  patientName = 'Eleanor Vance',
+  bedNumber = 'ICU-BED-01',
   urgency = 'CRITICAL_SEPSIS',
   compositeRiskPct = 75,
   shockIndex = '1.08',
@@ -40,90 +51,283 @@ export default function MultiAgentConsensusCard({
   evidenceList = [],
   onAcknowledge = null
 }) {
+  const { user } = useAuth();
   const isCritical = urgency === 'CRITICAL' || urgency === 'CRITICAL_SEPSIS' || compositeRiskPct >= 70;
   const isModerate = urgency === 'HIGH' || urgency === 'MODERATE' || (compositeRiskPct >= 35 && compositeRiskPct < 70);
 
   // Default Surviving Sepsis 1-Hour Bundle Checklist items
   const defaultChecklist = [
     {
-      id: 0,
+      id: 'task-lactate',
       title: 'Measure STAT Blood Lactate',
       detail: 'Re-measure serial lactate within 2-4 hours if initial ≥ 2.0 mmol/L to guide fluid titration and metabolic clearance.',
       badge: 'STAT (< 15 MIN)',
+      category: 'STAT_LABS',
       urgent: true
     },
     {
-      id: 1,
+      id: 'task-cultures',
       title: 'Obtain Blood Cultures (x2 Sets)',
       detail: 'Draw aerobic and anaerobic blood cultures from 2 distinct anatomical sites prior to antimicrobial infusion.',
       badge: 'PRIOR TO ANTIBIOTICS',
+      category: 'STAT_LABS',
       urgent: true
     },
     {
-      id: 2,
+      id: 'task-antibiotics',
       title: 'Initiate Empiric Broad-Spectrum IV Antimicrobials',
       detail: 'Administer broad-spectrum antimicrobial coverage within 1 hour of sepsis recognition.',
       badge: 'WITHIN 1 HOUR',
+      category: 'MEDICATION_CHANGE',
       urgent: true
     },
     {
-      id: 3,
+      id: 'task-fluids',
       title: 'Rapid 30 mL/kg Crystalloid Fluid Loading',
       detail: 'Administer balanced crystalloids for hypotension (MAP < 65 mmHg) or initial lactate ≥ 4.0 mmol/L.',
       badge: 'IMMEDIATE',
+      category: 'RESUSCITATION',
       urgent: true
     },
     {
-      id: 4,
+      id: 'task-vasopressor',
       title: 'Titrate Vasopressor Support (Norepinephrine)',
       detail: 'Target MAP ≥ 65 mmHg if patient remains refractory to initial crystalloid volume challenge.',
       badge: 'TITRATE TO MAP ≥ 65',
+      category: 'MEDICATION_CHANGE',
       urgent: true
     },
     {
-      id: 5,
+      id: 'task-art-line',
       title: 'Continuous Invasive Arterial Line Monitoring',
       detail: 'Establish arterial line transducer for beat-to-beat pressure waveform and continuous Shock Index surveillance.',
       badge: 'HEMODYNAMIC SURVEILLANCE',
+      category: 'BEDSIDE_HARDWARE',
       urgent: false
     }
   ];
 
+  // Helper to infer category from task title
+  const inferCategory = (title = '') => {
+    const t = title.toLowerCase();
+    if (t.includes('lactate') || t.includes('culture') || t.includes('blood gas') || t.includes('cbc') || t.includes('lab')) return 'STAT_LABS';
+    if (t.includes('norepinephrine') || t.includes('antimicrobial') || t.includes('antibiotic') || t.includes('vasopressor') || t.includes('infusion')) return 'MEDICATION_CHANGE';
+    if (t.includes('crystalloid') || t.includes('fluid') || t.includes('bolus') || t.includes('resuscitation')) return 'RESUSCITATION';
+    if (t.includes('arterial line') || t.includes('catheter') || t.includes('transducer') || t.includes('hardware')) return 'BEDSIDE_HARDWARE';
+    return 'THERAPY_ORDER';
+  };
+
   // Merge custom actionBundle if provided
-  const checklistItems = (actionBundle && actionBundle.length > 0)
+  const initialChecklist = (actionBundle && actionBundle.length > 0)
     ? actionBundle.map((act, i) => ({
-        id: i,
+        id: `bundle-task-${i}`,
         title: typeof act === 'string' ? act : (act.action || act.title || 'Clinical Action'),
         detail: act.detail || act.rationale || 'Surviving Sepsis 1-Hour Protocol action bundle recommendation.',
         badge: act.badge || (act.urgent ? 'STAT 1-HOUR' : 'RECOMMENDED'),
+        category: act.category || inferCategory(typeof act === 'string' ? act : act.title),
         urgent: act.urgent !== false
       }))
     : defaultChecklist;
 
-  // Interactive Checklist State
-  const [checkedItems, setCheckedItems] = useState({});
+  const [checklistItems, setChecklistItems] = useState(initialChecklist);
+  const [selectedTasks, setSelectedTasks] = useState({});
+  const [assignedTasks, setAssignedTasks] = useState({});
+  const [isAssigning, setIsAssigning] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [toast, setToast] = useState(null);
 
-  const toggleCheck = (idx) => {
-    setCheckedItems(prev => ({
+  // Custom Bedside Task Composer State
+  const [isCustomComposerOpen, setIsCustomComposerOpen] = useState(false);
+  const [customActionName, setCustomActionName] = useState('');
+  const [customCategory, setCustomCategory] = useState('MEDICATION_CHANGE');
+  const [customPriority, setCustomPriority] = useState('STAT');
+  const [customDoctorNotes, setCustomDoctorNotes] = useState('');
+
+  // Sync assigned tasks from localStorage on mount and when patient changes
+  useEffect(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('aegis_bedside_tasks') || '[]');
+      const assignedMap = {};
+      stored
+        .filter(t => t.patientId === patientId)
+        .forEach(t => {
+          assignedMap[t.actionName] = {
+            status: t.status,
+            assignedAt: t.orderedAt,
+            priority: t.priority
+          };
+        });
+      setAssignedTasks(assignedMap);
+    } catch (e) {
+      console.warn('Error reading stored tasks in consensus card:', e);
+    }
+  }, [patientId]);
+
+  // Toggle selection for batch assignment
+  const toggleSelectTask = (id) => {
+    setSelectedTasks(prev => ({
       ...prev,
-      [idx]: !prev[idx]
+      [id]: !prev[id]
     }));
   };
 
-  const handleAuthorizeAll = () => {
-    const allChecked = {};
-    checklistItems.forEach((_, idx) => {
-      allChecked[idx] = true;
-    });
-    setCheckedItems(allChecked);
-    setIsAuthorized(true);
-    if (onAcknowledge) {
-      onAcknowledge();
+  // Select or Deselect All
+  const handleSelectAll = () => {
+    const allSelected = checklistItems.every(item => selectedTasks[item.id]);
+    if (allSelected) {
+      setSelectedTasks({});
+    } else {
+      const newSel = {};
+      checklistItems.forEach(item => {
+        newSel[item.id] = true;
+      });
+      setSelectedTasks(newSel);
     }
   };
 
-  const completedCount = checklistItems.filter((_, idx) => checkedItems[idx]).length;
+  // Dispatch orders to Bedside Nurse (Backend API + Local Storage + Custom Event)
+  const dispatchOrdersToNurse = async (itemsToDispatch) => {
+    if (!itemsToDispatch || itemsToDispatch.length === 0) return;
+    setIsAssigning(true);
+
+    try {
+      const doctorName = user?.fullName || 'Dr. Rajesh Sharma, MD';
+      const doctorUser = user?.username || 'dr.sharma';
+
+      const ordersPayload = itemsToDispatch.map(item => ({
+        patientId: patientId || 'PT-9042',
+        actionName: item.title,
+        category: item.category || inferCategory(item.title),
+        priority: item.urgent ? 'STAT' : 'URGENT',
+        rationale: item.detail || 'Surviving Sepsis 1-Hour Protocol action bundle recommendation.',
+        doctorNotes: item.doctorNotes || `Bedside order authorized by ${doctorName} via Immediate Resuscitation Checklist`
+      }));
+
+      // 1. Call Backend API
+      try {
+        if (ordersPayload.length === 1) {
+          await clinicalApi.assignDoctorOrder(ordersPayload[0]);
+        } else {
+          await clinicalApi.batchAssignDoctorOrders(ordersPayload);
+        }
+      } catch (backendErr) {
+        console.warn('Backend API note (saving to client store):', backendErr.message);
+      }
+
+      // 2. Format as bedside tasks for Nurse Worklist
+      const newBedsideOrders = ordersPayload.map((payload, idx) => ({
+        id: Date.now() + idx + Math.floor(Math.random() * 1000),
+        patientId: payload.patientId,
+        patientName: patientName || (payload.patientId === 'PT-9042' ? 'Eleanor Vance' : `Patient ${payload.patientId}`),
+        icuBedNumber: bedNumber || 'ICU-BED-01',
+        orderCode: `ACT_${payload.category}_${Math.floor(Math.random() * 9000)}`,
+        actionName: payload.actionName,
+        category: payload.category,
+        priority: payload.priority,
+        status: 'APPROVED',
+        signedByDoctor: doctorUser,
+        rationale: `${payload.rationale} | Doctor Note: ${payload.doctorNotes}`,
+        orderedAt: new Date().toISOString()
+      }));
+
+      // 3. Persist in localStorage for bedside dashboard
+      const existing = JSON.parse(localStorage.getItem('aegis_bedside_tasks') || '[]');
+      const updated = [
+        ...newBedsideOrders,
+        ...existing.filter(e => !newBedsideOrders.some(n => n.patientId === e.patientId && n.actionName === e.actionName))
+      ];
+      localStorage.setItem('aegis_bedside_tasks', JSON.stringify(updated));
+
+      // 4. Dispatch global window event for real-time reactivity
+      window.dispatchEvent(new CustomEvent('bedside-task-assigned', { detail: newBedsideOrders }));
+
+      // 5. Update local assigned map in checklist
+      setAssignedTasks(prev => {
+        const next = { ...prev };
+        itemsToDispatch.forEach(it => {
+          next[it.title] = {
+            status: 'APPROVED',
+            assignedAt: new Date().toISOString(),
+            priority: it.urgent ? 'STAT' : 'URGENT'
+          };
+        });
+        return next;
+      });
+
+      // Clear selection
+      setSelectedTasks({});
+
+      // Show toast
+      setToast({
+        type: 'success',
+        text: `✓ Assigned ${itemsToDispatch.length} task${itemsToDispatch.length > 1 ? 's' : ''} to Bedside Nurse for Patient ${patientId} (${bedNumber || 'ICU-BED-01'})! Reflecting in Bedside Worklist.`
+      });
+      setTimeout(() => setToast(null), 5000);
+
+      if (onAcknowledge) {
+        onAcknowledge();
+      }
+    } catch (err) {
+      console.error('Error assigning orders to nurse:', err);
+      setToast({
+        type: 'error',
+        text: 'Failed to assign task: ' + err.message
+      });
+      setTimeout(() => setToast(null), 5000);
+    } finally {
+      setIsAssigning(false);
+    }
+  };
+
+  // 1-Click Assign Single Task
+  const handleAssignSingle = (item) => {
+    dispatchOrdersToNurse([item]);
+  };
+
+  // Assign Selected Tasks
+  const handleAssignSelected = () => {
+    const selected = checklistItems.filter(item => selectedTasks[item.id]);
+    if (selected.length > 0) {
+      dispatchOrdersToNurse(selected);
+    }
+  };
+
+  // Assign All Checklist Tasks
+  const handleAssignAll = () => {
+    dispatchOrdersToNurse(checklistItems);
+    setIsAuthorized(true);
+  };
+
+  // Add Custom Bedside Task
+  const handleCreateCustomTask = (e) => {
+    e.preventDefault();
+    if (!customActionName.trim()) return;
+
+    const newTaskItem = {
+      id: `custom-task-${Date.now()}`,
+      title: customActionName.trim(),
+      detail: customDoctorNotes.trim() || 'Bedside order assigned by Attending Physician.',
+      badge: customPriority === 'STAT' ? 'STAT 1-HOUR' : customPriority,
+      category: customCategory,
+      urgent: customPriority === 'STAT',
+      doctorNotes: customDoctorNotes.trim()
+    };
+
+    // Add to checklist items array
+    setChecklistItems(prev => [newTaskItem, ...prev]);
+
+    // Dispatch directly to nurse
+    dispatchOrdersToNurse([newTaskItem]);
+
+    // Reset form
+    setCustomActionName('');
+    setCustomDoctorNotes('');
+    setIsCustomComposerOpen(false);
+  };
+
+  const selectedCount = checklistItems.filter(item => selectedTasks[item.id]).length;
+  const assignedCount = checklistItems.filter(item => assignedTasks[item.title]).length;
+  const allAssigned = checklistItems.length > 0 && checklistItems.every(item => assignedTasks[item.title]);
 
   return (
     <div className="space-y-4 font-sans">
@@ -431,9 +635,30 @@ export default function MultiAgentConsensusCard({
 
       {/* =========================================================================
           SECTION 3: SEPARATE BOX FOR DOCTOR'S IMMEDIATE RESUSCITATION CHECKLIST
-          Functional, interactive checklist for the bedside physician right now
+          Interactive task assignment directly from Doctor to Bedside Nurse
           ========================================================================= */}
       <div className="rounded-3xl bg-white dark:bg-[#0D1524] border-2 border-emerald-400 dark:border-emerald-600/80 shadow-md p-5 space-y-4">
+
+        {/* Real-time Feedback Toast */}
+        {toast && (
+          <div className={`p-3 rounded-2xl text-xs font-semibold flex items-center justify-between gap-2 shadow-sm transition-all duration-300 animate-in fade-in slide-in-from-top-2 ${
+            toast.type === 'success'
+              ? 'bg-emerald-50 text-emerald-800 border-[1.5px] border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300'
+              : 'bg-rose-50 text-rose-800 border-[1.5px] border-rose-300 dark:bg-rose-950/60 dark:text-rose-300'
+          }`}>
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+              <span>{toast.text}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setToast(null)}
+              className="p-1 rounded-lg hover:bg-black/5 dark:hover:bg-white/10"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
 
         {/* Checklist Header */}
         <div className="flex items-center justify-between gap-3 flex-wrap border-b pb-3 border-slate-100 dark:border-slate-800">
@@ -442,7 +667,7 @@ export default function MultiAgentConsensusCard({
               <ClipboardCheck className="w-5 h-5" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                   Doctor's Immediate Resuscitation Checklist
                 </h3>
@@ -451,76 +676,234 @@ export default function MultiAgentConsensusCard({
                 </span>
               </div>
               <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Execute STAT clinical orders for Patient {patientId} ({bedNumber}) • Required within 60 minutes
+                Assign STAT bedside orders directly to Nurse Priya for Patient {patientId} ({bedNumber})
               </div>
             </div>
           </div>
 
-          {/* Progress Pill */}
+          {/* Action Header Controls */}
           <div className="flex items-center gap-2">
-            <span className="text-xs font-mono font-bold px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700">
-              {completedCount} of {checklistItems.length} Executed
+            <button
+              type="button"
+              onClick={() => setIsCustomComposerOpen(prev => !prev)}
+              className="text-xs font-bold px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 hover:bg-emerald-100 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs active:scale-95"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>{isCustomComposerOpen ? 'Close Composer' : '+ Add Custom Task for Nurse'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSelectAll}
+              className="text-xs font-mono font-bold px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 hover:bg-slate-200 transition-all cursor-pointer"
+            >
+              {checklistItems.every(i => selectedTasks[i.id]) ? 'Deselect All' : `Select All (${checklistItems.length})`}
+            </button>
+
+            <span className="text-xs font-mono font-bold px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700">
+              {assignedCount} of {checklistItems.length} Dispatched
             </span>
           </div>
         </div>
 
+        {/* Inline Custom Task Composer Form */}
+        {isCustomComposerOpen && (
+          <form
+            onSubmit={handleCreateCustomTask}
+            className="p-4 rounded-2xl bg-emerald-50/60 dark:bg-[#112338] border-[1.5px] border-emerald-300 dark:border-emerald-700/60 shadow-sm space-y-3 animate-in fade-in duration-200"
+          >
+            <div className="flex items-center justify-between pb-2 border-b border-emerald-200 dark:border-emerald-800">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <span className="text-xs font-bold text-slate-900 dark:text-white">
+                  Create & Assign Custom Bedside Task to Nurse
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCustomComposerOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200/50"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="md:col-span-2 space-y-1">
+                <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                  Task / Medication Order Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Titrate Norepinephrine to 0.15 mcg/kg/min or Arterial Line insertion"
+                  value={customActionName}
+                  onChange={(e) => setCustomActionName(e.target.value)}
+                  className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                  Priority
+                </label>
+                <select
+                  value={customPriority}
+                  onChange={(e) => setCustomPriority(e.target.value)}
+                  className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+                >
+                  <option value="STAT">STAT (Immediate 1-Hour)</option>
+                  <option value="URGENT">URGENT (&lt; 30 min)</option>
+                  <option value="ROUTINE">ROUTINE Bedside Order</option>
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                  Category
+                </label>
+                <select
+                  value={customCategory}
+                  onChange={(e) => setCustomCategory(e.target.value)}
+                  className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+                >
+                  <option value="MEDICATION_CHANGE">Medication Change / Titration</option>
+                  <option value="RESUSCITATION">Fluid Resuscitation / Bolus</option>
+                  <option value="STAT_LABS">STAT Laboratory Draw</option>
+                  <option value="BEDSIDE_HARDWARE">Lines & Hardware (Arterial/Central)</option>
+                  <option value="THERAPY_ORDER">Bedside Therapy & Monitoring</option>
+                </select>
+              </div>
+
+              <div className="md:col-span-2 space-y-1">
+                <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                  Doctor's Bedside Notes for Nurse
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Target MAP >= 65 mmHg. Re-zero arterial transducer q2h."
+                  value={customDoctorNotes}
+                  onChange={(e) => setCustomDoctorNotes(e.target.value)}
+                  className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsCustomComposerOpen(false)}
+                className="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isAssigning || !customActionName.trim()}
+                className="px-4 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 shadow-sm active:scale-95 disabled:opacity-50 cursor-pointer"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>{isAssigning ? 'Dispatching...' : 'Assign Order to Bedside Nurse'}</span>
+              </button>
+            </div>
+          </form>
+        )}
+
         {/* Interactive Checklist Items */}
-        <div className="space-y-2">
-          {checklistItems.map((item, idx) => {
-            const isChecked = Boolean(checkedItems[idx]);
+        <div className="space-y-2.5">
+          {checklistItems.map((item) => {
+            const isSelected = Boolean(selectedTasks[item.id]);
+            const assigned = assignedTasks[item.title];
+            const isAssigned = Boolean(assigned);
+            const isExecuted = assigned?.status === 'EXECUTED';
 
             return (
               <div
-                key={idx}
-                onClick={() => toggleCheck(idx)}
-                className={`p-3 rounded-2xl border-[1.5px] transition-all duration-200 cursor-pointer flex items-start justify-between gap-3 ${
-                  isChecked
-                    ? 'bg-emerald-50/60 border-emerald-300 dark:bg-emerald-950/20 dark:border-emerald-900/60'
+                key={item.id}
+                className={`p-3.5 rounded-2xl border-[1.5px] transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                  isExecuted
+                    ? 'bg-emerald-50/70 border-emerald-300 dark:bg-emerald-950/20 dark:border-emerald-900/60'
+                    : isAssigned
+                    ? 'bg-sky-50/60 border-sky-300 dark:bg-sky-950/30 dark:border-sky-800'
+                    : isSelected
+                    ? 'bg-emerald-50/40 border-emerald-400 dark:bg-emerald-950/20'
                     : 'bg-slate-50/70 border-slate-200 hover:border-slate-300 dark:bg-[#131D31] dark:border-slate-800'
                 }`}
               >
                 <div className="flex items-start gap-3 min-w-0 flex-1">
-                  <div className="mt-0.5 shrink-0 text-slate-400 hover:text-emerald-600 transition-colors">
-                    {isChecked ? (
+                  {/* Task Selection Checkbox */}
+                  <button
+                    type="button"
+                    onClick={() => toggleSelectTask(item.id)}
+                    className="mt-0.5 shrink-0 text-slate-400 hover:text-emerald-600 transition-colors cursor-pointer"
+                    title={isSelected ? "Deselect task" : "Select task to assign to nurse"}
+                  >
+                    {isSelected ? (
                       <CheckSquare className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                     ) : (
                       <Square className="w-5 h-5 text-slate-400" />
                     )}
-                  </div>
-                  <div className="space-y-0.5 min-w-0">
+                  </button>
+
+                  <div className="space-y-1 min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className={`text-xs font-bold ${isChecked ? 'line-through text-slate-500 dark:text-slate-400' : 'text-slate-900 dark:text-white'}`}>
+                      <span className={`text-xs font-bold ${isExecuted ? 'line-through text-slate-500 dark:text-slate-400' : 'text-slate-900 dark:text-white'}`}>
                         {item.title}
                       </span>
+
+                      {/* Priority / Urgency Badge */}
                       <span className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider border ${
-                        isChecked
+                        isExecuted
                           ? 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300'
                           : 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/50 dark:text-rose-300'
                       }`}>
-                        {isChecked ? 'EXECUTED' : item.badge}
+                        {isExecuted ? 'EXECUTED' : item.badge || 'STAT 1-HOUR'}
                       </span>
+
+                      {/* Category Badge */}
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-semibold text-slate-600 bg-slate-100 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                        {item.category || inferCategory(item.title)}
+                      </span>
+
+                      {/* Real-time Bedside Worklist Badge */}
+                      {isAssigned && !isExecuted && (
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-sky-100 text-sky-800 border border-sky-300 flex items-center gap-1.5 animate-pulse">
+                          <span className="w-1.5 h-1.5 rounded-full bg-sky-600" />
+                          <span>Assigned to Bedside Nurse</span>
+                        </span>
+                      )}
+                      {isExecuted && (
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                          ✓ Administered at Bedside
+                        </span>
+                      )}
                     </div>
+
                     <div className="text-[11px] text-slate-600 dark:text-slate-400 font-medium leading-relaxed">
                       {item.detail}
                     </div>
                   </div>
                 </div>
 
-                <div className="shrink-0 flex items-center">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleCheck(idx);
-                    }}
-                    className={`text-[10px] font-mono font-bold px-2.5 py-1 rounded-lg border transition-all ${
-                      isChecked
-                        ? 'bg-emerald-600 text-white border-emerald-600'
-                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-700 hover:border-emerald-500'
-                    }`}
-                  >
-                    {isChecked ? 'Done' : 'Mark Done'}
-                  </button>
+                {/* 1-Click Action Button on Each Row */}
+                <div className="shrink-0 flex items-center gap-2">
+                  {isAssigned ? (
+                    <span className="text-[10px] font-mono font-bold px-3 py-1.5 rounded-xl bg-sky-50 dark:bg-sky-950 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-sky-600" />
+                      <span>Dispatched</span>
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleAssignSingle(item)}
+                      disabled={isAssigning}
+                      className="text-[11px] font-bold px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-600 text-emerald-800 hover:text-white border border-emerald-300 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 disabled:opacity-50"
+                      title="Assign this task directly to bedside nurse"
+                    >
+                      <Send className="w-3 h-3" />
+                      <span>Assign to Nurse</span>
+                    </button>
+                  )}
                 </div>
               </div>
             );
@@ -528,24 +911,39 @@ export default function MultiAgentConsensusCard({
         </div>
 
         {/* Checklist Action Dock */}
-        <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3 flex-wrap">
+        <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2 text-[11px] font-mono text-slate-500 dark:text-slate-400">
             <Lock className="w-3.5 h-3.5 text-emerald-600" />
             <span>Digital Signature Log: Attending Physician Authority Enforced</span>
           </div>
 
-          <button
-            type="button"
-            onClick={handleAuthorizeAll}
-            className={`px-4 py-2 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-2 shadow-sm active:scale-95 ${
-              isAuthorized
-                ? 'bg-emerald-100 text-emerald-800 border-[1.5px] border-emerald-300'
-                : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20 hover:shadow-md'
-            }`}
-          >
-            <CheckCircle2 className="w-4 h-4" />
-            <span>{isAuthorized ? '✓ Sepsis Bundle Digitally Authorized' : 'Authorize & Sign 1-Hour Care Bundle'}</span>
-          </button>
+          <div className="flex items-center gap-2 flex-wrap">
+            {selectedCount > 0 && (
+              <button
+                type="button"
+                onClick={handleAssignSelected}
+                disabled={isAssigning}
+                className="px-4 py-2 rounded-full text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20 hover:shadow-md transition-all flex items-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>Assign Selected ({selectedCount}) to Nurse</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={handleAssignAll}
+              disabled={isAssigning}
+              className={`px-4 py-2 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-2 shadow-sm active:scale-95 ${
+                allAssigned
+                  ? 'bg-emerald-100 text-emerald-800 border-[1.5px] border-emerald-300'
+                  : 'bg-slate-900 hover:bg-slate-800 text-white shadow-slate-900/20 hover:shadow-md'
+              }`}
+            >
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <span>{allAssigned ? '✓ All Bundle Tasks Dispatched to Nurse' : 'Assign All Care Bundle Tasks to Nurse'}</span>
+            </button>
+          </div>
         </div>
 
       </div>

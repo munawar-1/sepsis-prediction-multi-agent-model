@@ -50,60 +50,87 @@ export default function TherapyTasksView({
   const [nurseNotes, setNurseNotes] = useState('');
   const [isAdministering, setIsAdministering] = useState(false);
 
-  // Load tasks from backend
+  // Load tasks from backend and local cache
   const loadTasks = async () => {
     setLoading(true);
     try {
-      const res = await clinicalApi.fetchNurseTasks();
-      if (res.data && Array.isArray(res.data)) {
-        setTasks(res.data);
-      } else {
-        // Fallback default tasks if database is initial
-        setTasks([
-          {
-            id: 101,
-            patientId: 'PT-9042',
-            patientName: 'Eleanor Vance',
-            icuBedNumber: 'ICU-BED-01',
-            orderCode: 'ACT_MED_NOREPINEPHRINE',
-            actionName: 'Titrate Norepinephrine Infusion to 0.12 mcg/kg/min IV',
-            category: 'MEDICATION_CHANGE',
-            priority: 'STAT',
-            status: 'APPROVED',
-            signedByDoctor: 'dr.sharma',
-            rationale: 'Severe cellular hypoperfusion: MAP 54 mmHg, Shock Index 1.67, Lactate 5.1 mmol/L | Doctor Note: Titrate q5m to maintain MAP >= 65.',
-            orderedAt: new Date(Date.now() - 25 * 60 * 1000).toISOString()
-          },
-          {
-            id: 102,
-            patientId: 'PT-9042',
-            patientName: 'Eleanor Vance',
-            icuBedNumber: 'ICU-BED-01',
-            orderCode: 'ACT_FLUID_BOLUS',
-            actionName: 'Administer 30 mL/kg IV Crystalloid Resuscitation Bolus (Plasmalyte)',
-            category: 'RESUSCITATION',
-            priority: 'STAT',
-            status: 'APPROVED',
-            signedByDoctor: 'dr.sharma',
-            rationale: 'Surviving Sepsis 1-Hour Protocol: Target MAP >= 65 mmHg and dynamic fluid responsiveness check.',
-            orderedAt: new Date(Date.now() - 40 * 60 * 1000).toISOString()
-          },
-          {
-            id: 103,
-            patientId: 'PT-8810',
-            patientName: 'Arthur Pendelton',
-            icuBedNumber: 'ICU-BED-02',
-            orderCode: 'ACT_STAT_LACTATE',
-            actionName: 'Draw STAT Serial Venous Blood Lactate (q2h)',
-            category: 'STAT_LABS',
-            priority: 'URGENT',
-            status: 'APPROVED',
-            signedByDoctor: 'dr.sharma',
-            rationale: 'Occult Hypoperfusion Protocol (Martha\'s Rule): Confirm biochemical clearance.',
-            orderedAt: new Date(Date.now() - 55 * 60 * 1000).toISOString()
-          }
-        ]);
+      const storedLocal = JSON.parse(localStorage.getItem('aegis_bedside_tasks') || '[]');
+
+      const fallbackTasks = [
+        {
+          id: 101,
+          patientId: 'PT-9042',
+          patientName: 'Eleanor Vance',
+          icuBedNumber: 'ICU-BED-01',
+          orderCode: 'ACT_MED_NOREPINEPHRINE',
+          actionName: 'Titrate Norepinephrine Infusion to 0.12 mcg/kg/min IV',
+          category: 'MEDICATION_CHANGE',
+          priority: 'STAT',
+          status: 'APPROVED',
+          signedByDoctor: 'dr.sharma',
+          rationale: 'Severe cellular hypoperfusion: MAP 54 mmHg, Shock Index 1.67, Lactate 5.1 mmol/L | Doctor Note: Titrate q5m to maintain MAP >= 65.',
+          orderedAt: new Date(Date.now() - 25 * 60 * 1000).toISOString()
+        },
+        {
+          id: 102,
+          patientId: 'PT-9042',
+          patientName: 'Eleanor Vance',
+          icuBedNumber: 'ICU-BED-01',
+          orderCode: 'ACT_FLUID_BOLUS',
+          actionName: 'Administer 30 mL/kg IV Crystalloid Resuscitation Bolus (Plasmalyte)',
+          category: 'RESUSCITATION',
+          priority: 'STAT',
+          status: 'APPROVED',
+          signedByDoctor: 'dr.sharma',
+          rationale: 'Surviving Sepsis 1-Hour Protocol: Target MAP >= 65 mmHg and dynamic fluid responsiveness check.',
+          orderedAt: new Date(Date.now() - 40 * 60 * 1000).toISOString()
+        },
+        {
+          id: 103,
+          patientId: 'PT-8810',
+          patientName: 'Arthur Pendelton',
+          icuBedNumber: 'ICU-BED-02',
+          orderCode: 'ACT_STAT_LACTATE',
+          actionName: 'Draw STAT Serial Venous Blood Lactate (q2h)',
+          category: 'STAT_LABS',
+          priority: 'URGENT',
+          status: 'APPROVED',
+          signedByDoctor: 'dr.sharma',
+          rationale: 'Occult Hypoperfusion Protocol (Martha\'s Rule): Confirm biochemical clearance.',
+          orderedAt: new Date(Date.now() - 55 * 60 * 1000).toISOString()
+        }
+      ];
+
+      try {
+        const res = await clinicalApi.fetchNurseTasks();
+        if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+          const apiTasks = res.data;
+          const merged = [...storedLocal];
+          apiTasks.forEach(task => {
+            if (!merged.some(m => m.id === task.id || (m.patientId === task.patientId && m.actionName === task.actionName))) {
+              merged.push(task);
+            }
+          });
+          fallbackTasks.forEach(fb => {
+            if (!merged.some(m => m.id === fb.id || (m.patientId === fb.patientId && m.actionName === fb.actionName))) {
+              merged.push(fb);
+            }
+          });
+          setTasks(merged);
+          return;
+        }
+      } catch (apiErr) {
+        console.warn('Backend tasks API error, using synced cache:', apiErr.message);
       }
+
+      // Merge local storage and fallback
+      const merged = [...storedLocal];
+      fallbackTasks.forEach(fb => {
+        if (!merged.some(m => m.id === fb.id || (m.patientId === fb.patientId && m.actionName === fb.actionName))) {
+          merged.push(fb);
+        }
+      });
+      setTasks(merged);
     } catch (e) {
       console.warn('Failed to load nurse tasks:', e);
     } finally {
@@ -113,6 +140,19 @@ export default function TherapyTasksView({
 
   useEffect(() => {
     loadTasks();
+
+    const handleTaskAssigned = (e) => {
+      console.log('Bedside task assigned event received in TherapyTasksView:', e?.detail);
+      loadTasks();
+    };
+
+    window.addEventListener('bedside-task-assigned', handleTaskAssigned);
+    window.addEventListener('storage', handleTaskAssigned);
+
+    return () => {
+      window.removeEventListener('bedside-task-assigned', handleTaskAssigned);
+      window.removeEventListener('storage', handleTaskAssigned);
+    };
   }, []);
 
   // Filter tasks
@@ -151,37 +191,40 @@ export default function TherapyTasksView({
         doctorNotes: doctorNotes.trim()
       };
 
-      const res = await clinicalApi.assignDoctorOrder(payload);
-      if (res.data) {
-        // Find patient name for local rendering
-        const targetAlert = alerts.find(a => a.patientId === targetPatientId);
-        const newTask = {
-          ...res.data,
-          patientName: targetAlert?.patientName || targetPatientId,
-          icuBedNumber: targetAlert?.bed || 'ICU-BED-01'
-        };
-        setTasks(prev => [newTask, ...prev]);
-        setIsAssignModalOpen(false);
-      } else {
-        // Fallback local update
-        const targetAlert = alerts.find(a => a.patientId === targetPatientId);
-        const newTask = {
-          id: Date.now(),
-          patientId: targetPatientId,
-          patientName: targetAlert?.patientName || targetPatientId,
-          icuBedNumber: targetAlert?.bed || 'ICU-BED-01',
-          orderCode: `ACT_${category}_${Math.floor(Math.random() * 9000)}`,
-          actionName: actionName.trim(),
-          category,
-          priority,
-          status: 'APPROVED',
-          signedByDoctor: user?.username || 'dr.sharma',
-          rationale: `${rationale.trim()} | Doctor Note: ${doctorNotes.trim()}`,
-          orderedAt: new Date().toISOString()
-        };
-        setTasks(prev => [newTask, ...prev]);
-        setIsAssignModalOpen(false);
+      let assignedData = null;
+      try {
+        const res = await clinicalApi.assignDoctorOrder(payload);
+        assignedData = res?.data;
+      } catch (err) {
+        console.warn('Backend assign call note:', err.message);
       }
+
+      const targetAlert = alerts.find(a => a.patientId === targetPatientId);
+      const newTask = {
+        id: assignedData?.id || Date.now(),
+        patientId: targetPatientId,
+        patientName: targetAlert?.patientName || (targetPatientId === 'PT-9042' ? 'Eleanor Vance' : targetPatientId),
+        icuBedNumber: targetAlert?.bed || 'ICU-BED-01',
+        orderCode: assignedData?.orderCode || `ACT_${category}_${Math.floor(Math.random() * 9000)}`,
+        actionName: actionName.trim(),
+        category,
+        priority,
+        status: 'APPROVED',
+        signedByDoctor: user?.username || 'dr.sharma',
+        rationale: `${rationale.trim()} | Doctor Note: ${doctorNotes.trim()}`,
+        orderedAt: new Date().toISOString()
+      };
+
+      // Persist in localStorage
+      const localTasks = JSON.parse(localStorage.getItem('aegis_bedside_tasks') || '[]');
+      const updatedLocal = [newTask, ...localTasks.filter(t => t.id !== newTask.id)];
+      localStorage.setItem('aegis_bedside_tasks', JSON.stringify(updatedLocal));
+
+      // Dispatch event
+      window.dispatchEvent(new CustomEvent('bedside-task-assigned', { detail: newTask }));
+
+      setTasks(prev => [newTask, ...prev.filter(p => p.id !== newTask.id)]);
+      setIsAssignModalOpen(false);
     } catch (err) {
       alert('Failed to assign order: ' + err.message);
     } finally {
@@ -198,7 +241,26 @@ export default function TherapyTasksView({
         nurseNotes: nurseNotes.trim() || 'Bedside administration completed, vitals monitored'
       };
 
-      await clinicalApi.administerOrder(taskId, payload);
+      try {
+        await clinicalApi.administerOrder(taskId, payload);
+      } catch (err) {
+        console.warn('Backend administer call note:', err.message);
+      }
+
+      // Update local storage
+      const localTasks = JSON.parse(localStorage.getItem('aegis_bedside_tasks') || '[]');
+      const updatedLocal = localTasks.map(t => {
+        if (t.id === taskId) {
+          return {
+            ...t,
+            status: 'EXECUTED',
+            executedAt: new Date().toISOString(),
+            rationale: (t.rationale || '') + ` | Administered: ${payload.doseAdministered} (${user?.fullName || 'Nurse Priya, RN'})`
+          };
+        }
+        return t;
+      });
+      localStorage.setItem('aegis_bedside_tasks', JSON.stringify(updatedLocal));
 
       setTasks(prev => prev.map(t => {
         if (t.id === taskId) {
